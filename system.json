@@ -1,0 +1,74 @@
+{
+  "id": "vryl",
+  "title": "Vryl",
+  "description": "Narrative-driven system with optional features for crunchy tactical combat.",
+  "authors": [
+    {
+      "name": "Ampyri",
+      "discord": "ampyri"
+    },
+    {
+      "name": "Ari Nightingale",
+      "discord": "aripegiodelmandolino"
+    }
+  ],
+  "documentTypes": {
+    "Actor": {
+        "character": {
+            "htmlFields": ["biography"]
+        },
+        "object": {
+            "htmlFields": ["biography"]
+        }
+    },
+    "Item": {
+        "item": {
+            "htmlFields": ["description"]
+        },
+        "status": {
+            "htmlFields": ["description"]
+        },
+        "combatAbility": {
+            "htmlFields": ["description"]
+        }
+    }
+  },
+  "flags": {
+    "hotReload": {
+      "extensions": ["css", "html", "hbs", "json"],
+      "paths": ["css", "lang", "templates"]
+    }
+  },
+  "media": [
+    {
+      "type": "setup",
+      "url": "systems/vryl/assets/anvil-impact.png",
+      "thumbnail": "systems/vryl/assets/anvil-impact.png"
+    }
+  ],
+  "version": "0.2.0",
+  "compatibility": {
+    "minimum": "14.356",
+    "verified": "14.356"
+  },
+  "esmodules": ["module/vryl.mjs"],
+  "styles": ["css/vryl.css"],
+  "languages": [
+    {
+      "lang": "en",
+      "name": "English",
+      "path": "lang/en.json"
+    }
+  ],
+  "packs": [],
+  "packFolders": [],
+  "socket": false,
+  "background": "systems/vryl/assets/anvil-impact.png",
+  
+  "grid": {
+    "type": 1,
+    "distance": 1,
+    "units": "m",
+    "diagonals": 0
+  }
+}

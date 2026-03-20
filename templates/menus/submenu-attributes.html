@@ -1,0 +1,36 @@
+<div class="flexcol">
+    <!-- <div class="form-group flexcol"> -->
+        {{#eachAttribute attributeTypes}}
+        <div id="{{dataName}}" class="attribute-type fitheight">
+            <div class="flexrow fitheight">
+            <b class="flex-group-center fitwidth clickable typeOptions" style="writing-mode: vertical-lr;">{{name}}</b>
+            {{#eachAttribute ../attributeCategories}}
+            {{#eq typeDataName ../dataName}}
+            <list id="{{dataName}}" class="attribute-category flexcol fitwidth">
+                <b class="flex-group-center fitheight clickable categoryOptions">{{name}}</b>
+                {{#eachAttribute ../../attributes}}
+                {{#eq categoryDataName ../dataName}}
+                <li id="{{dataName}}" class="attribute flexrow fitheight">
+                    <input type="text" class="editable submenu-attributes" style="min-width: 150px" name="name" value="{{name}}" placeholder="Attribute Name">
+
+                    <i class="fa-solid fa-gear flex-group-center clickable edit submenu-attributes" ></i>
+                    <i class="fa fa-trash flex-group-center clickable delete submenu-attributes"></i>
+                    <i class="fa-solid fa-angle-up flex-group-center clickable move-up submenu-attributes"></i>
+                    <i class="fa-solid fa-angle-down flex-group-center clickable move-down submenu-attributes"></i>
+                </li>
+                {{/eq}}
+                {{/eachAttribute}}
+            </list>
+            {{/eq}}
+            {{/eachAttribute}}
+            </div>
+            <hr>
+        </div>
+        {{/eachAttribute}}
+    <!-- </div> -->
+    <footer class="sheet-footer flexrow fitheight">
+        <button class="submit submenu-attributes">
+            <i class="fa fa-check"></i> Confirm
+        </button>
+    </footer>
+</div>

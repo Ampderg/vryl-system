@@ -1,0 +1,31 @@
+<div class="dice-roll" data-action="expandRoll">
+    {{#if flavor}}
+    {{{flavor}}}
+    {{/if}}
+    <div class="dice-result">
+        <div class="dice-formula">{{attributesHtml}}</div>
+        {{{tooltip}}}
+        <h4 class="dice-total">
+            {{total}}
+            {{#gt crits 0}}
+            <span style="position: absolute; top: 11%; right: 10px; font-size: 80%; height: 100%; align-items: center;"><i>{{crits}} Crit{{#gt crits 1}}s{{/gt}}!!</i></span>
+            {{/gt}}
+        </h4>
+        {{#lte total 0}}
+        <b>Failure</b>, with a <b>Twist</b> to be the worst possible result.
+        {{/lte}}
+        {{#eq total 1}}
+        <b>Failure</b>, but your efforts result in something else happening.
+        {{/eq}}
+        {{#eq total 2}}
+        <b>Success</b>, with a <b>Twist</b>. You achieve your goal, but in an unexpected way.
+        {{/eq}}
+        {{#eq total 3}}
+        <b>Success</b>. You achieve your goal without complication.
+        {{/eq}}
+        {{#gte total 4}}
+        <b>Success</b>, with a <b>Boon</b> to be the best possible result.
+        {{/gte}}
+        
+    </div>
+</div>

@@ -1,0 +1,29 @@
+<div class="flexcol">
+    <b>{{attribute.name}}</b>
+    <div class="flexrow">
+        <span class="fitwidth">Level: </span>
+        <span id="{{attribute.dataName}}" class="flex-group-center context-edit-attribute-pips">
+            <i class="fa-solid fa-minus clickable context-edit-attribute-pips minus"></i>
+            {{#for 0 max_level 1}}
+            {{#lt index ../attribute.heroicLevel}}
+            <i id="{{index}}" class="fa-solid fa-plus-circle attribute-level-pip-large"></i>
+            {{else}}
+            {{#lt index ../attribute.level}}
+            <i id="{{index}}" class="fa-solid fa-circle attribute-level-pip-large"></i>
+            {{else}}
+            <i id="{{index}}" class="fa-regular fa-circle attribute-level-pip-large"></i>
+            {{/lt}}
+            {{/lt}}
+            {{/for}}
+            <i class="fa-solid fa-plus clickable context-edit-attribute-pips plus" style="padding-left: 3px"></i>
+        </span>
+    </div>
+    <div class="flexrow">
+        <span class="fitwidth">Bonus: </span>
+        <span id="{{attribute.dataName}}" class="flex-group-center attribute-bonus-dice context-edit-attribute-pips">
+            <i class="fa-solid fa-minus clickable context-edit-attribute-pips minus"></i>
+            <b><span class="bonus-dice-num">+0</span></b>
+            <i class="fa-solid fa-plus clickable context-edit-attribute-pips plus" style="padding-left: 3px"></i>
+        </span>
+    </div>
+</div>

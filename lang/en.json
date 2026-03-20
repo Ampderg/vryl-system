@@ -1,0 +1,11 @@
+{
+  "VRYL": {
+    
+  },
+  "TYPES": {
+    "Actor": {
+      "character": "Character",
+      "object": "Object"
+    }
+  }
+}

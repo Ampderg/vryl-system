@@ -1,0 +1,44 @@
+<div class='attributes-list'>
+    {{#eachAttribute system.attributeTypes}}
+    <div id="{{dataName}}" class="attribute-type fitheight">
+        <div class="flexrow fitheight">
+            <b class="flex-group-center fitwidth typeOptions" style="writing-mode: vertical-lr;">{{name}}</b>
+            {{#eachAttribute ../system.attributeCategories}}
+            {{#eq typeDataName ../dataName}}
+            <list id="{{dataName}}" class="attribute-category flexcol">
+                <b class="flex-group-center fitheight categoryOptions"><u>{{name}}</u></b>
+                {{#eachAttribute ../../actor.system.attributes_array}}
+                {{#if exists}}
+                {{#eq categoryDataName ../dataName}}
+                <li id="{{dataName}}" class="attribute flexrow fitheight {{#if indexOdd}}odd-row{{/if}}">
+                    <span data-action="attribute-roll" id="{{dataName}}" class="fitflex attribute-name clickable roll attribute-list 
+                        actor-{{../../../actor.id}} attribute-type-{{../../dataName}} attribute-category-{{../dataName}} attribute-name-{{dataName}}">
+                    {{name}}
+                    </span>
+                    <span data-action="edit-attribute-pips" id="{{dataName}}"
+                        class="fitwidth fitflex attribute-level clickable edit-attribute-pips attribute-list">
+                        {{#for 0 ../../../system.max_level 1}}
+                        {{#lt index ../heroicLevel}}
+                        <i class="fa-solid fa-plus-circle attribute-level-pip"></i>
+                        {{else}}
+                        {{#lt index ../level}}
+                        <i class="fa-solid fa-circle attribute-level-pip"></i>
+                        {{else}}
+                        <i class="fa-regular fa-circle attribute-level-pip"></i>
+                        {{/lt}}
+                        {{/lt}}
+                        {{/for}}
+                    </span>
+                </li>
+                {{/eq}}
+                {{/if}}
+                {{/eachAttribute}}
+            </list>
+            {{/eq}}
+            {{/eachAttribute}}
+        </div>
+        <hr>
+    </div>
+
+    {{/eachAttribute}}
+</div>
