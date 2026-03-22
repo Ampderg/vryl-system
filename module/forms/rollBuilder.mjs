@@ -54,12 +54,13 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
         let html = await super._renderHTML(context, options);
 
         let dcElement = html.rollBuilder.querySelector("input#dc-input");
-        dcElement.addEventListener('change', (event) => { this.updateDC() });
+        dcElement.addEventListener('change', (event) => { this.updateDC(true) });
         Hooks.on(`vryl-rollDataUpdated`, () => { this.updateDC() });
 
         Hooks.on('renderChatMessageHTML', (message, html, context) => {
             this.bindChatListeners(message, html, context);
         });
+
 
         let opts = document.querySelectorAll(`.ui-control.plain.icon.fa-solid.fa-dice-d20`);
         for (let element of opts) {
@@ -77,7 +78,7 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
         this.updateDC();
     }
 
-    //#region Html Updates
+    //#region Update Roll Data
 
     static async updateRollData() {
         const containers = document.querySelectorAll(".roll-builder-attribute-container");
@@ -97,7 +98,12 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
                 });
             }
         });
+
         Hooks.callAll(`vryl-rollDataUpdated`);
+    }
+
+    async updateIndividualPanelRollData() {
+        this.element.querySelector(`input#dc-input`).value = CONFIG.ROLL_DATA.dc;
     }
 
 
@@ -155,7 +161,7 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
     static async #roll(event, target) {
         console.log("Rolling with data: ", CONFIG.ROLL_DATA);
 
-        const dc = this._getRollDC();
+        const dc = CONFIG.ROLL_DATA.dc;
 
         let levelData = this._getRollLevel();
 
@@ -164,7 +170,7 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
         roll.toMessage();
 
         RollSidebar.#clearRoll();
-        RollSidebar.#goToChat(target);
+        RollSidebar.goToChat(target);
     }
 
     //#region Print
@@ -172,12 +178,20 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
     static async #print(event, target) {
         console.log("Printing to chat with data: ", CONFIG.ROLL_DATA);
         const rollData = CONFIG.ROLL_DATA;
+        let rollActors = {};
+
+        for(const [key, value] of rollData.rollActors)
+        {
+            rollActors[key] = value;
+        }
+
         let html = await RollSidebar.renderRoll();
         html += `<button class="copy-roll">Copy Roll <i class="fa-solid fa-copy"></i></button>`
-
+        
         const flags = {
             vryl: {
                 rollData: rollData,
+                rollActors: rollActors,
             }
         }
 
@@ -191,8 +205,17 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
         let copyButton = html.querySelector(`.copy-roll`);
         if (copyButton) {
             copyButton.addEventListener('click', function () {
-                CONFIG.ROLL_DATA = message.flags.vryl.rollData;
+                const flags = message.flags.vryl;
+                CONFIG.ROLL_DATA = structuredClone(flags.rollData);
+                const rollActors = Object.entries(flags.rollActors);
+                CONFIG.ROLL_DATA.rollActors = new Map();
+                for(const [key, value] of rollActors)
+                {
+                    CONFIG.ROLL_DATA.rollActors.set(key, structuredClone(value));
+                }
+
                 RollSidebar.updateRollData();
+                CONFIG.ui.rollBuilder.goToRollBuilder();
             });
         }
     }
@@ -326,7 +349,7 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
 
     static async renderRollOptions() {
         let rollData = {};
-        rollData.dc = RollSidebar.dc;
+        rollData.dc = CONFIG.ROLL_DATA.dc;
 
         return await foundry.applications.handlebars.renderTemplate(`systems/vryl/templates/parts/roll/roll-options.html`, rollData);
     }
@@ -343,16 +366,23 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
         RollSidebar.updateRollData();
     }
 
-    static #goToChat(target) {
+    // #region Tab Nav
+
+    static goToRollBuilder()
+    {
+        if (!window.ui.sidebar.expanded)
+            window.ui.sidebar.expand();
+        window.ui.sidebar.changeTab("rollBuilder", "primary");
+    }
+
+    static goToChat(target) {
         if (target.offsetParent.offsetParent.id.includes("popout")) return;
-        window.ui.sidebar.expand()
+        if(!window.ui.sidebar.expanded)
+            window.ui.sidebar.expand()
         window.ui.sidebar.changeTab("chat", "primary");
     }
 
     //#region DC
-    _getRollDC() {
-        return this.element.querySelector(`input#dc-input`).value ?? 11;
-    }
 
     static _getDiceProbability(n, successThreshold, dc, sides = 20) {
         // Probability of success on a single die
@@ -379,17 +409,21 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
         return totalProbability;
     }
 
-    updateDC() {
+    updateDC(isInputChange = false) {
         console.log("Update DC");
         const elements = this.element.querySelectorAll(`.success-confidence-estimate`);
         const levelData = this._getRollLevel();
-        const dc = this._getRollDC();
+        
+        CONFIG.ROLL_DATA.dc = CONFIG.ROLL_DATA.dc ?? 11;
 
-        RollSidebar.dc = dc;
+        if(isInputChange)
+            CONFIG.ROLL_DATA.dc = this.element.querySelector(`input#dc-input`).value;
+        else
+            this.element.querySelector(`input#dc-input`).value = CONFIG.ROLL_DATA.dc;
 
         for (const element of elements) {
             const successThreshold = parseInt(element.id) - levelData.guaranteedSuccesses;
-            const prob = 100.0 * RollSidebar._getDiceProbability(levelData.totalLevels, successThreshold, dc);
+            const prob = 100.0 * RollSidebar._getDiceProbability(levelData.totalLevels, successThreshold, CONFIG.ROLL_DATA.dc);
             let confidenceString = "";
             if (prob <= 0.1)
                 confidenceString = "Impossible";

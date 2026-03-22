@@ -645,3 +645,8 @@
 .dc-difficulty-estimate-guaranteed {
   color: #00fbff
 }
+
+.copy-roll {
+  margin: 0 auto;
+  margin-top: 0.5em;
+}

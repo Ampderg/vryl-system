@@ -285,14 +285,12 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
         const attribute = attributesArray.filter((a) => a.dataName == target.id)[0];
         await CONFIG.ui.rollBuilder.toggleAttribute(this.document, attribute, false);
 
-        if (!window.ui.sidebar.expanded)
-            window.ui.sidebar.expand()
-        window.ui.sidebar.changeTab("rollBuilder", "primary");
+        CONFIG.ui.rollBuilder.goToRollBuilder();
         CONFIG.ui.rollBuilder.updateRollData();
         await this.renderSelectedAttributes();
     }
 
-
+    
 
     // #region Edit Attribute
 
