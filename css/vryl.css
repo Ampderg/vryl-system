@@ -242,6 +242,12 @@
 }
 
 /* Styles limited to vryl sheets */
+
+.vryl.character-sheet:not(.minimizing, .maximizing, .minimized) {
+  min-width: 425px;
+  max-width: 600px;
+}
+
 .vryl .item-form {
   font-family: "Roboto", sans-serif;
 }
@@ -255,8 +261,9 @@
   margin-bottom: 10px;
 }
 .vryl .sheet-header .profile-img {
-  flex: 0 0 100px;
-  height: 100px;
+  cursor: pointer;
+  flex: 0 0 150px;
+  height: 150px;
   margin-right: 10px;
 }
 .vryl .sheet-header .header-fields {
@@ -586,4 +593,55 @@
   outline: 2px solid var(--vryl-c-dark);
   background-image: linear-gradient(45deg, var(--vryl-c-dark) 6.25%, transparent 6.25%, transparent 50%, var(--vryl-c-dark) 50%, var(--vryl-c-dark) 56.25%, transparent 56.25%, transparent 100%);
   background-size: 11.31px 11.31px;
+}
+
+.button-spacing {
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
+.min-fit {
+  min-height: fit-content;
+  min-width: fit-content;
+}
+
+.number-step button {
+  flex: 0.2;
+}
+
+.number-step input {
+  text-align: center;
+}
+
+.success-confidence {
+  font-size: 75%;
+  padding-bottom: 0;
+}
+
+.dc-difficulty-estimate-impossible {
+  color: var(--vryl-c-beige);
+}
+
+.dc-difficulty-estimate-improbable {
+  color: #ff0000ba
+}
+
+.dc-difficulty-estimate-unlikely {
+  color: #ff4a4ad4
+}
+
+.dc-difficulty-estimate-coinflip {
+  color: #f2894cc8
+}
+
+.dc-difficulty-estimate-confident {
+  color: #36f45fc9
+}
+
+.dc-difficulty-estimate-certain {
+  color: #12ffacd8
+}
+
+.dc-difficulty-estimate-guaranteed {
+  color: #00fbff
 }

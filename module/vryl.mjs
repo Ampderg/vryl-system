@@ -6,13 +6,25 @@ import { AttributeRoll } from "./helpers/vrylRoll.mjs";
 
 // Import helper/utility classes and constants.
 import { DEFAULTS } from './helpers/systemDefaults.mjs';
+
+// Helpers
+import { VrylHandlebarsHelpers } from "./helpers/handlebarsHelpers.mjs";
+
+// Menus
 import { SubmenuAttributes } from "./forms/submenuAttributes.mjs";
 
 const collections = foundry.documents.collections;
 const sheets = foundry.appv1.sheets;
 
 Hooks.once("init", () => {
-  _registerHandlebarsHelpers();
+  game.vrylGlobalFunctions = {
+      adjustNumberStepValue: function(element, amount) {
+        const input = element.parentElement.querySelector(':scope > input');
+        input.value = parseInt(input.value) + parseInt(amount);
+        input.dispatchEvent(new Event('change'));
+    }
+  }
+
   // Configure custom Document implementations.
   CONFIG.SystemId = 'vryl';
   CONFIG.Actor.documentClass = VrylActor;
@@ -82,8 +94,8 @@ function _initSystemSettings() {
     }
   });
 
-  if (!game.settings.get(CONFIG.SystemId, 'attribute_types'))
-    game.settings.set(CONFIG.SystemId, 'attribute_types', DEFAULTS.attributesTypes);
+  // if (!game.settings.get(CONFIG.SystemId, 'attribute_types'))
+  //   game.settings.set(CONFIG.SystemId, 'attribute_types', DEFAULTS.attributesTypes);
 
   game.settings.register(CONFIG.SystemId, 'attribute_categories', {
     name: 'Character Attribute Categories',
@@ -98,8 +110,8 @@ function _initSystemSettings() {
     }
   });
 
-  if (!game.settings.get(CONFIG.SystemId, 'attribute_categories'))
-    game.settings.set(CONFIG.SystemId, 'attribute_categories', DEFAULTS.attributesCategories);
+  // if (!game.settings.get(CONFIG.SystemId, 'attribute_categories'))
+  //   game.settings.set(CONFIG.SystemId, 'attribute_categories', DEFAULTS.attributesCategories);
 
   game.settings.register(CONFIG.SystemId, 'attributes', {
     scope: 'world',     // "world" = sync to db, "client" = local storage
@@ -112,8 +124,8 @@ function _initSystemSettings() {
     }
   });
 
-  if (!game.settings.get(CONFIG.SystemId, 'attributes'))
-    game.settings.set(CONFIG.SystemId, 'attributes', DEFAULTS.attributes);
+  // if (!game.settings.get(CONFIG.SystemId, 'attributes'))
+  //   game.settings.set(CONFIG.SystemId, 'attributes', DEFAULTS.attributes);
 
   game.settings.registerMenu(CONFIG.SystemId, 'attributesMenu', {
     name: 'Character Attributes',
@@ -130,6 +142,14 @@ function _initSystemSettings() {
     default: 5, // The default value for the setting
   });
 
+  game.settings.register(CONFIG.SystemId, 'max_willpower', {
+    scope: 'world',     // "world" = sync to db, "client" = local storage
+    config: true,      // we will use the menu above to edit this setting
+    type: Number,
+    default: 10, // The default value for the setting
+  });
+
+  VrylHandlebarsHelpers.registerHandlebarsHelpers();
 }
 
 /* -------------------------------------------- */
@@ -140,86 +160,3 @@ Hooks.once("ready", function () {
   // Include steps that need to happen after Foundry has fully loaded here.
 });
 
-//#region Handlebars Helpers
-
-function _registerHandlebarsHelpers() {
-  Handlebars.registerHelper('for', function (from, to, incr, block) {
-    var accum = '';
-    for (var i = from; i < to; i += incr) {
-      let data = {
-        index: i,
-        isFirst: i === from,
-        isLast: i + incr >= to,
-        from: from,
-        to: to,
-      };
-      accum += block.fn(data);
-    }
-    return accum;
-  });
-
-  Handlebars.registerHelper('eachMap', function (context, options) {
-    // Clone the array to avoid mutating the original data
-    const arr = [...context.values()];
-
-    let ret = "";
-    for (let i = 0; i < arr.length; i++) {
-      // Pass the sorted item back to the template block
-      ret = ret + options.fn(arr[i]);
-    }
-    return ret;
-  });
-
-
-  Handlebars.registerHelper('eachAttribute', function (context, options) {
-    // Clone the array to avoid mutating the original data
-    const arr = context.toSorted((a, b) => {
-      // Basic sorting logic (e.g., by a 'name' property)
-      if (a.type && a.type != b.type) return 0;
-      if (a.category && a.category != b.category) return 0;
-      return a.sorting - b.sorting;
-    });
-
-    let ret = "";
-    let rowIndices = new Map();
-    for (let i = 0; i < arr.length; i++) {
-      if (arr[i].category != undefined) {
-        rowIndices.set(arr[i].category, (rowIndices.get(arr[i].category) ?? 0) + 1);
-        arr[i].indexOdd = rowIndices.get(arr[i].category) % 2 == 0;
-      }
-      else {
-        arr[i].indexOdd = i % 2 == 0;
-      }
-      ret = ret + options.fn(arr[i]);
-    }
-    return ret;
-  });
-
-  Handlebars.registerHelper('eq', function (a, b) {
-    var next = arguments[arguments.length - 1];
-    return (a === b) ? next.fn(this) : next.inverse(this);
-  });
-
-  Handlebars.registerHelper('lt', function (a, b) {
-    var next = arguments[arguments.length - 1];
-    return (a < b) ? next.fn(this) : next.inverse(this);
-  });
-  Handlebars.registerHelper('lte', function (a, b) {
-    var next = arguments[arguments.length - 1];
-    return (a <= b) ? next.fn(this) : next.inverse(this);
-  });
-  Handlebars.registerHelper('gt', function (a, b) {
-    var next = arguments[arguments.length - 1];
-    return (a > b) ? next.fn(this) : next.inverse(this);
-  });
-  Handlebars.registerHelper('gte', function (a, b) {
-    var next = arguments[arguments.length - 1];
-    return (a >= b) ? next.fn(this) : next.inverse(this);
-  });
-  Handlebars.registerHelper('ne', function (a, b) {
-    var next = arguments[arguments.length - 1];
-    return (a !== b) ? next.fn(this) : next.inverse(this);
-  });
-}
-
-//#endregion

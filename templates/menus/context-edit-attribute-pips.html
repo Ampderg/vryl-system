@@ -6,12 +6,12 @@
             <i class="fa-solid fa-minus clickable context-edit-attribute-pips minus"></i>
             {{#for 0 max_level 1}}
             {{#lt index ../attribute.heroicLevel}}
-            <i id="{{index}}" class="fa-solid fa-plus-circle attribute-level-pip-large"></i>
+            <i id="{{index}}" class="fa-solid fa-plus-circle context-edit-attribute-pips attribute-level-pip-large"></i>
             {{else}}
             {{#lt index ../attribute.level}}
-            <i id="{{index}}" class="fa-solid fa-circle attribute-level-pip-large"></i>
+            <i id="{{index}}" class="fa-solid fa-circle context-edit-attribute-pips attribute-level-pip-large"></i>
             {{else}}
-            <i id="{{index}}" class="fa-regular fa-circle attribute-level-pip-large"></i>
+            <i id="{{index}}" class="fa-regular fa-circle context-edit-attribute-pips attribute-level-pip-large"></i>
             {{/lt}}
             {{/lt}}
             {{/for}}

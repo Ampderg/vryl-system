@@ -1,8 +1,29 @@
-<header class='sheet-header'>
+<header class='sheet-header min-fit'>
   <img class='profile-img' src='{{actor.img}}' data-edit='img' data-action='onEditImage' data-tooltip='{{actor.name}}'
-    height='100' width='100' />
+    height='150' width='150' />
   <div class='header-fields'>
-    <div class='document-name'>
+    <div class='document-name flexcol'>
       <input name='name' type='text' value='{{actor.name}}' placeholder='Name' />
+      <div class="flexrow" style="padding-top:25px">
+        <div class="flexcol">
+          <b class="flex-group-center">Experience</b>
+          <input name='xp' class="flex-group-center" type='number' value='0' placeholder='0' style="width: 80px; height: 27px;"/>
+          <i class="flex-group-center">{{system.xpSpent}} Spent</i>
+        </div>
+        <div class="willpower flexcol">
+          <b class="flex-group-center clickable" title="Roll Willpower">Willpower</b>
+          <div class="willpower-pips flex-group-center clickable" data-action="willpowerRoll">
+            {{#for 0 system.max_willpower 1}}
+            <i class="fa-solid fa-circle attribute-level-pip-large"></i>
+            {{/for}}
+          </div>
+          <div class="flex-group-center flexrow">
+            <i class="fa-solid fa-plus-square clickable button-spacing" title="Spend Willpower for a Guaranteed Success" data-action="willpowerSpend"></i>
+            <i class="fa-solid fa-campground clickable button-spacing" title="Rest" data-action="willpowerRest"></i>
+            <i class="fa-solid fa-fire clickable button-spacing" title="Burn Willpower" data-action="willpowerBurn"></i>
+            <i class="fa-solid fa-flask clickable button-spacing" title="Condition Save" data-action="conditionSave"></i>
+          </div>
+        </div>
+      </div>
     </div>
 </header>

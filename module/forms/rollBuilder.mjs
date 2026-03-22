@@ -8,6 +8,8 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
     // #region Options
     static tabName = `rollBuilder`;
 
+
+
     static DEFAULT_OPTIONS = {
         classes: [
             `roll-sidebar`,
@@ -49,6 +51,16 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
     // #endregion Data Prep
 
     async _renderHTML(context, options) {
+        let html = await super._renderHTML(context, options);
+
+        let dcElement = html.rollBuilder.querySelector("input#dc-input");
+        dcElement.addEventListener('change', (event) => { this.updateDC() });
+        Hooks.on(`vryl-rollDataUpdated`, () => { this.updateDC() });
+
+        Hooks.on('renderChatMessageHTML', (message, html, context) => {
+            this.bindChatListeners(message, html, context);
+        });
+
         let opts = document.querySelectorAll(`.ui-control.plain.icon.fa-solid.fa-dice-d20`);
         for (let element of opts) {
             let item = element.parentElement;
@@ -58,7 +70,11 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
                     chatOpts[0].parentElement.after(item);
             }
         }
-        return super._renderHTML(context, options);
+        return html;
+    }
+
+    _onRender(context, options) {
+        this.updateDC();
     }
 
     //#region Html Updates
@@ -81,6 +97,7 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
                 });
             }
         });
+        Hooks.callAll(`vryl-rollDataUpdated`);
     }
 
 
@@ -97,75 +114,166 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
         };
     };
 
-    static async #roll(event, target) {
-        console.log("Rolling with data: ", CONFIG.ROLL_DATA);
+    _getRollLevel() {
+        let totalLevels = 0;
+        let guaranteedSuccesses = 0;
 
         const rollActors = CONFIG.ROLL_DATA.rollActors;
         const rollActorsValues = rollActors.values();
-        let totalLevels = 0;
-        let dc = 11;
-        let guaranteedSuccesses = 0;
+
+        function addAttribute(attribute) {
+            if (!isNaN(attribute.level))
+                totalLevels += attribute.level + attribute.heroicLevel + attribute.bonusDice;
+            if (!isNaN(attribute.guaranteedSuccesses))
+                guaranteedSuccesses += attribute.guaranteedSuccesses;
+        }
+
         for (const actor of rollActorsValues) {
             for (const attribute of actor.attributes) {
-                totalLevels += attribute.level + attribute.heroicLevel + attribute.bonusDice;
+                addAttribute(attribute);
             }
+
+            if (actor.willpower)
+                addAttribute(actor.willpower);
         }
+
+
 
         if (totalLevels <= 0) {
             guaranteedSuccesses -= 1 - totalLevels;
             totalLevels = 2 - totalLevels;
         }
 
-        let roll = new CONFIG.Dice.AttributeRoll(`${totalLevels}d20cs>=${dc}sa + ${guaranteedSuccesses}`);
-        roll.options.flavor = await CONFIG.ui.rollBuilder.renderRollAttributes();
+        return {
+            totalLevels: totalLevels,
+            guaranteedSuccesses: guaranteedSuccesses,
+        }
+    }
+
+    //#region Roll
+
+    static async #roll(event, target) {
+        console.log("Rolling with data: ", CONFIG.ROLL_DATA);
+
+        const dc = this._getRollDC();
+
+        let levelData = this._getRollLevel();
+
+        let roll = new CONFIG.Dice.AttributeRoll(`${levelData.totalLevels}d20cs>=${dc}sa + ${levelData.guaranteedSuccesses}`);
+        roll.options.flavor = await CONFIG.ui.rollBuilder.renderRoll();
         roll.toMessage();
 
         RollSidebar.#clearRoll();
         RollSidebar.#goToChat(target);
     }
 
+    //#region Print
+
     static async #print(event, target) {
         console.log("Printing to chat with data: ", CONFIG.ROLL_DATA);
+        const rollData = CONFIG.ROLL_DATA;
+        let html = await RollSidebar.renderRoll();
+        html += `<button class="copy-roll">Copy Roll <i class="fa-solid fa-copy"></i></button>`
 
-        ChatMessage.create({
-            content: await RollSidebar.renderRollAttributes()
+        const flags = {
+            vryl: {
+                rollData: rollData,
+            }
+        }
+
+        const msg = await ChatMessage.create({
+            content: html,
+            flags: flags,
         });
-
-        //RollSidebar.#clearRoll();
-        //RollSidebar.#goToChat(target);
     }
 
-    static async getAttributeCategory(attribute) {
+    async bindChatListeners(message, html, context) {
+        let copyButton = html.querySelector(`.copy-roll`);
+        if (copyButton) {
+            copyButton.addEventListener('click', function () {
+                CONFIG.ROLL_DATA = message.flags.vryl.rollData;
+                RollSidebar.updateRollData();
+            });
+        }
+    }
+
+    //#region Utils
+
+    static getAttributeCategory(attribute) {
         const attributeCategories = game.settings.get(CONFIG.SystemId, 'attribute_categories');
         return attributeCategories[attribute.category];
     }
-    static async getAttributeType(attribute) {
+    static getAttributeType(attribute) {
         const attributeCategory = this.getAttributeCategory(attribute);
         const attributeTypes = game.settings.get(CONFIG.SystemId, 'attribute_types');
         return attributeTypes[attributeCategory.type];
     }
+    static getDefaultAttributeFromDataName(dataName) {
+        const attributes = game.settings.get(CONFIG.SystemId, 'attributes');
+        return attributes.filter((a) => a.dataName == dataName);
+    }
+
+    //#region Attribute Selection
+
+    static populateRollActor(actor) {
+        if (!CONFIG.ROLL_DATA.rollActors.has(actor.id))
+            CONFIG.ROLL_DATA.rollActors.set(actor.id, {
+                actor: actor,
+                attributes: []
+            });
+    }
+
+    static async clearSelectedAttributes() {
+        CONFIG.ROLL_DATA.rollActors.clear();
+    }
+
+    static async toggleAttribute(actor, attribute, render = true) {
+        const rollActors = CONFIG.ROLL_DATA.rollActors;
+
+        if (!rollActors.has(actor.id) || rollActors.get(actor.id).attributes.filter((a) => a.dataName == attribute.dataName).length == 0)
+            await this.selectAttribute(actor, attribute, render);
+        else
+            await this.deselectAttribute(actor.id, attribute.dataName, render);
+    }
+
+    static async selectAttribute(actor, attribute, render = true) {
+        this.populateRollActor(actor);
+
+        const rollActors = CONFIG.ROLL_DATA.rollActors;
+        const actorData = rollActors.get(actor.id);
+        const type = this.getAttributeType(attribute);
+
+        actorData.attributes = actorData.attributes.filter((a) => {
+            const compareType = this.getAttributeType(a);
+            return type.canSelectMultipleAttributesAtOnce || compareType.dataName != type.dataName;
+        });
+
+        actorData.attributes.push(attribute);
+
+        if (render)
+            this.updateRollData();
+    }
 
     static async deselectAttribute(actorId, dataName, render = true) {
         const rollActors = CONFIG.ROLL_DATA.rollActors;
-        rollActors.forEach((value, key) => {
-            if (key == actorId) {
-                value.attributes = value.attributes.filter((a) => a.dataName != dataName);
 
-                let allSelected = document.querySelectorAll(`.attribute-name.selected.actor-${actorId}.attribute-name-${dataName}`);
-                for (let a of allSelected) {
-                    a.classList.remove(`selected`);
-                }
+        if (!rollActors.has(actorId)) return;
 
-                if (value.attributes.length == 0) {
-                    let allSelected = document.querySelectorAll(`.roll-builder-actor.actor-${actorId}`);
-                    for (let a of allSelected) {
-                        a.remove();
-                    }
-                }
-            }
-        })
+        const actorData = rollActors.get(actorId);
+
+        if (dataName == "willpower")
+            actorData.willpower = undefined;
+        else
+            actorData.attributes = actorData.attributes.filter((a) => a.dataName != dataName);
+
         if (render)
             this.updateRollData();
+    }
+
+    //#region Attribute Rendering
+
+    static async renderRoll() {
+        return (await this.renderRollAttributes()) + (await this.renderRollOptions());
     }
 
     static async renderRollAttributes() {
@@ -174,26 +282,53 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
         const attributeCategories = game.settings.get(CONFIG.SystemId, 'attribute_categories');
         const attributeTypes = game.settings.get(CONFIG.SystemId, 'attribute_types');
         for (const [key, actor] of rollActors) {
-            if(actor.attributes.length > 0)
-            {
-            content += `<div class="roll-builder-actor actor-${key}"><div class="roll-builder-actor-inner">`
-            content += `<h5 class="flex-group-center">${actor.name}</h5>`;
-            for (const attribute of actor.attributes.toSorted((a, b) => {
-                return this.getAttributeType(a).sorting - this.getAttributeType(b).sorting;
-            })) {
-                const bonusDiceContent = `<i>${attribute.bonusDice > 0 ? "+" : "-"} ${attribute.bonusDice} </i>`;
-                attribute.bonusDiceString = attribute.bonusDice && attribute.bonusDice != 0 ? bonusDiceContent : "";
-                attribute.combinedLevel = attribute.level + attribute.heroicLevel;
-                attribute.actorId = key;
-                attribute.dataName = attribute.dataName;
+            if (actor.attributes.length > 0 || actor.willpower) {
+                content += `<div class="roll-builder-actor actor-${key}"><div class="roll-builder-actor-inner">`
+                content += `<h5 class="flex-group-center">${actor.actor.name}</h5>`;
 
-                const template = await foundry.applications.handlebars.renderTemplate(`systems/vryl/templates/parts/roll-attribute.html`, attribute);
-                content += template;
+                const sortedAttributes = actor.attributes.toSorted((a, b) => {
+                    return this.getAttributeType(a).sorting - this.getAttributeType(b).sorting;
+                });
+
+                async function renderAttribute(attribute) {
+                    const bonusDiceContent = `<i>${attribute.bonusDice > 0 ? "+" : "-"} ${attribute.bonusDice} </i>`;
+                    attribute.combinedLevel = attribute.level + attribute.heroicLevel;
+
+                    attribute.actorId = key;
+                    attribute.dataName = attribute.dataName;
+
+                    if (!isNaN(attribute.combinedLevel)) {
+                        attribute.hasLevel = true;
+                        attribute.bonusDiceString = attribute.bonusDice && attribute.bonusDice != 0 ? bonusDiceContent : "";
+                    }
+                    if (attribute.guaranteedSuccesses > 0)
+                        attribute.hasFlat = true;
+
+                    const template = await foundry.applications.handlebars.renderTemplate(`systems/vryl/templates/parts/roll/roll-attribute.html`, attribute);
+                    content += template;
+                }
+
+                for (const attribute of sortedAttributes) {
+                    await renderAttribute(attribute);
+                }
+
+                if (actor.willpower) {
+                    actor.willpower.dataName = "willpower";
+                    actor.willpower.name = "Willpower";
+                    await renderAttribute(actor.willpower);
+                }
+
+                content += `</div></div>`;
             }
-            content += `</div></div>`;
-        }
         }
         return content;
+    }
+
+    static async renderRollOptions() {
+        let rollData = {};
+        rollData.dc = RollSidebar.dc;
+
+        return await foundry.applications.handlebars.renderTemplate(`systems/vryl/templates/parts/roll/roll-options.html`, rollData);
     }
 
     static async #clearRoll() {
@@ -213,5 +348,75 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
         window.ui.sidebar.expand()
         window.ui.sidebar.changeTab("chat", "primary");
     }
+
+    //#region DC
+    _getRollDC() {
+        return this.element.querySelector(`input#dc-input`).value ?? 11;
+    }
+
+    static _getDiceProbability(n, successThreshold, dc, sides = 20) {
+        // Probability of success on a single die
+        const p = (sides - dc) / sides;
+
+        // Probability of exactly k successes: (nCk) * p^k * (1-p)^(n-k)
+        const getBinomial = (n, k, p) => {
+            const combinations = (n, k) => {
+                if (k === 0 || k === n) return 1;
+                if (k > n / 2) k = n - k;
+                let res = 1;
+                for (let i = 1; i <= k; i++) res = res * (n - i + 1) / i;
+                return res;
+            };
+            return combinations(n, k) * Math.pow(p, k) * Math.pow(1 - p, n - k);
+        };
+
+        // Sum probabilities for 3, 4, ..., n successes
+        let totalProbability = 0;
+        for (let k = successThreshold; k <= n; k++) {
+            totalProbability += getBinomial(n, k, p);
+        }
+
+        return totalProbability;
+    }
+
+    updateDC() {
+        console.log("Update DC");
+        const elements = this.element.querySelectorAll(`.success-confidence-estimate`);
+        const levelData = this._getRollLevel();
+        const dc = this._getRollDC();
+
+        RollSidebar.dc = dc;
+
+        for (const element of elements) {
+            const successThreshold = parseInt(element.id) - levelData.guaranteedSuccesses;
+            const prob = 100.0 * RollSidebar._getDiceProbability(levelData.totalLevels, successThreshold, dc);
+            let confidenceString = "";
+            if (prob <= 0.1)
+                confidenceString = "Impossible";
+            else if (prob < 15)
+                confidenceString = "Improbable";
+            else if (prob < 40)
+                confidenceString = "Unlikely";
+            else if (prob < 65)
+                confidenceString = "Coinflip";
+            else if (prob < 90)
+                confidenceString = "Confident";
+            else if (prob < 98)
+                confidenceString = "Certain";
+            else
+                confidenceString = "Guaranteed";
+
+            const formatter = new Intl.NumberFormat('en-US', {
+                minimumFractionDigits: 1,
+                maximumFractionDigits: 1
+            });
+
+            const formattedProb = formatter.format(prob);
+
+            element.innerHTML = `<span class="dc-difficulty-estimate-${confidenceString.toLowerCase()}">${confidenceString}</span>`;
+            element.title = `${formattedProb}%`;
+        }
+    }
+
     // #endregion Actions
-};
+}

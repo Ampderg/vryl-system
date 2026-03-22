@@ -48,7 +48,7 @@
   ],
   "version": "0.2.0",
   "compatibility": {
-    "minimum": "14.356",
+    "minimum": "13.345",
     "verified": "14.356"
   },
   "esmodules": ["module/vryl.mjs"],

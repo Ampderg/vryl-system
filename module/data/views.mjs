@@ -2,9 +2,18 @@ const { api, sheets } = foundry.applications;
 
 export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorSheetV2) {
 
+    constructor(options = {}) {
+        super(options);
+
+        Hooks.on(`vryl-rollDataUpdated`, () => {
+            console.log("Roll data updated for actor: " + this.document.id);
+            this.renderSelectedAttributes();
+        });
+    }
+
     /** @override */
     static DEFAULT_OPTIONS = {
-        classes: ["vryl", "sheet", "actor"],
+        classes: ["vryl", "sheet", "actor", "character-sheet"],
         position: {
             width: 600,
             height: 800,
@@ -21,6 +30,13 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
             // toggleEffect: this._toggleEffect,
             "attribute-roll": VrylActorSheet._attributeRoll,
             "edit-attribute-pips": VrylActorSheet._editAttributePips,
+            
+            "willpowerSpend": this._willpowerSpend,
+            "willpowerRest": this._rest,
+            "willpowerBurn": this._willpowerBurn,
+            "conditionSave": this._conditionSave,
+            "willpowerRoll": this._willpowerRoll,
+            
         },
         // Custom property that's merged into `this.options`
         // dragDrop: [{ dragSelector: '.draggable', dropSelector: null }],
@@ -40,14 +56,36 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
         },
     }
 
-    //#region Prepare data for rendering on character sheet. NOT for actor data processing
+    //#region Rendering
+
+    /** @override */
+    _onFirstRender(context, options) {
+        super._onFirstRender(context, options);
+
+        console.log("Setting up context menu close listener...");
+        document.addEventListener('click', (e) => {
+            if (this.contextMenu && !e.defaultPrevented
+                && !this.contextMenu.element.contains(e.target)) {
+                console.log("Closing context menu for actor: " + this.document.id);
+                this._closeContextMenu();
+            }
+        });
+    }
+
+    _onRender(context, options) {
+        super._onRender(context, options);
+
+        this.renderSelectedAttributes();
+    }
+
+    //#region Prepare Context
     /** @override */
     async _prepareContext(options) {
         // Retrieve the data structure from the base sheet. You can inspect or log
         // the context variable to see the structure, but some key properties for
         // sheets are the actor object, the data object, whether or not it's
         // editable, the items array, and the effects array.
-        const context = await super._prepareContext(options)
+        const context = await super._prepareContext(options);
 
         // Use a safe clone of the actor data for further operations.
         context.actor = this.actor;
@@ -56,10 +94,10 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
         context.system = context.actor.system;
         context.flags = context.actor.flags;
 
-        context.system = {};
         context.system.attributeTypes = game.settings.get(CONFIG.SystemId, 'attribute_types');
         context.system.attributeCategories = game.settings.get(CONFIG.SystemId, 'attribute_categories');
         context.system.max_level = game.settings.get(CONFIG.SystemId, 'attribute_max_level');
+        context.system.max_willpower = game.settings.get(CONFIG.SystemId, 'max_willpower');
 
         // Prepare character data and items.
         if (context.actor.type == 'character') {
@@ -181,31 +219,7 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
 
     //#region Sheet interaction
 
-    /** @override */
-    _onFirstRender(context, options) {
-        super._onFirstRender(context, options);
 
-        console.log("Setting up context menu close listener...");
-        document.addEventListener('click', (e) => {
-            if (this.contextMenu && !e.defaultPrevented
-                && !this.contextMenu.element.contains(e.target)) {
-                this._closeContextMenu();
-            }
-        });
-
-        const rollActors = CONFIG.ROLL_DATA.rollActors;
-        rollActors.forEach((value, key) => {
-            if (key == this.document.id) {
-                value.attributes.forEach((attribute) => {
-                    let clickedElements = document.querySelectorAll(`.actor-${this.document.id}.attribute-name-${attribute.dataName}`);
-                    for (let a of clickedElements) {
-                        a.classList.add(`selected`);
-                    }
-                });
-            }
-        })
-
-    }
 
     _closeContextMenu() {
         if (!this.contextMenu) return;
@@ -248,37 +262,34 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
 
     //#region Roll
 
-    static async _attributeRoll(event, target) {
-        if (!CONFIG.ROLL_DATA.rollActors.has(this.document.id))
-            CONFIG.ROLL_DATA.rollActors.set(this.document.id, {
-                name: this.document.name,
-                attributes: []
-            });
+    async renderSelectedAttributes() {
+        if (!CONFIG.ROLL_DATA.rollActors.has(this.document.id)) return;
+        const selectedAttributes = CONFIG.ROLL_DATA.rollActors.get(this.document.id).attributes;
 
-        const clickedAttribute = this.document.system.attributes[target.id];
+        let allSelected = this.element.querySelectorAll(`.attribute-name.selected.actor-${this.document.id}.attribute-name`);
+        for (const element of allSelected) {
+            element.classList.remove(`selected`);
+        }
 
-        const attributeCategories = game.settings.get(CONFIG.SystemId, 'attribute_categories');
-        const attributeTypes = game.settings.get(CONFIG.SystemId, 'attribute_types');
+        for (const a of selectedAttributes) {
+            let selectedElements = this.element.querySelectorAll(`.attribute-name.actor-${this.document.id}.attribute-name-${a.dataName}`);
 
-        const clickedType = attributeTypes[attributeCategories[clickedAttribute.category].type];
-
-        if (!clickedType.multipleSkillsUsableAtOnce) {
-            let allSelected = document.querySelectorAll(`.attribute-name.selected.actor-${this.document.id}.attribute-type-${clickedType.dataName}`);
-            for (let a of allSelected) {
-                CONFIG.ui.rollBuilder.deselectAttribute(this.document.id, a.parentElement.id, false);
+            for (let a of selectedElements) {
+                a.classList.add(`selected`);
             }
         }
+    }
 
-        let clickedElements = document.querySelectorAll(`.attribute-name.actor-${this.document.id}.attribute-name-${clickedAttribute.dataName}`);
-        for (let a of clickedElements) {
-            a.classList.add(`selected`);
-        }
+    static async _attributeRoll(event, target) {
+        const attributesArray = Object.values(this.document.system.attributes);
+        const attribute = attributesArray.filter((a) => a.dataName == target.id)[0];
+        await CONFIG.ui.rollBuilder.toggleAttribute(this.document, attribute, false);
 
-        CONFIG.ROLL_DATA.rollActors.get(this.document.id).attributes.push(clickedAttribute);
-
-        window.ui.sidebar.expand()
+        if (!window.ui.sidebar.expanded)
+            window.ui.sidebar.expand()
         window.ui.sidebar.changeTab("rollBuilder", "primary");
         CONFIG.ui.rollBuilder.updateRollData();
+        await this.renderSelectedAttributes();
     }
 
 
@@ -321,13 +332,13 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
         let element = this.contextMenu.element;
 
         console.log(element);
-        element.firstChild.remove();
-        element.firstChild.firstChild.lastElementChild.remove();
+        element.querySelectorAll(`.window-header`)[0].remove();
+        element.querySelectorAll(`.form-footer`)[0].remove();
 
         const clickable = element.querySelectorAll('.clickable.context-edit-attribute-pips:not(.listeners_bound)');
 
         function updatePips() {
-            const pips = element.querySelectorAll('.attribute-level-pip-large');
+            const pips = element.querySelectorAll('.context-edit-attribute-pips.attribute-level-pip-large');
             pips.forEach((pip) => {
                 const index = parseInt(pip.id);
                 if (pip.classList.contains('fa-solid')) pip.classList.remove('fa-solid');
@@ -375,16 +386,62 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
         }
     }
 
+    //#region Edit Image
+
     static async _onEditImage(event, target) {
-        const field = target.dataset.field || "img"
-        const current = foundry.utils.getProperty(this.document, field)
+        const attr = target.dataset.edit;
+        const current = foundry.utils.getProperty(this.document, attr);
+        const { img } =
+            this.document.constructor.getDefaultArtwork?.(this.document.toObject()) ??
+            {};
+        const fp = new FilePicker({
+            current,
+            type: 'image',
+            redirectToRoot: img ? [img] : [],
+            callback: (path) => {
+                this.document.update({ [attr]: path });
+            },
+            top: this.position.top + 40,
+            left: this.position.left + 10,
+        });
+        return fp.browse();
+    }
 
-        const fp = new foundry.applications.apps.FilePicker({
-            type: "image",
-            current: current,
-            callback: (path) => this.document.update({ [field]: path })
-        })
+    //#region Willpower
 
-        fp.render(true)
+    static async _willpowerSpend(event, target) {
+        CONFIG.ui.rollBuilder.populateRollActor(this.document);
+
+        let rollActor = CONFIG.ROLL_DATA.rollActors.get(this.document.id);
+        if(!rollActor.willpower)
+            rollActor.willpower = {};
+
+        if(!rollActor.willpower.guaranteedSuccesses)
+            rollActor.willpower.guaranteedSuccesses = 0;
+
+        rollActor.willpower.guaranteedSuccesses++;
+        CONFIG.ui.rollBuilder.updateRollData();
+    }
+
+    static async _conditionSave(event, target) {
+        
+    }
+
+    static async _rest(event, target) {
+        
+    }
+
+    static async _willpowerBurn(event, target) {
+        
+    }
+
+    static async _willpowerRoll(event, target) {
+        
     }
 }
+
+//#region Init
+
+Hooks.once(`init`, () => {
+
+});

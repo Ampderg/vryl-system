@@ -18,9 +18,10 @@ export class VrylActor extends Actor {
         const flags = actorData.flags.vryl || {};
 
         console.log("Preparing derived data for " + actorData.name);
-        // Make separate methods for each Actor type (character, npc, etc.) to keep
-        // things organized.
         this._prepareCharacterData(actorData);
+
+        this.system = systemData;
+        this.flags.vryl = flags;
     }
 
     /**
@@ -33,10 +34,22 @@ export class VrylActor extends Actor {
             // Make modifications to data here. For example:
             const systemData = actorData.system;
 
-            // Loop through ability scores, and add their modifiers to our sheet output.
-            // for (let [key, attribute] of Object.entries(systemData.attributes)) {
-            //     attribute.derivedDiceCount = attribute.level + attribute.heroicLevel + attribute.bonusDice;
-            // }
+            const maxLevel = game.settings.get(CONFIG.SystemId, 'attribute_max_level');
+            let xpSpent = 0;
+            const attributes = Object.entries(systemData.attributes);
+            for (const entry of attributes) {
+                let a = entry[1];
+                let aData = CONFIG.ui.rollBuilder.getDefaultAttributeFromDataName(entry[0]);
+                const xpMultiplier = CONFIG.ui.rollBuilder.getAttributeType(aData[0]).xpMultiplier;
+
+                for (let i = 1; i <= a.level; i++) {
+                    xpSpent += i * xpMultiplier;
+                }
+                for (let i = 1; i <= a.heroicLevel; i++) {
+                    xpSpent += maxLevel * xpMultiplier * 2;
+                }
+            }
+            systemData.xpSpent = xpSpent;
         }
     }
     //#endregion
@@ -70,6 +83,12 @@ export class VrylActor extends Actor {
         }
     }
     //#endregion
+
+    //#region Update
+    async update(data = {}, operation = {}) {
+        super.update(data, operation);
+        //this.prepareDerivedData();
+    }
 }
 
 export class VrylItem extends Item {

@@ -14,15 +14,15 @@
         {{#lte total 0}}
         <b>Failure</b>, with a <b>Twist</b> to be the worst possible result.
         {{/lte}}
-        {{#eq total 1}}
+        {{#isEqual total 1}}
         <b>Failure</b>, but your efforts result in something else happening.
-        {{/eq}}
-        {{#eq total 2}}
+        {{/isEqual}}
+        {{#isEqual total 2}}
         <b>Success</b>, with a <b>Twist</b>. You achieve your goal, but in an unexpected way.
-        {{/eq}}
-        {{#eq total 3}}
+        {{/isEqual}}
+        {{#isEqual total 3}}
         <b>Success</b>. You achieve your goal without complication.
-        {{/eq}}
+        {{/isEqual}}
         {{#gte total 4}}
         <b>Success</b>, with a <b>Boon</b> to be the best possible result.
         {{/gte}}

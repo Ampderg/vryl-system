@@ -251,11 +251,15 @@ DEFAULTS.attributeTypes = [
         dataName: "primary",
         name: "Primary",
         sorting: 0,
+        xpMultiplier: 25,
+        canSelectMultipleAttributesAtOnce: false,
     },
     {
         dataName: "secondary",
         name: "Secondary",
         sorting: 1,
+        xpMultiplier: 10,
+        canSelectMultipleAttributesAtOnce: false,
     },
 ]
 

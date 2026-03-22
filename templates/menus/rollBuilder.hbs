@@ -1,7 +1,6 @@
 <section id="rollBuilder" class="tab sidebar-tab directory flexcol roll-builder-sidebar active" style="flex-direction: column-reverse; position:absolute; bottom: 0;" data-tab="rollBuilder"
 	data-group="primary">
 	<header class="directory-header flexcol" data-application-part="header">
-
 		<div class="header-actions action-buttons flexrow">
 			<button type="button" class="roll-builder-print-to-chat" data-action="print">
 				<i class="fa-solid fa-paste" inert=""></i>
@@ -13,6 +12,30 @@
 			</button>
 		</div>
 	</header>
+	<div class="flexcol roll-builder-options">
+		<div class="flexrow roll-builder-dc flex-group-center">
+			<div class="flexrow flex-group-center">
+				<b class="fitwidth" style="padding-right:1em;">DC</b>
+				<div class="number-step flexrow">
+					<button type="button" onclick="game.vrylGlobalFunctions.adjustNumberStepValue(this, -1)">-</button>
+					<input type="number" id="dc-input" value='11' data-action="updateDC">
+					<button type="button" onclick="game.vrylGlobalFunctions.adjustNumberStepValue(this, 1)">+</button>
+				</div>
+			</div>
+			<div class="flexrow success-confidence">
+				<div class="flexcol">
+					<i>3 Successes: </i>
+					<i>2 Successes: </i>
+					<i>1 Successes: </i>
+				</div>
+				<div class="flexcol">
+					<b id="3" class="success-confidence-estimate" title="75%"></b>
+					<b id="2" class="success-confidence-estimate" title="75%"></b>
+					<b id="1" class="success-confidence-estimate" title="75%"></b>
+				</div>
+			</div>
+		</div>
+	</div>
 	<div class="flexcol roll-builder-attribute-container">
 		
 	</div>
