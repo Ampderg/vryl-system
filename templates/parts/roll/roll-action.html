@@ -1,0 +1,17 @@
+<div class="roll-builder-attribute roll-action flexcol flex-group-center action-name-{{action}} actor-{{actorId}}">
+    {{#if (eq action "no-level-zero")}}
+    <span class="flex-group-center"><i>
+        - No dice will be rolled at roll level zero and below.
+    </i></span>
+    {{/if}}
+    {{#if (eq action "narrative-result")}}
+    <span class="flex-group-center"><i>
+        - This roll will include a narrative result.
+    </i></span>
+    {{/if}}
+    {{#if (eq action "successes-regenerate-willpower")}}
+    <span class="flex-group-center"><i>
+        - Regain one Willpower for every Success.
+    </i></span>
+    {{/if}}
+</div>

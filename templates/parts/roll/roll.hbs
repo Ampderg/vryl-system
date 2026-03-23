@@ -8,9 +8,13 @@
         <h4 class="dice-total">
             {{total}}
             {{#gt crits 0}}
-            <span style="position: absolute; top: 11%; right: 10px; font-size: 80%; height: 100%; align-items: center;"><i>{{crits}} Crit{{#gt crits 1}}s{{/gt}}!!</i></span>
+            <span
+                style="position: absolute; top: 11%; right: 10px; font-size: 80%; height: 100%; align-items: center;"><i>{{crits}}
+                    Crit{{#gt crits 1}}s{{/gt}}!!</i></span>
             {{/gt}}
         </h4>
+        {{../type}}
+        {{#if flags.vryl.narrativeResult}}
         {{#lte total 0}}
         <b>Failure</b>, with a <b>Twist</b> to be the worst possible result.
         {{/lte}}
@@ -26,6 +30,6 @@
         {{#gte total 4}}
         <b>Success</b>, with a <b>Boon</b> to be the best possible result.
         {{/gte}}
-        
+        {{/if}}
     </div>
 </div>

@@ -76,6 +76,7 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
 
     _onRender(context, options) {
         this.updateDC();
+        CONFIG.ui.rollBuilder.clearRoll();
     }
 
     //#region Update Roll Data
@@ -87,15 +88,26 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
             let attributeElements = container.querySelectorAll(`.roll-builder-attribute`);
             for (let element of attributeElements) {
                 element.classList.add("attribute-deletable");
-                element.addEventListener('click', (event) => {
-                    let actorId;
-                    let attributeDataName;
-                    element.classList.forEach((c) => {
-                        if (c.startsWith(`actor-`)) actorId = c.replace(`actor-`, ``);
-                        else if (c.startsWith(`attribute-name-`)) attributeDataName = c.replace(`attribute-name-`, ``);
-                    })
-                    this.deselectAttribute(actorId, attributeDataName);
-                });
+                if (element.classList.contains(`roll-action`))
+                    element.addEventListener('click', (event) => {
+                        let actorId;
+                        let attributeDataName;
+                        element.classList.forEach((c) => {
+                            if (c.startsWith(`actor-`)) actorId = c.replace(`actor-`, ``);
+                            else if (c.startsWith(`action-name-`)) attributeDataName = c.replace(`action-name-`, ``);
+                        })
+                        this.removeAction(attributeDataName, game.actors.get(actorId));
+                    });
+                else
+                    element.addEventListener('click', (event) => {
+                        let actorId;
+                        let attributeDataName;
+                        element.classList.forEach((c) => {
+                            if (c.startsWith(`actor-`)) actorId = c.replace(`actor-`, ``);
+                            else if (c.startsWith(`attribute-name-`)) attributeDataName = c.replace(`attribute-name-`, ``);
+                        })
+                        this.deselectAttribute(actorId, attributeDataName);
+                    });
             }
         });
 
@@ -121,8 +133,8 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
     };
 
     _getRollLevel() {
-        let totalLevels = 0;
-        let guaranteedSuccesses = 0;
+        let totalLevels = CONFIG.ROLL_DATA.bonusDice ?? 0;
+        let guaranteedSuccesses = CONFIG.ROLL_DATA.guaranteedSuccesses ?? 0;
 
         const rollActors = CONFIG.ROLL_DATA.rollActors;
         const rollActorsValues = rollActors.values();
@@ -132,15 +144,17 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
                 totalLevels += attribute.level;
             if (attribute.heroicLevel && !isNaN(attribute.heroicLevel))
                 totalLevels += attribute.heroicLevel;
-            if (attribute.bonusDice &&!isNaN(attribute.bonusDice))
+            if (attribute.bonusDice && !isNaN(attribute.bonusDice))
                 totalLevels += attribute.bonusDice;
             if (attribute.guaranteedSuccesses && !isNaN(attribute.guaranteedSuccesses))
                 guaranteedSuccesses += attribute.guaranteedSuccesses;
         }
 
         for (const actor of rollActorsValues) {
-            for (const attribute of actor.attributes) {
-                addAttribute(attribute);
+            if (actor.attributes) {
+                for (const attribute of actor.attributes) {
+                    addAttribute(attribute);
+                }
             }
 
             if (actor.willpower)
@@ -149,7 +163,7 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
 
 
 
-        if (totalLevels <= 0) {
+        if (totalLevels <= 0 && !CONFIG.ui.rollBuilder.hasPreRollFlag(`no-level-zero`)) {
             guaranteedSuccesses -= 1 - totalLevels;
             totalLevels = 2 - totalLevels;
         }
@@ -171,7 +185,15 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
 
         let roll = new CONFIG.Dice.AttributeRoll(`${levelData.totalLevels}d20cs>=${dc}sa + ${levelData.guaranteedSuccesses}`);
         roll.options.flavor = await CONFIG.ui.rollBuilder.renderRoll();
-        await roll.toMessage();
+        let msg = await roll.toMessage({
+            flags: {
+                vryl: {
+                    narrativeResult: CONFIG.ui.rollBuilder.hasPreRollFlag(`narrative-result`),
+                }
+            },
+        });
+
+        await CONFIG.ui.rollBuilder.processPostRollActions(msg);
 
         const coinflipWillpower = game.settings.get(CONFIG.SystemId, 'spend_willpower_coinflip');
 
@@ -185,15 +207,15 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
                     actor.actor.update({ [`system.willpower.level`]: actor.actor.system.willpower.level - coinCount + willpowerKeepRoll.total })
                 }
                 else {
-                    await ChatMessage.create({content: `${actor.actor.name} lost <b>${actor.willpower.guaranteedSuccesses} Willpower</b>!`})
+                    await ChatMessage.create({ content: `${actor.actor.name} lost <b>${actor.willpower.guaranteedSuccesses} Willpower</b>!` })
                     actor.actor.update({ [`system.willpower.level`]: actor.actor.system.willpower.level - actor.willpower.guaranteedSuccesses })
                 }
             }
         }
 
 
-        RollSidebar.#clearRoll();
-        RollSidebar.goToChat(target);
+        CONFIG.ui.rollBuilder.clearRoll();
+        CONFIG.ui.rollBuilder.goToChat(target);
     }
 
     //#region Print
@@ -225,7 +247,7 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
             flags: flags,
         });
 
-        RollSidebar.#clearRoll();
+        RollSidebar.clearRoll();
         RollSidebar.goToChat(target);
     }
 
@@ -262,6 +284,9 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
 
                     currentData.attributes = actorData.attributes.length > 0 ? actorData.attributes : oldData.attributes;
 
+                    if (!currentData.attributes)
+                        currentData.attributes = [];
+
                     currentData.willpower = actorData.willpower ?? oldData.willpower;
 
                     currentData.actor = game.actors.get(actorData.actor._id);
@@ -278,13 +303,13 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
     //#region Utils
 
     static getAttributeCategory(attribute) {
-        if(attribute.dataName == 'willpower') return attribute;
+        if (attribute.dataName == 'willpower') return attribute;
 
         const attributeCategories = game.settings.get(CONFIG.SystemId, 'attribute_categories');
         return attributeCategories[attribute.category];
     }
     static getAttributeType(attribute) {
-        if(attribute.dataName == 'willpower') return attribute;
+        if (attribute.dataName == 'willpower') return attribute;
 
         const attributeCategory = this.getAttributeCategory(attribute);
         const attributeTypes = game.settings.get(CONFIG.SystemId, 'attribute_types');
@@ -316,15 +341,15 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
         else
             await this.deselectAttribute(actor.id, 'willpower', render);
     }
-    
+
     static async toggleAttribute(actor, attribute, render = true) {
         this.populateRollActor(actor);
-        
+
         const rollActors = CONFIG.ROLL_DATA.rollActors;
         const actorData = rollActors.get(actor.id);
 
         let doSelect = false;
-        if(attribute.dataName == 'willpower')
+        if (attribute.dataName == 'willpower')
             doSelect = !actorData.willpower || isNaN(actorData.willpower.level);
         else
             doSelect = actorData.attributes.filter((a) => a.dataName == attribute.dataName).length == 0
@@ -342,14 +367,12 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
         const actorData = rollActors.get(actor.id);
 
         //Deselect matching types
-        if(attribute.dataName == 'willpower')
-        {
-            if(actorData.willpower && !isNaN(actorData.willpower.guaranteedSuccesses))
+        if (attribute.dataName == 'willpower') {
+            if (actorData.willpower && !isNaN(actorData.willpower.guaranteedSuccesses))
                 attribute.guaranteedSuccesses = actorData.willpower.guaranteedSuccesses;
             actorData.willpower = attribute;
         }
-        else
-        {
+        else {
             const type = this.getAttributeType(attribute);
 
             actorData.attributes = actorData.attributes.filter((a) => {
@@ -390,49 +413,113 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
         const rollActors = CONFIG.ROLL_DATA.rollActors;
         const attributeCategories = game.settings.get(CONFIG.SystemId, 'attribute_categories');
         const attributeTypes = game.settings.get(CONFIG.SystemId, 'attribute_types');
-        for (const [key, actor] of rollActors) {
-            if (actor.attributes.length > 0 || actor.willpower) {
-                content += `<div class="roll-builder-actor actor-${key}"><div class="roll-builder-actor-inner">`
-                content += `<h5 class="flex-group-center">${actor.actor.name}</h5>`;
 
+        async function renderAttribute(actorId, attribute) {
+            if (actorId == 'global') {
+                if (attribute.level == 0)
+                    attribute.level = undefined;
+                if (attribute.guaranteedSuccesses == 0)
+                    attribute.guaranteedSuccesses = undefined;
+            }
+
+            let content = "";
+            const bonusDiceContent = ` ${attribute.bonusDice > 0 ? "+" : "-"} ${Math.abs(attribute.bonusDice)}`;
+            attribute.combinedLevel = attribute.level ?? 0;
+            if (attribute.heroicLevel && !isNaN(attribute.heroicLevel))
+                attribute.combinedLevel += attribute.heroicLevel;
+
+            attribute.actorId = actorId;
+            attribute.dataName = attribute.dataName;
+
+            if (!isNaN(attribute.level) || !isNaN(attribute.bonusDice)) {
+                attribute.hasLevel = true;
+                attribute.bonusDiceString = attribute.bonusDice && attribute.bonusDice != 0 ? bonusDiceContent : "";
+            }
+            if (attribute.guaranteedSuccesses > 0)
+                attribute.hasFlat = true;
+
+            const template = await foundry.applications.handlebars.renderTemplate(`systems/vryl/templates/parts/roll/roll-attribute.html`, attribute);
+            content += template;
+            return content;
+        }
+
+        async function renderAction(action) {
+            const template = await foundry.applications.handlebars.renderTemplate(`systems/vryl/templates/parts/roll/roll-action.html`, action);
+            return template;
+        }
+
+        for (const [key, actor] of rollActors) {
+            let actorContent = "";
+            //Render attributes
+            if ((actor.attributes && actor.attributes.length > 0)) {
                 const sortedAttributes = actor.attributes.toSorted((a, b) => {
                     return this.getAttributeType(a).sorting - this.getAttributeType(b).sorting;
                 });
 
-                async function renderAttribute(attribute) {
-                    const bonusDiceContent = ` ${attribute.bonusDice > 0 ? "+" : "-"} ${Math.abs(attribute.bonusDice)}`;
-                    attribute.combinedLevel = attribute.level ?? 0;
-                    if(attribute.heroicLevel && !isNaN(attribute.heroicLevel))
-                        attribute.combinedLevel += attribute.heroicLevel;
-
-                    attribute.actorId = key;
-                    attribute.dataName = attribute.dataName;
-
-                    if (!isNaN(attribute.combinedLevel)) {
-                        attribute.hasLevel = true;
-                        attribute.bonusDiceString = attribute.bonusDice && attribute.bonusDice != 0 ? bonusDiceContent : "";
-                    }
-                    if (attribute.guaranteedSuccesses > 0)
-                        attribute.hasFlat = true;
-
-                    const template = await foundry.applications.handlebars.renderTemplate(`systems/vryl/templates/parts/roll/roll-attribute.html`, attribute);
-                    content += template;
-                }
-
                 for (const attribute of sortedAttributes) {
-                    await renderAttribute(attribute);
+                    actorContent += await renderAttribute(key, attribute);
                 }
+            }
+            //Add willpower if it is present
+            if (actor.willpower) {
+                actor.willpower.dataName = "willpower";
+                actor.willpower.name = "Willpower";
 
-                if (actor.willpower) {
-                    actor.willpower.dataName = "willpower";
-                    actor.willpower.name = "Willpower";
-                    ;
-                    await renderAttribute(actor.willpower);
+                actorContent += await renderAttribute(key, actor.willpower);
+            }
+
+            //Render actor actions
+            if ((actor.actions && actor.actions.length > 0)) {
+                // if (actorContent != "")
+                //     actorContent += "<br>";
+                for (const action of actor.actions) {
+                    action.actorId = key;
+                    actorContent += await renderAction(action);
                 }
+            }
 
-                content += `</div></div>`;
+            //Combine all renderings
+            if (actorContent != "") {
+                content += `
+                <div class="roll-builder-actor actor-${key}"><div class="roll-builder-actor-inner">
+                <h5 class="flex-group-center">${actor.actor.name}</h5>
+                ${actorContent}
+                </div></div>`;
+            }
+
+
+        }
+
+        //Global content
+        let globalContent = "";
+
+        const globalAttribute = {
+            level: CONFIG.ROLL_DATA.bonusDice,
+            guaranteedSuccesses: CONFIG.ROLL_DATA.guaranteedSuccesses,
+        }
+        //Bonus Dice
+        if ((globalAttribute.level && globalAttribute.level != 0)
+            || (globalAttribute.guaranteedSuccesses && globalAttribute.guaranteedSuccesses != 0))
+            globalContent += await renderAttribute('global', globalAttribute);
+
+        //Actions
+        if (CONFIG.ROLL_DATA.globalActions && CONFIG.ROLL_DATA.globalActions.length > 0) {
+            // if (globalContent != "")
+            //     globalContent += "<hr>";
+            for (const action of CONFIG.ROLL_DATA.globalActions) {
+                action.actorId = 'global';
+                globalContent += await renderAction(action);
             }
         }
+
+        if (globalContent != "") {
+            content += `
+            <div class="roll-builder-actor global"><div class="roll-builder-actor-inner">
+            <h6 class="flex-group-center">Roll Options</h6>
+            ${globalContent}
+            </div></div>`
+        }
+
         return content;
     }
 
@@ -443,16 +530,21 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
         return await foundry.applications.handlebars.renderTemplate(`systems/vryl/templates/parts/roll/roll-options.html`, rollData);
     }
 
-    static async #clearRoll() {
+    static async clearRoll(replaceWithDefault = true) {
         console.log("Clearing roll data...");
-        CONFIG.ROLL_DATA.rollActors.clear();
+        CONFIG.ROLL_DATA = {};
+        CONFIG.ROLL_DATA.rollActors = new Map();
+        CONFIG.ROLL_DATA.globalActions = [];
 
         let allSelected = document.querySelectorAll(`.selected.attribute-name`);
         for (let a of allSelected) {
             a.classList.remove(`selected`);
         }
 
-        RollSidebar.updateRollData();
+        if (replaceWithDefault) {
+            CONFIG.ui.rollBuilder.addAction('narrative-result', 'global', false);
+        }
+        CONFIG.ui.rollBuilder.updateRollData();
     }
 
     // #region Tab Nav
@@ -540,5 +632,91 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
         }
     }
 
-    // #endregion Actions
+    // #region Roll Actions
+
+    static getActionArray(actor) {
+        if (!CONFIG.ROLL_DATA.globalActions)
+            CONFIG.ROLL_DATA.globalActions = [];
+
+        if (actor && actor != 'global' && actor._id) {
+            this.populateRollActor(actor);
+
+            const actorData = CONFIG.ROLL_DATA.rollActors.get(actor._id);
+            if (!actorData.actions)
+                actorData.actions = [];
+
+            return actorData.actions;
+        }
+
+        return CONFIG.ROLL_DATA.globalActions;
+    }
+
+    static addAction(actionName, actor = 'global', render = true) {
+        const actionsArray = this.getActionArray(actor);
+
+        actionsArray.push({
+            action: actionName,
+            actor: actor
+        })
+
+        if (render)
+            this.updateRollData();
+    }
+
+    static removeAction(actionName, actor = 'global', render = true) {
+        let actionsArray = this.getActionArray(actor);
+
+        const index = actionsArray.findIndex((a) => a.action == actionName);
+
+        if (index > -1) {
+            actionsArray.splice(index, 1); // 2nd parameter means remove one item only
+        }
+
+        if (render)
+            this.updateRollData();
+    }
+
+    static hasPreRollFlag(flag) {
+        const flags = this.getPreRollActionFlags();
+        return flags.filter((a) => a == flag).length > 0;
+    }
+
+    static getPreRollActionFlags() {
+        let flags = [];
+
+        const rollData = CONFIG.ROLL_DATA;
+
+        if (rollData.globalActions && rollData.globalActions.length > 0) {
+            for (const action of rollData.globalActions) {
+                if (action.action == `no-level-zero`)
+                    flags.push(`no-level-zero`);
+                else if (action.action == `narrative-result`)
+                    flags.push(`narrative-result`);
+            }
+        }
+
+        return flags;
+    }
+
+    static async processPostRollActions(msg) {
+        const rollData = CONFIG.ROLL_DATA;
+
+        for (const [key, actorData] of rollData.rollActors) {
+            if (actorData.actions && actorData.actions.length > 0) {
+                const actor = game.actors.get(key);
+                for (const action of actorData.actions) {
+                    switch (action.action) {
+                        case `successes-regenerate-willpower`:
+                            this.successesRegenerateWillpower(actor, msg);
+                            break;
+                    }
+                }
+            }
+        }
+    }
+
+    static async successesRegenerateWillpower(actor, msg) {
+        actor.update({ [`system.willpower.level`]: Math.min(actor._source.system.willpower.level + msg.rolls[0]._total, actor.system.willpower.max) });
+    }
+
 }

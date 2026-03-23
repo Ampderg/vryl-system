@@ -21,7 +21,7 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
             height: 800,
         },
         window: {
-            resizable: true,
+            resizable: false,
             title: 'Character Sheet' // Just the localization key
         },
         actions: {
@@ -537,12 +537,27 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
     }
 
     static async _conditionSave(event, target) {
-
+        
     }
 
-    static async _rest(event, target) {
+    static async _rest(event, target) {      
+        CONFIG.ui.rollBuilder.clearRoll(false);
 
+        const missingWillpower = this.document.system.willpower.max - this.document.system.willpower.level;     
+        if(missingWillpower > 0)
+        {   
+            CONFIG.ROLL_DATA.guaranteedSuccesses = 1;
+            CONFIG.ROLL_DATA.bonusDice = missingWillpower - 1;
+        }
+
+        CONFIG.ui.rollBuilder.addAction(`no-level-zero`, 'global', false);
+        CONFIG.ui.rollBuilder.addAction(`no-narrative-result`, 'global', false);
+        CONFIG.ui.rollBuilder.addAction(`successes-regenerate-willpower`, this.document, false);
+
+        CONFIG.ui.rollBuilder.goToRollBuilder();
+        CONFIG.ui.rollBuilder.updateRollData();
     }
+        
 
     static async _willpowerBurn(event, target) {
 

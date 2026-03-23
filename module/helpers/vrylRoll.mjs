@@ -18,6 +18,7 @@ export class AttributeRoll extends foundry.dice.Roll {
         }
         context.crits = crits;
 
+        context.flags = options.message.flags;
         return context;
     }
 }

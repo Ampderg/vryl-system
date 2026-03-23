@@ -246,6 +246,7 @@
 .vryl.character-sheet:not(.minimizing, .maximizing, .minimized) {
   min-width: 425px;
   max-width: 600px;
+  min-height: 600px;
 }
 
 .vryl .item-form {
@@ -738,4 +739,8 @@
 
 .vryl.sheet nav.tabs.icon-only [data-tab] span {
   display: none;
+}
+
+.roll-action {
+  font-size: 85%;
 }
