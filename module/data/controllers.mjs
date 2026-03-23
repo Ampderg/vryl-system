@@ -86,7 +86,26 @@ export class VrylActor extends Actor {
 
     //#region Update
     async update(data = {}, operation = {}) {
-        super.update(data, operation);
+        await super.update(data, operation);
+
+        const actorData = CONFIG.ROLL_DATA.rollActors.get(this.id);
+        if(actorData)
+        {
+            if(actorData.willpower)
+            {
+                if(!isNaN(actorData.willpower.level))
+                    actorData.willpower.level = this.system.willpower.level;
+                if(!isNaN(actorData.willpower.bonusDice))
+                    actorData.willpower.bonusDice = this.system.willpower.bonusDice;
+                if(!isNaN(actorData.willpower.guaranteedSuccesses))
+                    actorData.willpower.guaranteedSuccesses = this.system.willpower.guaranteedSuccesses;
+            }
+            for(let i = 0; i < actorData.attributes.length; i++)
+            {
+                actorData.attributes[i] = this.system.attributes[actorData.attributes[i].dataName];
+            }
+            CONFIG.ui.rollBuilder.updateRollData();
+        }
         //this.prepareDerivedData();
     }
 }

@@ -453,6 +453,7 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
         }
 
         function updateBonusDice(bonusDice) {
+            if(isNaN(bonusDice) || bonusDice == null) bonusDice = 0;
             const num = element.querySelector('.context-edit-attribute-pips .bonus-dice-num');
             num.innerHTML = ((bonusDice >= 0) ? "+" : "") + bonusDice;
         }
@@ -616,6 +617,7 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
         }
 
         function updateBonusDice(bonusDice) {
+            if(isNaN(bonusDice) || bonusDice == null) bonusDice = 0;
             const num = element.querySelector('.context-edit-willpower-pips .bonus-dice-num');
             num.innerHTML = ((bonusDice >= 0) ? "+" : "") + bonusDice;
         }
