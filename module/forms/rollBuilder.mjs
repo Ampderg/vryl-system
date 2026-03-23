@@ -365,7 +365,7 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
                 });
 
                 async function renderAttribute(attribute) {
-                    const bonusDiceContent = `<i>${attribute.bonusDice > 0 ? "+" : "-"} ${attribute.bonusDice} </i>`;
+                    const bonusDiceContent = ` ${attribute.bonusDice > 0 ? "+" : "-"} ${attribute.bonusDice}`;
                     attribute.combinedLevel = attribute.level + attribute.heroicLevel;
 
                     attribute.actorId = key;

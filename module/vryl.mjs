@@ -18,8 +18,12 @@ const sheets = foundry.appv1.sheets;
 
 Hooks.once("init", () => {
   game.vrylGlobalFunctions = {
-      adjustNumberStepValue: function(element, amount) {
-        const input = element.parentElement.querySelector(':scope > input');
+      adjustNumberStepValue: function(element, amount, childrenDeep = 1) {
+        let parent = element;
+        for(let i = 0; i < childrenDeep; i++)
+          parent = parent.parentElement;
+        
+        const input = parent.querySelector(':scope > input');
         input.value = parseInt(input.value) + parseInt(amount);
         input.dispatchEvent(new Event('change'));
     }

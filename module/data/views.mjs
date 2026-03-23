@@ -11,6 +11,7 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
         });
     }
 
+
     /** @override */
     static DEFAULT_OPTIONS = {
         classes: ["vryl", "sheet", "actor", "character-sheet"],
@@ -47,12 +48,47 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
 
     }
 
+    /** @type {Record<string, foundry.applications.types.ApplicationTabsConfiguration>} */
+    static TABS = {
+        primary: {
+            tabs: [
+                {
+                    id: "attribute-list",
+                    icon: "fa fa-circle-user",
+                },
+                {
+                    id: "inventory",
+                    icon: "fa fa-suitcase",
+                },
+                {
+                    id: "aspects",
+                    icon: "fa fa-list",
+                },
+                {
+                    id: "tactical",
+                    icon: "fa fa-swords",
+                }
+                ,
+                {
+                    id: "notes",
+                    icon: "fa fa-feather-pointed",
+                }
+            ],
+            labelPrefix: "vryl.tab", // Optional. Prepended to the id to generate a localization key
+            initial: "attribute-list", // Set the initial tab
+        },
+    };
 
     static PARTS = {
         header: {
             template: `systems/vryl/templates/parts/header.html`
         },
-        attributes: {
+        tabs: {
+            // Foundry-provided generic template
+            template: 'systems/vryl/templates/parts/side-tabs.html',
+            // classes: ['sysclass'], // Optionally add extra classes to the part for extra customization
+        },
+        attribute: {
             template: `systems/vryl/templates/parts/attributes-list.html`
         },
     }
@@ -71,10 +107,14 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
                 this._closeContextMenu();
             }
         });
+
     }
 
     _onRender(context, options) {
         super._onRender(context, options);
+
+        let xpElement = this.element.querySelector("input#xp-input");
+        xpElement.addEventListener('change', (event) => { this.updateXP() });
 
         this.renderSelectedAttributes();
     }
@@ -90,6 +130,12 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
 
         // Use a safe clone of the actor data for further operations.
         context.actor = this.actor;
+        
+        // Prepare character data and items.
+        if (context.actor.type == 'character') {
+            // this._prepareItems(context);
+            this._prepareCharacterData(context);
+        }
 
         // Add the actor's data to context.data for easier access, as well as flags.
         context.system = context.actor.system;
@@ -100,11 +146,13 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
         context.system.max_level = game.settings.get(CONFIG.SystemId, 'attribute_max_level');
         context.system.max_willpower = game.settings.get(CONFIG.SystemId, 'max_willpower');
 
-        // Prepare character data and items.
-        if (context.actor.type == 'character') {
-            // this._prepareItems(context);
-            this._prepareCharacterData(context);
+        for(const a of context.system.attributes_array)
+        {
+            const combinedLevel = a.level + a.heroicLevel + a.bonusDice; 
+            a.combinedLevel = Math.min(Math.max(combinedLevel, 0), 5);
+            a.combinedHeroicLevel = Math.min(Math.max(combinedLevel - 5, 0), 5);
         }
+
 
         // Add roll data for TinyMCE editors.
         context.rollData = context.actor.getRollData();
@@ -120,10 +168,36 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
         console.log("Preparing data for " + context.actor.name);
         console.log(context);
 
+        context.tabs = this._prepareTabs("primary");
+        this._preparePartContext('attribute-list', context);
 
         return context;
     }
 
+    async _preparePartContext(partId, context) {
+        super._preparePartContext(partId, context);
+        switch (partId) {
+            case 'attribute-list':
+            case 'inventory':
+            case 'aspects':
+            case 'tactical':
+            case 'notes':
+                context.tab = context.tabs[partId];
+                break;
+            default:
+        }
+        return context;
+    }
+
+    updateXP()
+    {
+        let xp = parseInt(this.element.querySelector("input#xp-input").value);
+        if(isNaN(xp)){
+            const xpField = CONFIG.Actor.dataModels.character.schema.getField('xp');
+            xp = xpField.initial;
+        }
+        this.document.update({[`system.xp`]: xp});
+    }
 
     /**
      * Organize and classify Items for Character sheets.
@@ -352,38 +426,48 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
             });
         }
 
-        for (let c of clickable) {
-            c.classList.add('listeners_bound');
-            if (c.classList.contains('plus'))
-                c.addEventListener('click', async (event) => {
-                    console.log("Add pip");
-
-                    if (data.attribute.level < data.max_level) {
-                        data.attribute.level++;
-                        this.document.update({ [`system.attributes.${data.attribute.dataName}.level`]: data.attribute.level });
-
-                    }
-                    else if (data.attribute.heroicLevel < data.max_level) {
-                        data.attribute.heroicLevel++;
-                        this.document.update({ [`system.attributes.${data.attribute.dataName}.heroicLevel`]: data.attribute.heroicLevel });
-                    }
-                    updatePips();
-                });
-            else if (c.classList.contains('minus'))
-                c.addEventListener('click', async (event) => {
-                    console.log("Subtract pip");
-
-                    if (data.attribute.heroicLevel > 0) {
-                        data.attribute.heroicLevel--;
-                        this.document.update({ [`system.attributes.${data.attribute.dataName}.heroicLevel`]: data.attribute.heroicLevel });
-                    }
-                    else if (data.attribute.level > 0) {
-                        data.attribute.level--;
-                        this.document.update({ [`system.attributes.${data.attribute.dataName}.level`]: data.attribute.level });
-                    }
-                    updatePips();
-                });
+        function updateBonusDice(bonusDice)
+        {
+            const num = element.querySelector('.context-edit-attribute-pips .bonus-dice-num');
+            num.innerHTML = ((bonusDice >= 0) ? "+" : "") + bonusDice;
         }
+
+        for (let c of clickable) {
+            c.addEventListener('click', async (event) => {
+                let change = 0;
+                if (c.classList.contains('plus')) change = 1;
+                else if (c.classList.contains('minus')) change = -1;
+
+                if(c.classList.contains(`attribute-level`))
+                {
+                    console.log("Add pip");
+                    
+                    let combinedLevel = data.attribute.level + data.attribute.heroicLevel + change;
+                    combinedLevel = Math.min(Math.max(combinedLevel, 0), 10);
+
+                    if(combinedLevel != data.attribute.level + data.attribute.heroicLevel)
+                    {
+                        this.document.update({ [`system.attributes.${data.attribute.dataName}.level`]: Math.min(Math.max(combinedLevel, 0), 5) });
+                        this.document.update({ [`system.attributes.${data.attribute.dataName}.heroicLevel`]: Math.min(Math.max(combinedLevel - 5, 0), 5) });
+                        
+                    }
+                    updatePips();
+                }
+                else if (c.classList.contains(`attribute-bonus-dice`))
+                {
+                    const bonusDice = data.attribute.bonusDice + change;
+
+                    updateBonusDice(bonusDice);
+                    data.attribute.bonusDice = bonusDice;
+                    this.document.update({ [`system.attributes.${data.attribute.dataName}.bonusDice`]: bonusDice});
+                }
+            });
+
+            c.classList.add('listeners_bound');
+            
+        }
+
+        updateBonusDice(data.attribute.bonusDice);
     }
 
     //#region Edit Image
@@ -419,7 +503,7 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
         if (!rollActor.willpower.guaranteedSuccesses)
             rollActor.willpower.guaranteedSuccesses = 0;
 
-        if(rollActor.willpower.guaranteedSuccesses < this.document.system.willpower.level)
+        if (rollActor.willpower.guaranteedSuccesses < this.document.system.willpower.level)
             rollActor.willpower.guaranteedSuccesses++;
 
         CONFIG.ui.rollBuilder.goToRollBuilder();
@@ -490,13 +574,21 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
                 if (pip.classList.contains('fa-solid')) pip.classList.remove('fa-solid');
                 if (pip.classList.contains('fa-regular')) pip.classList.remove('fa-regular');
                 if (pip.classList.contains('fa-circle')) pip.classList.remove('fa-circle');
-                if (pip.classList.contains('fa-circle-half-stroke')) pip.classList.remove('fa-circle-half-stroke');
+                if (pip.classList.contains('fa-circle-dot')) pip.classList.remove('fa-circle-dot');
 
                 if (index < data.attribute.level) pip.classList.add('fa-solid', 'fa-circle');
-                else if (index < data.attribute.max) pip.classList.add('fa-solid', 'fa-circle-half-stroke');
+                else if (index < data.attribute.max) pip.classList.add('fa-regular', 'fa-circle-dot');
                 else pip.classList.add('fa-regular', 'fa-circle');
             });
         }
+
+        function updateBonusDice(bonusDice)
+        {
+            const num = element.querySelector('.context-edit-willpower-pips .bonus-dice-num');
+            num.innerHTML = ((bonusDice >= 0) ? "+" : "") + bonusDice;
+        }
+
+        updateBonusDice(data.attribute.bonusDice);
 
         for (let c of clickable) {
             c.classList.add('listeners_bound');
@@ -506,6 +598,8 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
                     prop = 'level';
                 else if (c.classList.contains('willpowerMax'))
                     prop = 'max';
+                else if (c.classList.contains('willpower-bonus-dice'))
+                    prop = 'bonusDice';
 
                 let change = 0;
                 if (c.classList.contains('plus'))
@@ -527,12 +621,16 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
                     if (prop == 'max') {
                         data.attribute.level = data.attribute.max - oldSpent;
 
-                        if(data.attribute.max < data.attribute.level)
+                        if (data.attribute.max < data.attribute.level)
                             data.attribute.level = data.attribute.max;
 
-                        if(data.attribute.level < 0) data.attribute.level = 0;
-                        
+                        if (data.attribute.level < 0) data.attribute.level = 0;
+
                         this.document.update({ [`system.willpower.level`]: data.attribute.level });
+                    }
+                    else if (prop == 'bonusDice')
+                    {
+                        updateBonusDice(data.attribute.bonusDice);
                     }
 
                     this.document.system.willpower = data.attribute;

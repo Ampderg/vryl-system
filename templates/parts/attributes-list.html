@@ -1,4 +1,8 @@
-<div class='attributes-list'>
+<section
+  class='tab attribute-list {{tab.cssClass}}'
+  data-group='primary'
+  data-tab='attribute-list'
+>
     {{#eachAttribute system.attributeTypes}}
     <div id="{{dataName}}" class="attribute-type fitheight">
         <div class="flexrow fitheight">
@@ -13,21 +17,24 @@
                 <li id="{{dataName}}" class="attribute flexrow fitheight {{#if indexOdd}}odd-row{{/if}}">
                     <span data-action="attribute-roll" id="{{dataName}}" class="fitflex attribute-name clickable roll attribute-list 
                         actor-{{../../../actor.id}} attribute-type-{{../../dataName}} attribute-category-{{../dataName}} attribute-name-{{dataName}}">
-                    {{name}}
+                        {{name}}
                     </span>
                     <span data-action="edit-attribute-pips" id="{{dataName}}"
                         class="fitwidth fitflex attribute-level clickable edit-attribute-pips attribute-list">
                         {{#for 0 ../../../system.max_level 1}}
-                        {{#lt index ../heroicLevel}}
+                        {{#lt index ../combinedHeroicLevel}}
                         <i class="fa-solid fa-plus-circle attribute-level-pip"></i>
                         {{else}}
-                        {{#lt index ../level}}
+                        {{#lt index ../combinedLevel}}
                         <i class="fa-solid fa-circle attribute-level-pip"></i>
                         {{else}}
                         <i class="fa-regular fa-circle attribute-level-pip"></i>
                         {{/lt}}
                         {{/lt}}
                         {{/for}}
+                        {{#nenull bonusDice 0}}
+                        <span class="align-center" style="position:relative; font-size: 8px;"><i style="position:absolute; bottom: 1em; left: 0.5em;" class="fa-solid fa-asterisk align-center" ></i></span>
+                        {{/nenull}}
                     </span>
                 </li>
                 {{/isEqual}}
@@ -41,4 +48,4 @@
     </div>
 
     {{/eachAttribute}}
-</div>
+</section>

@@ -649,3 +649,93 @@
 .copy-roll {
   margin-top: 0.5em;
 }
+
+.vryl.sheet {
+  overflow: visible; /* Needed to display tabs off the sheet box */
+
+  > .window-content {
+    overflow: visible;
+  }
+}
+
+.vryl.sheet nav.tabs {
+    --tab-full-width: 44px;
+  --tab-inactive-width: 80px;
+  --sheet-tabs-icon-height: 30px;
+
+  position: absolute;
+  left: 100%;
+  /* top: var(--header-height); */
+  width: max-content;
+  display: flex;
+  margin: 0;
+  /* font-family: var(--font-serif);
+  font-size: 100%; */
+  font-weight: bold;
+  text-transform: uppercase;
+  z-index: -100;
+
+  > div {
+    z-index: -99;
+    display: flex;
+    flex-grow: 1;
+    min-width: 18rem;
+    gap: 2px 2px;
+  }
+
+  [data-tab] {
+    overflow: hidden;
+    width: calc((var(--tab-full-width) - var(--tab-inactive-width)) * -1);
+    right: calc((var(--tab-full-width) - var(--tab-inactive-width)) * -1);
+    height: 40px;
+    position: relative;
+    display: flex;
+    justify-content: end;
+    align-items: center;
+    background: no-repeat;
+    background-color: var(--vryl-c-background-highlight);
+    background-position: center;
+    background-size: auto 80%;
+    border: 1px solid transparent;
+    border-radius: 0 8px 8px 0;
+    font-size: var(--font-size-14);
+    margin-left: calc((var(--tab-full-width) - var(--tab-inactive-width)) * -1);
+    padding: 4px 6px;
+    transition: all 250ms ease;
+    filter: drop-shadow(3px 0 5px black);
+  }
+
+  [data-tab].active,
+  [data-tab]:hover {
+    background-color: var(--vryl-c-clickable);
+  }
+
+  [data-tab]:hover,
+  [data-tab].active {
+    right: 0;
+    width: var(--tab-full-width);
+    margin: 0;
+  }
+
+  [data-tab]:hover {
+    text-shadow: none;
+    box-shadow: 0 0 5px 0 black;
+    border: 1px solid;
+  }
+
+  [data-tab] > img {
+    width: var(--sheet-tabs-icon-height);
+  }
+
+  [data-tab] > i {
+    width: var(--sheet-tabs-icon-height);
+    font-size: calc(var(--sheet-tabs-icon-height) - 6px);
+    text-align: center;
+    vertical-align: middle;
+  }
+
+}
+
+.vryl.sheet nav.tabs.icon-only [data-tab] span {
+  display: none;
+}

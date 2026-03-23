@@ -82,9 +82,20 @@ export class VrylHandlebarsHelpers {
         });
         Handlebars.registerHelper('ne', function (a, b) {
             var next = arguments[arguments.length - 1];
-            return (a !== b) ? next.fn(this) : next.inverse(this);
+            let result = a != b;
+            return result ? next.fn(this) : next.inverse(this);
         });
 
+        Handlebars.registerHelper('nenull', function (a, b) {
+            var next = arguments[arguments.length - 1];
+            let result = a != b;
+            if(a == null || a == undefined) result = false;
+            return result ? next.fn(this) : next.inverse(this);
+        });
+
+        Handlebars.registerHelper("add", function(a, b) {
+            return a + b;
+        });
         //#endregion
     }
 }

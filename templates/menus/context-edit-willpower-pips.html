@@ -7,7 +7,7 @@
             {{else}}
             {{#lt index ../attribute.max}}
             <i id="{{index}}"
-                class="fa-solid fa-circle-half-stroke context-edit-willpower-pips attribute-level-pip-large"></i>
+                class="fa-regular fa-circle-dot context-edit-willpower-pips attribute-level-pip-large"></i>
             {{else}}
             <i id="{{index}}" class="fa-regular fa-circle context-edit-willpower-pips attribute-level-pip-large"></i>
             {{/lt}}
@@ -35,9 +35,9 @@
     <div class="flexrow">
         <span class="">Bonus: </span>
         <span id="willpower" class="flex-group-center attribute-bonus-dice context-edit-willpower-pips">
-            <i class="fa-solid fa-minus clickable context-edit-willpower-pips minus"></i>
+            <i class="fa-solid fa-minus clickable context-edit-willpower-pips minus willpower-bonus-dice"></i>
             <b><span class="bonus-dice-num">+0</span></b>
-            <i class="fa-solid fa-plus clickable context-edit-willpower-pips plus" style="padding-left: 3px"></i>
+            <i class="fa-solid fa-plus clickable context-edit-willpower-pips plus willpower-bonus-dice" style="padding-left: 3px"></i>
         </span>
     </div>
 </div>
