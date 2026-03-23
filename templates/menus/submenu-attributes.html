@@ -5,11 +5,11 @@
             <div class="flexrow fitheight">
             <b class="flex-group-center fitwidth clickable typeOptions" style="writing-mode: vertical-lr;">{{name}}</b>
             {{#eachAttribute ../attributeCategories}}
-            {{#isEqual typeDataName ../dataName}}
+            {{#if (eq typeDataName ../dataName)}}
             <list id="{{dataName}}" class="attribute-category flexcol fitwidth">
                 <b class="flex-group-center fitheight clickable categoryOptions">{{name}}</b>
                 {{#eachAttribute ../../attributes}}
-                {{#isEqual categoryDataName ../dataName}}
+                {{#if (eq categoryDataName ../dataName)}}
                 <li id="{{dataName}}" class="attribute flexrow fitheight">
                     <input type="text" class="editable submenu-attributes" style="min-width: 150px" name="name" value="{{name}}" placeholder="Attribute Name">
 
@@ -18,10 +18,10 @@
                     <i class="fa-solid fa-angle-up flex-group-center clickable move-up submenu-attributes"></i>
                     <i class="fa-solid fa-angle-down flex-group-center clickable move-down submenu-attributes"></i>
                 </li>
-                {{/isEqual}}
+                {{/if}}
                 {{/eachAttribute}}
             </list>
-            {{/isEqual}}
+            {{/if}}
             {{/eachAttribute}}
             </div>
             <hr>

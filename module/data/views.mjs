@@ -1,4 +1,5 @@
 const { api, sheets } = foundry.applications;
+import { prepareActiveEffectCategories } from '../helpers/effects.mjs';
 
 export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorSheetV2) {
 
@@ -25,10 +26,10 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
         },
         actions: {
             onEditImage: this._onEditImage,
-            // viewDoc: this._viewDoc,
-            // createDoc: this._createDoc,
-            // deleteDoc: this._deleteDoc,
-            // toggleEffect: this._toggleEffect,
+            viewDoc: this._viewDoc,
+            createDoc: this._createDoc,
+            deleteDoc: this._deleteDoc,
+            toggleEffect: this._toggleEffect,
             "attribute-roll": VrylActorSheet._attributeRoll,
             "edit-attribute-pips": VrylActorSheet._editAttributePips,
 
@@ -73,6 +74,11 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
                     id: "notes",
                     icon: "fa fa-feather-pointed",
                 }
+                ,
+                {
+                    id: "effects",
+                    icon: "fa-solid fa-wand-magic-sparkles",
+                }
             ],
             labelPrefix: "vryl.tab", // Optional. Prepended to the id to generate a localization key
             initial: "attribute-list", // Set the initial tab
@@ -90,6 +96,9 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
         },
         attribute: {
             template: `systems/vryl/templates/parts/attributes-list.html`
+        },
+        effects: {
+            template: `systems/vryl/templates/parts/effects.html`
         },
     }
 
@@ -130,7 +139,7 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
 
         // Use a safe clone of the actor data for further operations.
         context.actor = this.actor;
-        
+
         // Prepare character data and items.
         if (context.actor.type == 'character') {
             // this._prepareItems(context);
@@ -146,9 +155,8 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
         context.system.max_level = game.settings.get(CONFIG.SystemId, 'attribute_max_level');
         context.system.max_willpower = game.settings.get(CONFIG.SystemId, 'max_willpower');
 
-        for(const a of context.system.attributes_array)
-        {
-            const combinedLevel = a.level + a.heroicLevel + a.bonusDice; 
+        for (const a of context.system.attributes_array) {
+            const combinedLevel = a.level + a.heroicLevel + a.bonusDice;
             a.combinedLevel = Math.min(Math.max(combinedLevel, 0), 5);
             a.combinedHeroicLevel = Math.min(Math.max(combinedLevel - 5, 0), 5);
         }
@@ -158,11 +166,11 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
         context.rollData = context.actor.getRollData();
 
         // Prepare active effects
-        // context.effects = prepareActiveEffectCategories(
-        //     // A generator that returns all effects stored on the actor
-        //     // as well as any items
-        //     this.actor.allApplicableEffects()
-        // );
+        context.effects = prepareActiveEffectCategories(
+            // A generator that returns all effects stored on the actor
+            // as well as any items
+            this.actor.allApplicableEffects()
+        );
 
 
         console.log("Preparing data for " + context.actor.name);
@@ -184,19 +192,27 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
             case 'notes':
                 context.tab = context.tabs[partId];
                 break;
+            case 'effects':
+                context.tab = context.tabs[partId];
+                // Prepare active effects
+                context.effects = prepareActiveEffectCategories(
+                    // A generator that returns all effects stored on the actor
+                    // as well as any items
+                    this.actor.allApplicableEffects()
+                );
+                break;
             default:
         }
         return context;
     }
 
-    updateXP()
-    {
+    updateXP() {
         let xp = parseInt(this.element.querySelector("input#xp-input").value);
-        if(isNaN(xp)){
+        if (isNaN(xp)) {
             const xpField = CONFIG.Actor.dataModels.character.schema.getField('xp');
             xp = xpField.initial;
         }
-        this.document.update({[`system.xp`]: xp});
+        this.document.update({ [`system.xp`]: xp });
     }
 
     /**
@@ -299,6 +315,7 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
     _closeContextMenu() {
         if (!this.contextMenu) return;
 
+        Hooks.callAll(`vryl-actor-context-menu-closed`);
         console.log("Closing context menu...");
         this.contextMenu.close({ animate: false });
         this.contextMenu = null;
@@ -339,13 +356,17 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
 
     async renderSelectedAttributes() {
         if (!this.element) return;
-        if (!CONFIG.ROLL_DATA.rollActors.has(this.document.id)) return;
-        const selectedAttributes = CONFIG.ROLL_DATA.rollActors.get(this.document.id).attributes;
 
-        let allSelected = this.element.querySelectorAll(`.attribute-name.selected.actor-${this.document.id}.attribute-name`);
+
+
+        let allSelected = this.element.querySelectorAll(`.attribute-name.selected.actor-${this.document.id}.attribute-name, .willpower-roll`);
         for (const element of allSelected) {
             element.classList.remove(`selected`);
         }
+
+        if (!CONFIG.ROLL_DATA.rollActors.has(this.document.id)) return;
+        const actor = CONFIG.ROLL_DATA.rollActors.get(this.document.id);
+        const selectedAttributes = actor.attributes;
 
         for (const a of selectedAttributes) {
             let selectedElements = this.element.querySelectorAll(`.attribute-name.actor-${this.document.id}.attribute-name-${a.dataName}`);
@@ -353,6 +374,10 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
             for (let a of selectedElements) {
                 a.classList.add(`selected`);
             }
+        }
+
+        if (actor.willpower && !isNaN(actor.willpower.level)) {
+            this.element.querySelector(`.willpower-roll`).classList.add(`selected`);
         }
     }
 
@@ -377,6 +402,7 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
 
         let data = {
             attribute: this.document.system.attributes[target.id],
+            source: structuredClone(this.document._source.system.attributes[target.id]),
             max_level: game.settings.get(CONFIG.SystemId, 'attribute_max_level'),
         };
 
@@ -420,14 +446,13 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
                 if (pip.classList.contains('fa-circle')) pip.classList.remove('fa-circle');
                 if (pip.classList.contains('fa-plus-circle')) pip.classList.remove('fa-plus-circle');
 
-                if (index < data.attribute.heroicLevel) pip.classList.add('fa-solid', 'fa-plus-circle');
-                else if (index < data.attribute.level) pip.classList.add('fa-solid', 'fa-circle');
+                if (index < data.source.heroicLevel) pip.classList.add('fa-solid', 'fa-plus-circle');
+                else if (index < data.source.level) pip.classList.add('fa-solid', 'fa-circle');
                 else pip.classList.add('fa-regular', 'fa-circle');
             });
         }
 
-        function updateBonusDice(bonusDice)
-        {
+        function updateBonusDice(bonusDice) {
             const num = element.querySelector('.context-edit-attribute-pips .bonus-dice-num');
             num.innerHTML = ((bonusDice >= 0) ? "+" : "") + bonusDice;
         }
@@ -438,36 +463,36 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
                 if (c.classList.contains('plus')) change = 1;
                 else if (c.classList.contains('minus')) change = -1;
 
-                if(c.classList.contains(`attribute-level`))
-                {
+                if (c.classList.contains(`attribute-level`)) {
                     console.log("Add pip");
-                    
-                    let combinedLevel = data.attribute.level + data.attribute.heroicLevel + change;
+
+                    let combinedLevel = data.source.level + data.source.heroicLevel + change;
                     combinedLevel = Math.min(Math.max(combinedLevel, 0), 10);
 
-                    if(combinedLevel != data.attribute.level + data.attribute.heroicLevel)
-                    {
-                        this.document.update({ [`system.attributes.${data.attribute.dataName}.level`]: Math.min(Math.max(combinedLevel, 0), 5) });
-                        this.document.update({ [`system.attributes.${data.attribute.dataName}.heroicLevel`]: Math.min(Math.max(combinedLevel - 5, 0), 5) });
-                        
+                    if (combinedLevel != data.source.level + data.source.heroicLevel) {
+                        data.source.level = Math.min(Math.max(combinedLevel, 0), 5);
+                        this.document.update({ [`system.attributes.${data.attribute.dataName}.level`]: data.source.level });
+                        data.source.heroicLevel = Math.min(Math.max(combinedLevel - 5, 0), 5);
+                        this.document.update({ [`system.attributes.${data.attribute.dataName}.heroicLevel`]: data.source.heroicLevel });
+
                     }
                     updatePips();
                 }
-                else if (c.classList.contains(`attribute-bonus-dice`))
-                {
-                    const bonusDice = data.attribute.bonusDice + change;
+                else if (c.classList.contains(`attribute-bonus-dice`)) {
+                    const bonusDice = data.source.bonusDice + change;
 
                     updateBonusDice(bonusDice);
                     data.attribute.bonusDice = bonusDice;
-                    this.document.update({ [`system.attributes.${data.attribute.dataName}.bonusDice`]: bonusDice});
+                    data.source.bonusDice = bonusDice;
+                    this.document.update({ [`system.attributes.${data.attribute.dataName}.bonusDice`]: bonusDice });
                 }
             });
 
             c.classList.add('listeners_bound');
-            
-        }
 
-        updateBonusDice(data.attribute.bonusDice);
+        }
+        updatePips();
+        updateBonusDice(data.source.bonusDice);
     }
 
     //#region Edit Image
@@ -523,7 +548,14 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
     }
 
     static async _willpowerRoll(event, target) {
+        let attribute = this.document.system.willpower;
+        attribute.dataName = "willpower";
+        attribute.name = "Willpower";
 
+        await CONFIG.ui.rollBuilder.toggleAttribute(this.document, attribute, true);
+
+        CONFIG.ui.rollBuilder.goToRollBuilder();
+        await this.renderSelectedAttributes();
     }
 
     static async _editWillpowerPips(event, target) {
@@ -533,6 +565,7 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
 
         let data = {
             attribute: this.document.system.willpower,
+            source: structuredClone(this.document._source.system.willpower),
             max_level: game.settings.get(CONFIG.SystemId, 'max_willpower'),
         };
 
@@ -576,19 +609,19 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
                 if (pip.classList.contains('fa-circle')) pip.classList.remove('fa-circle');
                 if (pip.classList.contains('fa-circle-dot')) pip.classList.remove('fa-circle-dot');
 
-                if (index < data.attribute.level) pip.classList.add('fa-solid', 'fa-circle');
-                else if (index < data.attribute.max) pip.classList.add('fa-regular', 'fa-circle-dot');
+                if (index < data.source.level) pip.classList.add('fa-solid', 'fa-circle');
+                else if (index < data.source.max) pip.classList.add('fa-regular', 'fa-circle-dot');
                 else pip.classList.add('fa-regular', 'fa-circle');
             });
         }
 
-        function updateBonusDice(bonusDice)
-        {
+        function updateBonusDice(bonusDice) {
             const num = element.querySelector('.context-edit-willpower-pips .bonus-dice-num');
             num.innerHTML = ((bonusDice >= 0) ? "+" : "") + bonusDice;
         }
 
-        updateBonusDice(data.attribute.bonusDice);
+        updatePips();
+        updateBonusDice(data.source.bonusDice);
 
         for (let c of clickable) {
             c.classList.add('listeners_bound');
@@ -607,31 +640,36 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
                 else if (c.classList.contains('minus'))
                     change = -1;
 
-                const oldVal = data.attribute[prop];
-                const oldSpent = data.attribute.max - data.attribute.level;
-                data.attribute[prop] += change;
+                const oldVal = data.source[prop];
+                const oldSpent = data.source.max - data.source.level;
+                data.source[prop] += change;
 
-                data.attribute[prop] = Math.max(Math.min(data.attribute[prop], 10), 0)
+                if(prop != 'bonusDice')
+                    data.source[prop] = Math.max(Math.min(data.source[prop], 10), 0)
+
                 if (prop == 'level')
-                    data.attribute.level = Math.min(data.attribute.level, data.attribute.max);
+                    data.source.level = Math.min(data.source.level, data.source.max);
 
-                if (data.attribute[prop] != oldVal) {
-                    this.document.update({ [`system.willpower.${prop}`]: data.attribute[prop] });
+                if (data.source[prop] != oldVal) {
+                    this.document.update({ [`system.willpower.${prop}`]: data.source[prop] });
 
                     if (prop == 'max') {
-                        data.attribute.level = data.attribute.max - oldSpent;
+                        data.source.level = data.source.max - oldSpent;
 
-                        if (data.attribute.max < data.attribute.level)
-                            data.attribute.level = data.attribute.max;
+                        if (data.source.max < data.source.level)
+                            data.source.level = data.source.level = data.source.max;
 
-                        if (data.attribute.level < 0) data.attribute.level = 0;
+                        if (data.source.level < 0) data.source.level = 0;
 
-                        this.document.update({ [`system.willpower.level`]: data.attribute.level });
+                        this.document.update({ [`system.willpower.level`]: data.source.level });
                     }
-                    else if (prop == 'bonusDice')
-                    {
-                        updateBonusDice(data.attribute.bonusDice);
+                    else if (prop == 'bonusDice') {
+                        updateBonusDice(data.source.bonusDice);
                     }
+
+                    data.attribute.level = data.source.level;
+                    data.attribute.max = data.source.max;
+                    data.attribute.bonusDice = data.source.bonusDice;
 
                     this.document.system.willpower = data.attribute;
                 }
@@ -639,6 +677,101 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
             });
 
         }
+    }
+
+    //#region Embedded Documents
+
+    /**
+   * Fetches the embedded document representing the containing HTML element
+   *
+   * @param {HTMLElement} target    The element subject to search
+   * @returns {Item | ActiveEffect} The embedded Item or ActiveEffect
+   */
+    _getEmbeddedDocument(target) {
+        const docRow = target.closest('li[data-document-class]');
+        if (docRow.dataset.documentClass === 'Item') {
+            return this.actor.items.get(docRow.dataset.itemId);
+        } else if (docRow.dataset.documentClass === 'ActiveEffect') {
+            const parent =
+                docRow.dataset.parentId === this.actor.id
+                    ? this.actor
+                    : this.actor.items.get(docRow?.dataset.parentId);
+            return parent.effects.get(docRow?.dataset.effectId);
+        } else return console.warn('Could not find document class');
+    }
+
+    //#region Active Effects
+
+    /**
+   * Renders an embedded document's sheet
+   *
+   * @this BoilerplateActorSheet
+   * @param {PointerEvent} event   The originating click event
+   * @param {HTMLElement} target   The capturing HTML element which defined a [data-action]
+   * @protected
+   */
+    static async _viewDoc(event, target) {
+        const doc = this._getEmbeddedDocument(target);
+        doc.sheet.render(true);
+    }
+
+    /**
+     * Handles item deletion
+     *
+     * @this BoilerplateActorSheet
+     * @param {PointerEvent} event   The originating click event
+     * @param {HTMLElement} target   The capturing HTML element which defined a [data-action]
+     * @protected
+     */
+    static async _deleteDoc(event, target) {
+        const doc = this._getEmbeddedDocument(target);
+        await doc.delete();
+    }
+
+    /**
+     * Handle creating a new Owned Item or ActiveEffect for the actor using initial data defined in the HTML dataset
+     *
+     * @this BoilerplateActorSheet
+     * @param {PointerEvent} event   The originating click event
+     * @param {HTMLElement} target   The capturing HTML element which defined a [data-action]
+     * @private
+     */
+    static async _createDoc(event, target) {
+        // Retrieve the configured document class for Item or ActiveEffect
+        const docCls = getDocumentClass(target.dataset.documentClass);
+        // Prepare the document creation data by initializing it a default name.
+        const docData = {
+            name: docCls.defaultName({
+                // defaultName handles an undefined type gracefully
+                type: target.dataset.type,
+                parent: this.actor,
+            }),
+        };
+        // Loop through the dataset and add it to our docData
+        for (const [dataKey, value] of Object.entries(target.dataset)) {
+            // These data attributes are reserved for the action handling
+            if (['action', 'documentClass'].includes(dataKey)) continue;
+            // Nested properties require dot notation in the HTML, e.g. anything with `system`
+            // An example exists in spells.hbs, with `data-system.spell-level`
+            // which turns into the dataKey 'system.spellLevel'
+            foundry.utils.setProperty(docData, dataKey, value);
+        }
+
+        // Finally, create the embedded document!
+        await docCls.create(docData, { parent: this.actor });
+    }
+
+    /**
+     * Determines effect parent to pass to helper
+     *
+     * @this BoilerplateActorSheet
+     * @param {PointerEvent} event   The originating click event
+     * @param {HTMLElement} target   The capturing HTML element which defined a [data-action]
+     * @private
+     */
+    static async _toggleEffect(event, target) {
+        const effect = this._getEmbeddedDocument(target);
+        await effect.update({ disabled: !effect.disabled });
     }
 }
 

@@ -24,7 +24,7 @@
           <i class="flex-group-center" style="padding-top:5px">{{system.xpSpent}} Spent</i>
         </div>
         <div class="willpower flexcol">
-          <b class="flex-group-center clickable" title="Roll Willpower" data-action="willpowerRoll">Willpower</b>
+          <b class="flex-group-center clickable willpower-roll" title="Roll Willpower" data-action="willpowerRoll">Willpower</b>
           <div class="willpower-pips flex-group-center clickable" data-action="edit-willpower-pips">
             {{#for 0 system.max_willpower 1}}
             {{#lt index ../system.willpower.bonusDice}}

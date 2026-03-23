@@ -8,12 +8,12 @@
         <div class="flexrow fitheight">
             <b class="flex-group-center fitwidth typeOptions" style="writing-mode: vertical-lr;">{{name}}</b>
             {{#eachAttribute ../system.attributeCategories}}
-            {{#isEqual typeDataName ../dataName}}
+            {{#if (eq typeDataName ../dataName)}}
             <list id="{{dataName}}" class="attribute-category flexcol">
                 <b class="flex-group-center fitheight categoryOptions"><u>{{name}}</u></b>
                 {{#eachAttribute ../../actor.system.attributes_array}}
                 {{#if exists}}
-                {{#isEqual categoryDataName ../dataName}}
+                {{#if (eq categoryDataName ../dataName)}}
                 <li id="{{dataName}}" class="attribute flexrow fitheight {{#if indexOdd}}odd-row{{/if}}">
                     <span data-action="attribute-roll" id="{{dataName}}" class="fitflex attribute-name clickable roll attribute-list 
                         actor-{{../../../actor.id}} attribute-type-{{../../dataName}} attribute-category-{{../dataName}} attribute-name-{{dataName}}">
@@ -37,11 +37,11 @@
                         {{/nenull}}
                     </span>
                 </li>
-                {{/isEqual}}
+                {{/if}}
                 {{/if}}
                 {{/eachAttribute}}
             </list>
-            {{/isEqual}}
+            {{/if}}
             {{/eachAttribute}}
         </div>
         <hr>

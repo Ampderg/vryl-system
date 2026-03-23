@@ -128,9 +128,13 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
         const rollActorsValues = rollActors.values();
 
         function addAttribute(attribute) {
-            if (!isNaN(attribute.level))
-                totalLevels += attribute.level + attribute.heroicLevel + attribute.bonusDice;
-            if (!isNaN(attribute.guaranteedSuccesses))
+            if (attribute.level && !isNaN(attribute.level))
+                totalLevels += attribute.level;
+            if (attribute.heroicLevel && !isNaN(attribute.heroicLevel))
+                totalLevels += attribute.heroicLevel;
+            if (attribute.bonusDice &&!isNaN(attribute.bonusDice))
+                totalLevels += attribute.bonusDice;
+            if (attribute.guaranteedSuccesses && !isNaN(attribute.guaranteedSuccesses))
                 guaranteedSuccesses += attribute.guaranteedSuccesses;
         }
 
@@ -274,10 +278,14 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
     //#region Utils
 
     static getAttributeCategory(attribute) {
+        if(attribute.dataName == 'willpower') return attribute;
+
         const attributeCategories = game.settings.get(CONFIG.SystemId, 'attribute_categories');
         return attributeCategories[attribute.category];
     }
     static getAttributeType(attribute) {
+        if(attribute.dataName == 'willpower') return attribute;
+
         const attributeCategory = this.getAttributeCategory(attribute);
         const attributeTypes = game.settings.get(CONFIG.SystemId, 'attribute_types');
         return attributeTypes[attributeCategory.type];
@@ -301,10 +309,27 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
         CONFIG.ROLL_DATA.rollActors.clear();
     }
 
+    static async toggleWillpower(actor, render = true) {
+        const actorData = rollActors.get(actor.id);
+        if (!actorData || !actorData.willpower)
+            await this.selectAttribute(actor, actor.system.willpower, render);
+        else
+            await this.deselectAttribute(actor.id, 'willpower', render);
+    }
+    
     static async toggleAttribute(actor, attribute, render = true) {
+        this.populateRollActor(actor);
+        
         const rollActors = CONFIG.ROLL_DATA.rollActors;
+        const actorData = rollActors.get(actor.id);
 
-        if (!rollActors.has(actor.id) || rollActors.get(actor.id).attributes.filter((a) => a.dataName == attribute.dataName).length == 0)
+        let doSelect = false;
+        if(attribute.dataName == 'willpower')
+            doSelect = !actorData.willpower || isNaN(actorData.willpower.level);
+        else
+            doSelect = actorData.attributes.filter((a) => a.dataName == attribute.dataName).length == 0
+
+        if (doSelect)
             await this.selectAttribute(actor, attribute, render);
         else
             await this.deselectAttribute(actor.id, attribute.dataName, render);
@@ -315,14 +340,24 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
 
         const rollActors = CONFIG.ROLL_DATA.rollActors;
         const actorData = rollActors.get(actor.id);
-        const type = this.getAttributeType(attribute);
 
-        actorData.attributes = actorData.attributes.filter((a) => {
-            const compareType = this.getAttributeType(a);
-            return type.canSelectMultipleAttributesAtOnce || compareType.dataName != type.dataName;
-        });
+        //Deselect matching types
+        if(attribute.dataName == 'willpower')
+        {
+            if(actorData.willpower && !isNaN(actorData.willpower.guaranteedSuccesses))
+                attribute.guaranteedSuccesses = actorData.willpower.guaranteedSuccesses;
+            actorData.willpower = attribute;
+        }
+        else
+        {
+            const type = this.getAttributeType(attribute);
 
-        actorData.attributes.push(attribute);
+            actorData.attributes = actorData.attributes.filter((a) => {
+                const compareType = this.getAttributeType(a);
+                return type.canSelectMultipleAttributesAtOnce || compareType.dataName != type.dataName;
+            });
+            actorData.attributes.push(attribute);
+        }
 
         if (render)
             this.updateRollData();
@@ -365,8 +400,10 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
                 });
 
                 async function renderAttribute(attribute) {
-                    const bonusDiceContent = ` ${attribute.bonusDice > 0 ? "+" : "-"} ${attribute.bonusDice}`;
-                    attribute.combinedLevel = attribute.level + attribute.heroicLevel;
+                    const bonusDiceContent = ` ${attribute.bonusDice > 0 ? "+" : "-"} ${Math.abs(attribute.bonusDice)}`;
+                    attribute.combinedLevel = attribute.level;
+                    if(attribute.heroicLevel && !isNaN(attribute.heroicLevel))
+                        attribute.combinedLevel += attribute.heroicLevel;
 
                     attribute.actorId = key;
                     attribute.dataName = attribute.dataName;
@@ -389,6 +426,7 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
                 if (actor.willpower) {
                     actor.willpower.dataName = "willpower";
                     actor.willpower.name = "Willpower";
+                    ;
                     await renderAttribute(actor.willpower);
                 }
 
