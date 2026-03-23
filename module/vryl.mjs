@@ -136,6 +136,8 @@ function _initSystemSettings() {
   });
 
   game.settings.register(CONFIG.SystemId, 'attribute_max_level', {
+    name: 'Max Attribute Level',
+    hint: "",
     scope: 'world',     // "world" = sync to db, "client" = local storage
     config: true,      // we will use the menu above to edit this setting
     type: Number,
@@ -143,10 +145,21 @@ function _initSystemSettings() {
   });
 
   game.settings.register(CONFIG.SystemId, 'max_willpower', {
+    name: 'Max Willpower Level',
+    hint: "",
     scope: 'world',     // "world" = sync to db, "client" = local storage
     config: true,      // we will use the menu above to edit this setting
     type: Number,
     default: 10, // The default value for the setting
+  });
+
+  game.settings.register(CONFIG.SystemId, 'spend_willpower_coinflip', {
+    name: 'Flip a coin to spend Willpower',
+    hint: "When you spend Willpower to gain Guaranteed Successes on rolls, flip a coin for every spent Willpower. If they land on heads, the Willpower isn't spent.",
+    scope: 'world',     // "world" = sync to db, "client" = local storage
+    config: true,      // we will use the menu above to edit this setting
+    type: Boolean,
+    default: true, // The default value for the setting
   });
 
   VrylHandlebarsHelpers.registerHandlebarsHelpers();

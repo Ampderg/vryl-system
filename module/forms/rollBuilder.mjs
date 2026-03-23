@@ -167,7 +167,26 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
 
         let roll = new CONFIG.Dice.AttributeRoll(`${levelData.totalLevels}d20cs>=${dc}sa + ${levelData.guaranteedSuccesses}`);
         roll.options.flavor = await CONFIG.ui.rollBuilder.renderRoll();
-        roll.toMessage();
+        await roll.toMessage();
+
+        const coinflipWillpower = game.settings.get(CONFIG.SystemId, 'spend_willpower_coinflip');
+
+        for (const [key, actor] of CONFIG.ROLL_DATA.rollActors) {
+            if (actor.willpower && !isNaN(actor.willpower.guaranteedSuccesses)) {
+                if (coinflipWillpower) {
+                    const coinCount = actor.willpower.guaranteedSuccesses;
+                    let willpowerKeepRoll = new Roll(`${coinCount}dc`);
+                    await willpowerKeepRoll.evaluate();
+                    await willpowerKeepRoll.toMessage({ flavor: `${actor.actor.name} lost <b>${coinCount - willpowerKeepRoll.total} Willpower</b>!` });
+                    actor.actor.update({ [`system.willpower.level`]: actor.actor.system.willpower.level - coinCount + willpowerKeepRoll.total })
+                }
+                else {
+                    await ChatMessage.create({content: `${actor.actor.name} lost <b>${actor.willpower.guaranteedSuccesses} Willpower</b>!`})
+                    actor.actor.update({ [`system.willpower.level`]: actor.actor.system.willpower.level - actor.willpower.guaranteedSuccesses })
+                }
+            }
+        }
+
 
         RollSidebar.#clearRoll();
         RollSidebar.goToChat(target);
@@ -180,14 +199,16 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
         const rollData = CONFIG.ROLL_DATA;
         let rollActors = {};
 
-        for(const [key, value] of rollData.rollActors)
-        {
+        for (const [key, value] of rollData.rollActors) {
             rollActors[key] = value;
         }
 
         let html = await RollSidebar.renderRoll();
-        html += `<button class="copy-roll">Copy Roll <i class="fa-solid fa-copy"></i></button>`
-        
+        html += `<div class="copy-roll flexrow">
+        <button class="copy-roll-replace">Copy Roll <i class="fa-solid fa-copy"></i></button>
+        <button class="copy-roll-append">Append Roll <i class="fa-regular fa-plus-square"></i></button>
+        </div>`;
+
         const flags = {
             vryl: {
                 rollData: rollData,
@@ -199,19 +220,49 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
             content: html,
             flags: flags,
         });
+
+        RollSidebar.#clearRoll();
+        RollSidebar.goToChat(target);
     }
 
     async bindChatListeners(message, html, context) {
-        let copyButton = html.querySelector(`.copy-roll`);
+        let copyButton = html.querySelector(`.copy-roll-replace`);
         if (copyButton) {
             copyButton.addEventListener('click', function () {
                 const flags = message.flags.vryl;
                 CONFIG.ROLL_DATA = structuredClone(flags.rollData);
                 const rollActors = Object.entries(flags.rollActors);
                 CONFIG.ROLL_DATA.rollActors = new Map();
-                for(const [key, value] of rollActors)
-                {
-                    CONFIG.ROLL_DATA.rollActors.set(key, structuredClone(value));
+                for (const [key, value] of rollActors) {
+                    let actorData = structuredClone(value);
+                    actorData.actor = game.actors.get(value.actor._id);
+                    CONFIG.ROLL_DATA.rollActors.set(key, actorData);
+                }
+
+                RollSidebar.updateRollData();
+                CONFIG.ui.rollBuilder.goToRollBuilder();
+            });
+        }
+        let appendButton = html.querySelector(`.copy-roll-append`);
+        if (appendButton) {
+            appendButton.addEventListener('click', function () {
+                const flags = message.flags.vryl;
+                const rollActors = Object.entries(flags.rollActors);
+
+                for (const [key, value] of rollActors) {
+                    let actorData = structuredClone(value);
+                    let currentData = CONFIG.ROLL_DATA.rollActors.get(key) ?? {};
+                    const oldData = structuredClone(currentData);
+
+                    currentData = actorData;
+
+                    currentData.attributes = actorData.attributes.length > 0 ? actorData.attributes : oldData.attributes;
+
+                    currentData.willpower = actorData.willpower ?? oldData.willpower;
+
+                    currentData.actor = game.actors.get(actorData.actor._id);
+
+                    CONFIG.ROLL_DATA.rollActors.set(key, currentData);
                 }
 
                 RollSidebar.updateRollData();
@@ -368,8 +419,7 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
 
     // #region Tab Nav
 
-    static goToRollBuilder()
-    {
+    static goToRollBuilder() {
         if (!window.ui.sidebar.expanded)
             window.ui.sidebar.expand();
         window.ui.sidebar.changeTab("rollBuilder", "primary");
@@ -377,7 +427,7 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
 
     static goToChat(target) {
         if (target.offsetParent.offsetParent.id.includes("popout")) return;
-        if(!window.ui.sidebar.expanded)
+        if (!window.ui.sidebar.expanded)
             window.ui.sidebar.expand()
         window.ui.sidebar.changeTab("chat", "primary");
     }
@@ -413,10 +463,10 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
         console.log("Update DC");
         const elements = this.element.querySelectorAll(`.success-confidence-estimate`);
         const levelData = this._getRollLevel();
-        
+
         CONFIG.ROLL_DATA.dc = CONFIG.ROLL_DATA.dc ?? 11;
 
-        if(isInputChange)
+        if (isInputChange)
             CONFIG.ROLL_DATA.dc = this.element.querySelector(`input#dc-input`).value;
         else
             this.element.querySelector(`input#dc-input`).value = CONFIG.ROLL_DATA.dc;

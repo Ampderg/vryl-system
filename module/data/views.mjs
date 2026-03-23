@@ -30,13 +30,14 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
             // toggleEffect: this._toggleEffect,
             "attribute-roll": VrylActorSheet._attributeRoll,
             "edit-attribute-pips": VrylActorSheet._editAttributePips,
-            
+
             "willpowerSpend": this._willpowerSpend,
             "willpowerRest": this._rest,
             "willpowerBurn": this._willpowerBurn,
             "conditionSave": this._conditionSave,
             "willpowerRoll": this._willpowerRoll,
-            
+            "edit-willpower-pips": this._editWillpowerPips,
+
         },
         // Custom property that's merged into `this.options`
         // dragDrop: [{ dragSelector: '.draggable', dropSelector: null }],
@@ -263,6 +264,7 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
     //#region Roll
 
     async renderSelectedAttributes() {
+        if (!this.element) return;
         if (!CONFIG.ROLL_DATA.rollActors.has(this.document.id)) return;
         const selectedAttributes = CONFIG.ROLL_DATA.rollActors.get(this.document.id).attributes;
 
@@ -290,7 +292,7 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
         await this.renderSelectedAttributes();
     }
 
-    
+
 
     // #region Edit Attribute
 
@@ -312,7 +314,7 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
             window: {
                 title: data.attribute.name,
             },
-            content: await renderTemplate(`systems/vryl/templates/menus/context-edit-attribute-pips.html`, data),
+            content: await renderTemplate(path, data),
             buttons: [{
                 action: "apply",
                 label: "Apply",
@@ -411,30 +413,134 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
         CONFIG.ui.rollBuilder.populateRollActor(this.document);
 
         let rollActor = CONFIG.ROLL_DATA.rollActors.get(this.document.id);
-        if(!rollActor.willpower)
+        if (!rollActor.willpower)
             rollActor.willpower = {};
 
-        if(!rollActor.willpower.guaranteedSuccesses)
+        if (!rollActor.willpower.guaranteedSuccesses)
             rollActor.willpower.guaranteedSuccesses = 0;
 
-        rollActor.willpower.guaranteedSuccesses++;
+        if(rollActor.willpower.guaranteedSuccesses < this.document.system.willpower.level)
+            rollActor.willpower.guaranteedSuccesses++;
+
+        CONFIG.ui.rollBuilder.goToRollBuilder();
         CONFIG.ui.rollBuilder.updateRollData();
     }
 
     static async _conditionSave(event, target) {
-        
+
     }
 
     static async _rest(event, target) {
-        
+
     }
 
     static async _willpowerBurn(event, target) {
-        
+
     }
 
     static async _willpowerRoll(event, target) {
-        
+
+    }
+
+    static async _editWillpowerPips(event, target) {
+        this._closeContextMenu();
+        event.preventDefault();
+        console.log("Editing willpower pips");
+
+        let data = {
+            attribute: this.document.system.willpower,
+            max_level: game.settings.get(CONFIG.SystemId, 'max_willpower'),
+        };
+
+        const path = `systems/vryl/templates/menus/context-edit-willpower-pips.html`;
+
+        const rect = target.parentElement.getBoundingClientRect();
+
+        const dialog = new foundry.applications.api.DialogV2({
+            window: {
+                title: "Willpower",
+            },
+            content: await renderTemplate(path, data),
+            buttons: [{
+                action: "apply",
+                label: "Apply",
+                default: true,
+                // callback: (event, button, dialog) => button.form.elements.choice.value
+            }],
+            position: {
+                left: rect.left + 2,
+                top: rect.top - 17,
+                width: 50,
+            },
+        });
+
+        this.contextMenu = await dialog.render({ force: true });
+        let element = this.contextMenu.element;
+
+        console.log(element);
+        element.querySelectorAll(`.window-header`)[0].remove();
+        element.querySelectorAll(`.form-footer`)[0].remove();
+
+        const clickable = element.querySelectorAll('.clickable.context-edit-willpower-pips:not(.listeners_bound)');
+
+        function updatePips() {
+            const pips = element.querySelectorAll('.context-edit-willpower-pips.attribute-level-pip-large');
+            pips.forEach((pip) => {
+                const index = parseInt(pip.id);
+                if (pip.classList.contains('fa-solid')) pip.classList.remove('fa-solid');
+                if (pip.classList.contains('fa-regular')) pip.classList.remove('fa-regular');
+                if (pip.classList.contains('fa-circle')) pip.classList.remove('fa-circle');
+                if (pip.classList.contains('fa-circle-half-stroke')) pip.classList.remove('fa-circle-half-stroke');
+
+                if (index < data.attribute.level) pip.classList.add('fa-solid', 'fa-circle');
+                else if (index < data.attribute.max) pip.classList.add('fa-solid', 'fa-circle-half-stroke');
+                else pip.classList.add('fa-regular', 'fa-circle');
+            });
+        }
+
+        for (let c of clickable) {
+            c.classList.add('listeners_bound');
+            c.addEventListener('click', async (event) => {
+                let prop = '';
+                if (c.classList.contains('willpowerCurrent'))
+                    prop = 'level';
+                else if (c.classList.contains('willpowerMax'))
+                    prop = 'max';
+
+                let change = 0;
+                if (c.classList.contains('plus'))
+                    change = 1;
+                else if (c.classList.contains('minus'))
+                    change = -1;
+
+                const oldVal = data.attribute[prop];
+                const oldSpent = data.attribute.max - data.attribute.level;
+                data.attribute[prop] += change;
+
+                data.attribute[prop] = Math.max(Math.min(data.attribute[prop], 10), 0)
+                if (prop == 'level')
+                    data.attribute.level = Math.min(data.attribute.level, data.attribute.max);
+
+                if (data.attribute[prop] != oldVal) {
+                    this.document.update({ [`system.willpower.${prop}`]: data.attribute[prop] });
+
+                    if (prop == 'max') {
+                        data.attribute.level = data.attribute.max - oldSpent;
+
+                        if(data.attribute.max < data.attribute.level)
+                            data.attribute.level = data.attribute.max;
+
+                        if(data.attribute.level < 0) data.attribute.level = 0;
+                        
+                        this.document.update({ [`system.willpower.level`]: data.attribute.level });
+                    }
+
+                    this.document.system.willpower = data.attribute;
+                }
+                updatePips();
+            });
+
+        }
     }
 }
 

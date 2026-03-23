@@ -30,8 +30,16 @@ class AttributeActorDataModel extends ActorDataModel {
       });
     });
 
+
+
     const schema = super.defineSchema();
     schema.attributes = new SchemaField(attributes);
+
+    schema.willpower = new SchemaField({
+      level: new NumberField({ required: true, default: 3, min: 0, max: game.settings.get(CONFIG.SystemId, 'max_willpower') }),
+      max: new NumberField({ required: true, default: 3, min: 0, max: game.settings.get(CONFIG.SystemId, 'max_willpower') }),
+    });
+
     return schema;
   }
 }

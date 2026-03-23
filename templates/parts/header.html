@@ -11,10 +11,19 @@
           <i class="flex-group-center">{{system.xpSpent}} Spent</i>
         </div>
         <div class="willpower flexcol">
-          <b class="flex-group-center clickable" title="Roll Willpower">Willpower</b>
-          <div class="willpower-pips flex-group-center clickable" data-action="willpowerRoll">
+          <b class="flex-group-center clickable" title="Roll Willpower" data-action="willpowerRoll">Willpower</b>
+          <div class="willpower-pips flex-group-center clickable" data-action="edit-willpower-pips">
             {{#for 0 system.max_willpower 1}}
-            <i class="fa-solid fa-circle attribute-level-pip-large"></i>
+            {{#lt index ../system.willpower.level}}
+            <i id="{{index}}" class="fa-solid fa-circle context-edit-willpower-pips attribute-level-pip-large"></i>
+            {{else}}
+            {{#lt index ../system.willpower.max}}
+            <i id="{{index}}"
+                class="fa-solid fa-circle-half-stroke context-edit-willpower-pips attribute-level-pip-large"></i>
+            {{else}}
+            <i id="{{index}}" class="fa-regular fa-circle context-edit-willpower-pips attribute-level-pip-large"></i>
+            {{/lt}}
+            {{/lt}}
             {{/for}}
           </div>
           <div class="flex-group-center flexrow">

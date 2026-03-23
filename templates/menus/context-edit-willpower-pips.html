@@ -1,0 +1,43 @@
+<div class="flexcol context-edit-willpower-pips">
+    <b class="flex-group-center">Willpower</b>
+    <div id="willpower" class="flex-group-center context-edit-willpower-pips">
+            {{#for 0 max_level 1}}
+            {{#lt index ../attribute.level}}
+            <i id="{{index}}" class="fa-solid fa-circle context-edit-willpower-pips attribute-level-pip-large"></i>
+            {{else}}
+            {{#lt index ../attribute.max}}
+            <i id="{{index}}"
+                class="fa-solid fa-circle-half-stroke context-edit-willpower-pips attribute-level-pip-large"></i>
+            {{else}}
+            <i id="{{index}}" class="fa-regular fa-circle context-edit-willpower-pips attribute-level-pip-large"></i>
+            {{/lt}}
+            {{/lt}}
+            {{/for}}
+    </div>
+    <div class="flexcol">
+        <div class="flexrow">
+            <span >Current: </span>
+            <span class="flex-group-center context-edit-willpower-pips">
+                <i class="fa-solid fa-minus clickable context-edit-willpower-pips minus willpowerCurrent"></i>
+                <i class="fa-solid fa-plus clickable context-edit-willpower-pips plus willpowerCurrent"
+                    style="padding-left: 7px"></i>
+            </span>
+        </div>
+        <div class="flexrow">
+            <span class="">Level: </span>
+            <span class="flex-group-center context-edit-willpower-pips">
+                <i class="fa-solid fa-minus clickable context-edit-willpower-pips minus willpowerMax"></i>
+                <i class="fa-solid fa-plus clickable context-edit-willpower-pips plus willpowerMax"
+                    style="padding-left: 7px"></i>
+            </span>
+        </div>
+    </div>
+    <div class="flexrow">
+        <span class="">Bonus: </span>
+        <span id="willpower" class="flex-group-center attribute-bonus-dice context-edit-willpower-pips">
+            <i class="fa-solid fa-minus clickable context-edit-willpower-pips minus"></i>
+            <b><span class="bonus-dice-num">+0</span></b>
+            <i class="fa-solid fa-plus clickable context-edit-willpower-pips plus" style="padding-left: 3px"></i>
+        </span>
+    </div>
+</div>
