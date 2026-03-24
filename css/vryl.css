@@ -759,5 +759,12 @@
 }
 
 .details-dropdown {
-  
+
+}
+
+.small-button {
+  height: 50%;
+  min-height: 50%;
+  gap: 0rem;
+  padding: 0 0rem;
 }

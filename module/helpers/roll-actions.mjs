@@ -31,4 +31,10 @@ export const ROLL_ACTIONS = [
             actionType: `postRoll`,
             actionOwner: `actor`,
         },
+        {
+            action: `group-roll`,
+            actionType: `preRoll`,
+            actionOwner: `global`,
+            presentInMenu: false,
+        },
     ];

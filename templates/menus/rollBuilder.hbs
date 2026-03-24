@@ -1,5 +1,5 @@
-<section id="rollBuilder" class="tab sidebar-tab directory flexcol roll-builder-sidebar active" style="flex-direction: column-reverse; position:absolute; bottom: 0;" data-tab="rollBuilder"
-	data-group="primary">
+<section id="rollBuilder" class="tab sidebar-tab directory flexcol roll-builder-sidebar active"
+	style="flex-direction: column-reverse; position:absolute; bottom: 0;" data-tab="rollBuilder" data-group="primary">
 	<header class="directory-header flexcol" data-application-part="header">
 		<div class="header-actions action-buttons flexrow">
 			<button type="button" class="roll-builder-print-to-chat" data-action="print">
@@ -20,6 +20,9 @@
 			<button type="button" data-action="open-global-actions" title="Global Roll Flags">
 				<i class="fa-solid fa-flag" inert=""></i>
 			</button>
+			<button type="button" class="groupRollContainer" data-action="groupRoll" title="Group Roll Settings">
+				<i class="fa-solid fa-user-group full-width" inert=""></i>
+			</button>
 			<button type="button" data-action="clearRoll" title="Clear">
 				<i class="fa-solid fa-eraser" inert=""></i>
 			</button>
@@ -32,8 +35,10 @@
 			</div>
 			<b class="fitwidth" style="padding: 0 1em;"><i class="fa-solid fa-plus-square"></i></b>
 			<div class="number-step flexrow">
-				<button type="button" onclick="CONFIG.ui.rollBuilder.adjustRollData('guaranteedSuccesses', -1)">-</button>
-				<button type="button" onclick="CONFIG.ui.rollBuilder.adjustRollData('guaranteedSuccesses', 1)">+</button>
+				<button type="button"
+					onclick="CONFIG.ui.rollBuilder.adjustRollData('guaranteedSuccesses', -1)">-</button>
+				<button type="button"
+					onclick="CONFIG.ui.rollBuilder.adjustRollData('guaranteedSuccesses', 1)">+</button>
 			</div>
 		</div>
 		<div class="flexrow roll-builder-row roll-builder-dc flex-group-center">
@@ -60,6 +65,6 @@
 		</div>
 	</div>
 	<div class="flexcol roll-builder-attribute-container">
-		
+
 	</div>
 </section>

@@ -22,6 +22,7 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
             roll: this.#roll,
             print: this.#print,
             clearRoll: this.clearRoll,
+            groupRoll: this.toggleGroupRoll,
             "open-template-actor": this.openTemplateActor,
             "open-global-actions": this.openGlobalActions,
         },
@@ -123,8 +124,6 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
         this.element.querySelector(`input#dc-input`).value = CONFIG.ROLL_DATA.dc;
     }
 
-
-    // #region Actions
     static async #openApp(event, target) {
         const { app: appKey, ...options } = target.dataset;
         delete options.action;
@@ -136,6 +135,8 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
             console.error(`Failed to find app with key: ${appKey}`);
         };
     };
+
+    //#region Roll
 
     static _getRollLevel() {
         let totalLevels = CONFIG.ROLL_DATA.bonusDice ?? 0;
@@ -166,9 +167,11 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
                 addAttribute(actor.willpower);
         }
 
+        const groupRollData = CONFIG.ui.rollBuilder.getRollFlagData(`group-roll`, `global`);
+        if (groupRollData)
+            totalLevels = Math.ceil(totalLevels / parseFloat(groupRollData.targetGroupSize.value));
 
-
-        if (totalLevels <= 0 && CONFIG.ui.rollBuilder.hasPreRollFlag(`roll-level-zero`)) {
+        if (totalLevels <= 0 && CONFIG.ui.rollBuilder.hasRollFlag(`roll-level-zero`, 'global', 'preRoll')) {
             guaranteedSuccesses -= 1 - totalLevels;
             totalLevels = 2 - totalLevels;
         }
@@ -178,8 +181,6 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
             guaranteedSuccesses: guaranteedSuccesses,
         }
     }
-
-    //#region Roll
 
     static _getRollData() {
         let dc = CONFIG.ROLL_DATA.dc;
@@ -208,7 +209,7 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
         const rollData = CONFIG.ui.rollBuilder._getRollData();
 
         let formula = `${rollData.level}d${rollData.faces}`;
-        if (CONFIG.ui.rollBuilder.hasPreRollFlag(`explode-crits`))
+        if (CONFIG.ui.rollBuilder.hasRollFlag(`explode-crits`, 'global', 'preRoll'))
             formula += `x>=${rollData.critThreshold}`;
         formula += `cs>=${rollData.dc}`;
         formula += `sa`;
@@ -218,7 +219,7 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
         let msg = await roll.toMessage({
             flags: {
                 vryl: {
-                    narrativeResult: CONFIG.ui.rollBuilder.hasPreRollFlag(`narrative-result`),
+                    narrativeResult: CONFIG.ui.rollBuilder.hasRollFlag(`narrative-result`, 'global', 'preRoll'),
                 }
             },
         });
@@ -601,6 +602,10 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
             }
         }
 
+        if (CONFIG.ROLL_DATA.targetGroupSize != undefined) {
+
+        }
+
         if (globalContent != "") {
             content += `
             <div class="roll-builder-actor global"><div class="roll-builder-actor-inner">
@@ -616,6 +621,8 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
         return await foundry.applications.handlebars.renderTemplate(`systems/vryl/templates/parts/roll/roll-options.html`, rollData);
     }
 
+    //#region Clear Roll
+
     static async clearRoll(replaceWithDefault = true) {
         console.log("Clearing roll data...");
         CONFIG.ROLL_DATA = {};
@@ -630,6 +637,7 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
         if (replaceWithDefault) {
             CONFIG.ui.rollBuilder.addAction('narrative-result', 'global', false);
             CONFIG.ui.rollBuilder.addAction(`roll-level-zero`, 'global', false);
+            CONFIG.ui.rollBuilder.toggleGroupRoll(undefined, undefined, false);
         }
         CONFIG.ui.rollBuilder.updateRollData();
     }
@@ -651,12 +659,67 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
 
     //#region Input Fields
 
-    static adjustRollData(field, change, render = true) {
+    static adjustRollData(field, change, options =
+        {
+            render: true,
+            min: undefined,
+            max: undefined,
+        }) {
         if (!CONFIG.ROLL_DATA[field]) CONFIG.ROLL_DATA[field] = 0;
         CONFIG.ROLL_DATA[field] += change;
 
-        if (render)
+        if (options.min != undefined)
+            CONFIG.ROLL_DATA[field] = Math.min(CONFIG.ROLL_DATA[field], min);
+        if (options.max != undefined)
+            CONFIG.ROLL_DATA[field] = Math.max(CONFIG.ROLL_DATA[field], max);
+
+        if (options.render)
             this.updateRollData();
+    }
+
+    //#region Group Roll
+
+    static adjustTargetGroupSize(change) {
+        let amount;
+        const data = this.getRollFlagData(`group-roll`, `global`);
+        if (!data || !data.targetGroupSize.value)
+            amount = 1;
+        else
+            amount = data.targetGroupSize.value;
+
+        amount += change;
+
+        this.setTargetGroupSize(amount);
+    }
+
+    static setTargetGroupSize(amount) {
+        this.addAction(`group-roll`, `global`, `true`, { targetGroupSize: { label: `<i class="fa-solid fa-user-group"></i>`, value: amount } });
+    }
+
+    static toggleGroupRoll(event, target, force = undefined) {
+        let content;
+        if ((!CONFIG.ui.rollBuilder.hasRollFlag(`group-roll`, `global`) && force !== false) || (force === true)) {
+            content = `
+            <div class="groupRollContainer flexrow" style="padding: 0 0.58em;">    
+                <b class="fitwidth clickable" style="padding-right: 0.3em;" data-action="groupRoll"><i class="fa-solid fa-user-group"></i></b>
+                <button class="small-button" type="button" onclick="CONFIG.ui.rollBuilder.adjustTargetGroupSize(-1)">-</button>
+                <button class="small-button" type="button" onclick="CONFIG.ui.rollBuilder.adjustTargetGroupSize(1)">+</button>
+            </div>`;
+
+            CONFIG.ui.rollBuilder.setTargetGroupSize(1);
+        }
+        else {
+            content = `
+            <button type="button" class="groupRollContainer" data-action="groupRoll" title="Group Roll Settings">
+				<i class="fa-solid fa-user-group" inert=""></i>
+			</button>`;
+
+            CONFIG.ui.rollBuilder.removeAction(`group-roll`, `global`);
+        }
+
+        const elements = document.querySelectorAll(`.groupRollContainer`);
+        for(const e of elements)
+            e.outerHTML = content;
     }
 
     //#region DC
@@ -749,12 +812,17 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
         return CONFIG.ROLL_DATA.globalActions;
     }
 
-    static addAction(actionName, actor = 'global', render = true) {
+    static addAction(actionName, actor = 'global', render = true, data = undefined) {
         const actionsArray = this.getActionArray(actor);
+
+        if (actionsArray.filter((a) => a.action == actionName).length > 0) {
+            this.removeAction(actionName, actor, render);
+        }
 
         actionsArray.push({
             action: actionName,
-            actor: actor
+            actor: actor,
+            data: data,
         })
 
         if (render)
@@ -774,20 +842,27 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
             this.updateRollData();
     }
 
-    static hasPreRollFlag(flag) {
-        const flags = this.getPreRollActionFlags();
-        return flags.filter((a) => a == flag).length > 0;
+    static hasRollFlag(flag, actor = 'global', actionType = 'preRoll') {
+        const flags = this.getRollActionFlags(actor, actionType);
+        return flags.filter((a) => a.action == flag).length > 0;
     }
 
-    static getPreRollActionFlags() {
+    static getRollFlagData(flag, actor = 'global', actionType = 'preRoll') {
+        const flags = this.getRollActionFlags(actor, actionType);
+        const flagData = flags.filter((a) => a.action == flag)[0];
+        if (flagData)
+            return flagData.data;
+    }
+
+    static getRollActionFlags(actor = 'global', actionType = 'preRoll') {
         let flags = [];
 
         const rollData = CONFIG.ROLL_DATA;
 
-        if (rollData.globalActions && rollData.globalActions.length > 0) {
+        if (actor == 'global' && rollData.globalActions && rollData.globalActions.length > 0) {
             for (const action of rollData.globalActions) {
-                if (ROLL_ACTIONS.filter((a) => a.action == action.action && a.actionType == 'preRoll').length > 0)
-                    flags.push(action.action);
+                if (ROLL_ACTIONS.filter((a) => a.action == action.action && a.actionType == actionType).length > 0)
+                    flags.push(action);
             }
         }
 
@@ -924,7 +999,8 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
         let content = "";
 
         for (const action of actionList) {
-            content += await foundry.applications.handlebars.renderTemplate(`systems/vryl/templates/parts/roll/roll-action.html`, action);
+            if(action.presentInMenu !== false)
+                content += await foundry.applications.handlebars.renderTemplate(`systems/vryl/templates/parts/roll/roll-action.html`, action);
         }
 
         content = content.replaceAll(`flex-group-center`, `flex-group-left align-left full-width`);
@@ -1007,7 +1083,7 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
         windowHooks.push({
             name: `vryl-rollDataUpdated`,
             id: Hooks.on(`vryl-rollDataUpdated`, () => {
-                            onActionsUpdate();
+                onActionsUpdate();
 
             })
         });
