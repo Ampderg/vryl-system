@@ -1,29 +1,34 @@
-export const ROLL_ACTIONS = {
-    globalActions: [
+export const ROLL_ACTIONS = [
         {
             action: `narrative-result`,
             actionType: `preRoll`,
+            actionOwner: `global`,
         },
         {
-            action: `no-level-zero`,
+            action: `roll-level-zero`,
             actionType: `preRoll`,
+            actionOwner: `global`,
         },
         {
             action: `explode-crits`,
             actionType: `preRoll`,
+            actionOwner: `global`,
         },
-    ],
-    actorActions: [
+        {
+            action: `no-willpower-spend`,
+            actionType: `preRoll`,
+            actionOwner: `both`,
+        },
         {
             action: `successes-regenerate-willpower`,
             functionName: `successesRegenerateWillpower`,
             actionType: `postRoll`,
+            actionOwner: `actor`,
         },
         {
             action: `failures-lose-willpower`,
             functionName: `failuresLoseWillpower`,
             actionType: `postRoll`,
-
+            actionOwner: `actor`,
         },
-    ],
-};
+    ];

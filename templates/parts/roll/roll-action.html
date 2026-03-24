@@ -3,23 +3,26 @@
     <span class="flex-group-left align-left full-width">
         <i>- 
             {{#if (eq action "narrative-result")}}
-            This roll will include a narrative result.
+            <b>Narrative Result</b>
             {{/if}}
 
             <!-- Roll Dice modification -->
-            {{#if (eq action "no-level-zero")}}
-            No dice will be rolled at roll level zero and below.
+            {{#if (eq action "roll-level-zero")}}
+            Use Disadvantage at 0 dice.
             {{/if}}
             {{#if (eq action "explode-crits")}}
-            Each Crit explodes, rolling an additional die.
+            <b>Exploding Crits</b>
             {{/if}}
 
             <!-- Willpower -->
+            {{#if (eq action "no-willpower-spend")}}
+            You cannot spend Willpower to gain Guaranteed Successes
+            {{/if}}
             {{#if (eq action "successes-regenerate-willpower")}}
-            Regain one Willpower for every <b>Success</b>.
+            Regain one Willpower for every <b>Success</b>
             {{/if}}
             {{#if (eq action "failures-lose-willpower")}}
-            Lose one Willpower for every <b>Failure</b>.
+            Lose one Willpower for every <b>Failure</b>
 
             {{/if}}
         </i>

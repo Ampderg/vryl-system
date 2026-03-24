@@ -167,7 +167,7 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
 
 
 
-        if (totalLevels <= 0 && !CONFIG.ui.rollBuilder.hasPreRollFlag(`no-level-zero`)) {
+        if (totalLevels <= 0 && CONFIG.ui.rollBuilder.hasPreRollFlag(`roll-level-zero`)) {
             guaranteedSuccesses -= 1 - totalLevels;
             totalLevels = 2 - totalLevels;
         }
@@ -580,6 +580,7 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
 
         if (replaceWithDefault) {
             CONFIG.ui.rollBuilder.addAction('narrative-result', 'global', false);
+            CONFIG.ui.rollBuilder.addAction(`roll-level-zero`, 'global', false);
         }
         CONFIG.ui.rollBuilder.updateRollData();
     }
@@ -736,7 +737,7 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
 
         if (rollData.globalActions && rollData.globalActions.length > 0) {
             for (const action of rollData.globalActions) {
-                if (ROLL_ACTIONS.globalActions.filter((a) => a.action == action.action && a.actionType == 'preRoll').length > 0)
+                if (ROLL_ACTIONS.filter((a) => a.action == action.action && a.actionType == 'preRoll').length > 0)
                     flags.push(action.action);
             }
         }
@@ -751,8 +752,9 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
             if (actorData.actions && actorData.actions.length > 0) {
                 const actor = game.actors.get(key);
                 for (const action of actorData.actions) {
-                    const actionData = ROLL_ACTIONS.actorActions.filter((a) => a.action == action.action && a.actionType == 'postRoll')[0];
-                    this[actionData.functionName](actor, msg);
+                    const actionData = ROLL_ACTIONS.filter((a) => a.action == action.action && a.actionType == 'postRoll')[0];
+                    if(actionData && actionData.functionName)
+                        this[actionData.functionName](actor, msg);
                 }
             }
         }
@@ -782,9 +784,8 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
     }
 
     static async openActions(actor) {
-        const actionList = actor == 'global' ? ROLL_ACTIONS.globalActions : ROLL_ACTIONS.actorActions;
-
-
+        const actionList = actor == 'global' ? ROLL_ACTIONS.filter((a) => a.actionOwner == 'global' || a.actionOwner == 'both') 
+        : ROLL_ACTIONS.filter((a) => a.actionOwner == 'actor' || a.actionOwner == 'both') ;
 
         let content = "";
 

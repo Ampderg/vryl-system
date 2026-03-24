@@ -550,7 +550,7 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
             CONFIG.ROLL_DATA.bonusDice = missingWillpower - 1;
         }
 
-        CONFIG.ui.rollBuilder.addAction(`no-level-zero`, 'global', false);
+        CONFIG.ui.rollBuilder.addAction(`no-willpower-spend`, this.document, false);
         CONFIG.ui.rollBuilder.addAction(`successes-regenerate-willpower`, this.document, false);
 
         CONFIG.ui.rollBuilder.goToRollBuilder();
@@ -567,7 +567,7 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
 
         await CONFIG.ui.rollBuilder.toggleAttribute(this.document, attribute, true);
 
-        CONFIG.ui.rollBuilder.addAction(`no-level-zero`, 'global', false);
+        CONFIG.ui.rollBuilder.addAction(`no-willpower-spend`, this.document, false);
         CONFIG.ui.rollBuilder.addAction(`failures-lose-willpower`, this.document, false);
 
         CONFIG.ui.rollBuilder.goToRollBuilder();
