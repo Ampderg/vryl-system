@@ -55,6 +55,29 @@ export class VrylHandlebarsHelpers {
             return ret;
         });
 
+        Handlebars.registerHelper('entries', function(object) {
+
+            const entries = Object.entries(object);
+            const arr = [];
+
+            for(const e of entries)
+            {
+                e[1].key = e[0];
+                arr.push(e[1]);
+            }
+
+            return arr;
+        });
+
+        Handlebars.registerHelper('sort', function(array) {
+
+            return array.toSorted((a, b) => {
+                if(a.sorting != undefined)
+                    return a.sorting - b.sorting;
+                return a - b;
+            });
+        });
+
         //#endregion
         
         //#region Comparison

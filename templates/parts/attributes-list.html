@@ -8,7 +8,7 @@
             {{#if (eq typeDataName ../dataName)}}
             <div id="{{dataName}}" class="attribute-category flexcol">
                 <b class="flex-group-center fitheight categoryOptions"><u>{{name}}</u></b>
-                {{#each ../../system.attributes}}
+                {{#each (sort (entries ../../system.attributes))}}
                 {{#if this.exists}}
                 {{#if (eq this.categoryDataName ../dataName)}}
                 <div id="{{dataName}}" class="attribute flexrow fitheight {{#if indexOdd}}odd-row{{/if}}">
