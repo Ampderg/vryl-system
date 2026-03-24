@@ -13,6 +13,18 @@
 		</div>
 	</header>
 	<div class="flexcol roll-builder-options">
+		<div class="flexrow roll-builder-input-fields">
+			<b class="fitwidth" style="padding: 0 1em;"><i class="fa-solid fa-dice-d20"></i></b>
+			<div class="number-step flexrow">
+				<button type="button" onclick="CONFIG.ui.rollBuilder.adjustRollData('bonusDice', -1)">-</button>
+				<button type="button" onclick="CONFIG.ui.rollBuilder.adjustRollData('bonusDice', 1)">+</button>
+			</div>
+			<b class="fitwidth" style="padding: 0 1em;"><i class="fa-solid fa-plus-square"></i></b>
+			<div class="number-step flexrow">
+				<button type="button" onclick="CONFIG.ui.rollBuilder.adjustRollData('guaranteedSuccesses', -1)">-</button>
+				<button type="button" onclick="CONFIG.ui.rollBuilder.adjustRollData('guaranteedSuccesses', 1)">+</button>
+			</div>
+		</div>
 		<div class="flexrow roll-builder-dc flex-group-center">
 			<div class="flexrow flex-group-center">
 				<b class="fitwidth" style="padding-right:1em;">DC</b>

@@ -186,7 +186,7 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
         let faces = 20;
         let formula = `${levelData.totalLevels}d${faces}`;
         let critThreshold = faces;
-        if(CONFIG.ui.rollBuilder.hasPreRollFlag(`explode-crits`))
+        if (CONFIG.ui.rollBuilder.hasPreRollFlag(`explode-crits`))
             formula += `x>=${critThreshold}`;
         formula += `cs>=${dc}`;
         formula += `sa`;
@@ -397,15 +397,23 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
     static async deselectAttribute(actorId, dataName, render = true) {
         const rollActors = CONFIG.ROLL_DATA.rollActors;
 
-        if (!rollActors.has(actorId)) return;
+        if (!rollActors.has(actorId)) {
+            if (actorId != 'global')
+                return;
 
-        const actorData = rollActors.get(actorId);
+            if (dataName == "") {
+                CONFIG.ROLL_DATA.bonusDice = 0;
+                CONFIG.ROLL_DATA.guaranteedSuccesses = 0;
+            }
+        }
+        else {
+            const actorData = rollActors.get(actorId);
 
-        if (dataName == "willpower")
-            actorData.willpower = undefined;
-        else
-            actorData.attributes = actorData.attributes.filter((a) => a.dataName != dataName);
-
+            if (dataName == "willpower")
+                actorData.willpower = undefined;
+            else
+                actorData.attributes = actorData.attributes.filter((a) => a.dataName != dataName);
+        }
         if (render)
             this.updateRollData();
     }
@@ -570,6 +578,16 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
         window.ui.sidebar.changeTab("chat", "primary");
     }
 
+    //#region Input Fields
+
+    static adjustRollData(field, change, render = true) {
+        if (!CONFIG.ROLL_DATA[field]) CONFIG.ROLL_DATA[field] = 0;
+        CONFIG.ROLL_DATA[field] += change;
+
+        if (render)
+            this.updateRollData();
+    }
+
     //#region DC
 
     static _getDiceProbability(n, successThreshold, dc, sides = 20) {
@@ -724,7 +742,7 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
 
     static async failuresLoseWillpower(actor, msg) {
         let newWillpower = Math.max(actor._source.system.willpower.level - (msg.rolls[0].terms[0]._number - msg.rolls[0]._total), 0);
-        if(newWillpower > actor._source.system.willpower.level)
+        if (newWillpower > actor._source.system.willpower.level)
             return;
         actor.update({ [`system.willpower.level`]: newWillpower });
     }
