@@ -3,6 +3,7 @@ const { api, sheets } = foundry.applications;
 const { HandlebarsApplicationMixin } = foundry.applications.api;
 const { AbstractSidebarTab } = foundry.applications.sidebar;
 const { deepClone } = foundry.utils;
+import { ROLL_ACTIONS } from '../helpers/roll-actions.mjs';
 
 export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) {
     // #region Options
@@ -182,8 +183,15 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
         const dc = CONFIG.ROLL_DATA.dc;
 
         let levelData = this._getRollLevel();
-
-        let roll = new CONFIG.Dice.AttributeRoll(`${levelData.totalLevels}d20cs>=${dc}sa + ${levelData.guaranteedSuccesses}`);
+        let faces = 20;
+        let formula = `${levelData.totalLevels}d${faces}`;
+        let critThreshold = faces;
+        if(CONFIG.ui.rollBuilder.hasPreRollFlag(`explode-crits`))
+            formula += `x>=${critThreshold}`;
+        formula += `cs>=${dc}`;
+        formula += `sa`;
+        formula += ` + ${levelData.guaranteedSuccesses}`;
+        let roll = new CONFIG.Dice.AttributeRoll(formula);
         roll.options.flavor = await CONFIG.ui.rollBuilder.renderRoll();
         let msg = await roll.toMessage({
             flags: {
@@ -688,10 +696,8 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
 
         if (rollData.globalActions && rollData.globalActions.length > 0) {
             for (const action of rollData.globalActions) {
-                if (action.action == `no-level-zero`)
-                    flags.push(`no-level-zero`);
-                else if (action.action == `narrative-result`)
-                    flags.push(`narrative-result`);
+                if (ROLL_ACTIONS.globalActions.preRoll.filter((a) => a.action == action.action).length > 0)
+                    flags.push(action.action);
             }
         }
 
@@ -705,11 +711,8 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
             if (actorData.actions && actorData.actions.length > 0) {
                 const actor = game.actors.get(key);
                 for (const action of actorData.actions) {
-                    switch (action.action) {
-                        case `successes-regenerate-willpower`:
-                            this.successesRegenerateWillpower(actor, msg);
-                            break;
-                    }
+                    const actionData = ROLL_ACTIONS.actorActions.postRoll.filter((a) => a.action == action.action)[0];
+                    this[actionData.functionName](actor, msg);
                 }
             }
         }
@@ -717,6 +720,13 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
 
     static async successesRegenerateWillpower(actor, msg) {
         actor.update({ [`system.willpower.level`]: Math.min(actor._source.system.willpower.level + msg.rolls[0]._total, actor.system.willpower.max) });
+    }
+
+    static async failuresLoseWillpower(actor, msg) {
+        let newWillpower = Math.max(actor._source.system.willpower.level - (msg.rolls[0].terms[0]._number - msg.rolls[0]._total), 0);
+        if(newWillpower > actor._source.system.willpower.level)
+            return;
+        actor.update({ [`system.willpower.level`]: newWillpower });
     }
 
 }

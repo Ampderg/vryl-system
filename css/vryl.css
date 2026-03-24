@@ -654,6 +654,8 @@
 .vryl.sheet {
   overflow: visible; /* Needed to display tabs off the sheet box */
 
+  min-height: fit-content;
+  
   > .window-content {
     overflow: visible;
   }

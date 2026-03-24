@@ -21,7 +21,7 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
             height: 800,
         },
         window: {
-            resizable: false,
+            resizable: true,
             title: 'Character Sheet' // Just the localization key
         },
         actions: {
@@ -551,7 +551,6 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
         }
 
         CONFIG.ui.rollBuilder.addAction(`no-level-zero`, 'global', false);
-        CONFIG.ui.rollBuilder.addAction(`no-narrative-result`, 'global', false);
         CONFIG.ui.rollBuilder.addAction(`successes-regenerate-willpower`, this.document, false);
 
         CONFIG.ui.rollBuilder.goToRollBuilder();
@@ -560,7 +559,19 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
         
 
     static async _willpowerBurn(event, target) {
+        CONFIG.ui.rollBuilder.clearRoll(false);
 
+        let attribute = this.document.system.willpower;
+        attribute.dataName = "willpower";
+        attribute.name = "Willpower";
+
+        await CONFIG.ui.rollBuilder.toggleAttribute(this.document, attribute, true);
+
+        CONFIG.ui.rollBuilder.addAction(`no-level-zero`, 'global', false);
+        CONFIG.ui.rollBuilder.addAction(`failures-lose-willpower`, this.document, false);
+
+        CONFIG.ui.rollBuilder.goToRollBuilder();
+        CONFIG.ui.rollBuilder.updateRollData();
     }
 
     static async _willpowerRoll(event, target) {
@@ -571,6 +582,7 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
         await CONFIG.ui.rollBuilder.toggleAttribute(this.document, attribute, true);
 
         CONFIG.ui.rollBuilder.goToRollBuilder();
+
         await this.renderSelectedAttributes();
     }
 
