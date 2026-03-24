@@ -180,22 +180,40 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
 
     //#region Roll
 
+    _getRollData() {
+        let dc = CONFIG.ROLL_DATA.dc;
+
+        for (const [key, actor] of CONFIG.ROLL_DATA.rollActors) {
+            if(actor.actor.system.dcMod)
+                dc += actor.actor.system.dcMod;
+        }
+
+        let levelData = this._getRollLevel();
+        let faces = 20;      
+        let critThreshold = faces; 
+
+        return {
+            dc: dc,
+            level: levelData.totalLevels,
+            guaranteedSuccesses: levelData.guaranteedSuccesses,
+            faces: faces,
+            critThreshold: critThreshold,
+        }
+    }
+
     static async #roll(event, target) {
         console.log("Rolling with data: ", CONFIG.ROLL_DATA);
 
-        const dc = CONFIG.ROLL_DATA.dc;
+        const rollData = this._getRollData();
 
-        let levelData = this._getRollLevel();
-        let faces = 20;
-        let formula = `${levelData.totalLevels}d${faces}`;
-        let critThreshold = faces;
+        let formula = `${rollData.level}d${rollData.faces}`;
         if (CONFIG.ui.rollBuilder.hasPreRollFlag(`explode-crits`))
-            formula += `x>=${critThreshold}`;
-        formula += `cs>=${dc}`;
+            formula += `x>=${rollData.critThreshold}`;
+        formula += `cs>=${rollData.dc}`;
         formula += `sa`;
-        formula += ` + ${levelData.guaranteedSuccesses}`;
+        formula += ` + ${rollData.guaranteedSuccesses}`;
         let roll = new CONFIG.Dice.AttributeRoll(formula);
-        roll.options.flavor = await CONFIG.ui.rollBuilder.renderRoll();
+        roll.options.flavor = await CONFIG.ui.rollBuilder.renderRoll(rollData);
         let msg = await roll.toMessage({
             flags: {
                 vryl: {
@@ -426,11 +444,11 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
 
     //#region Attribute Rendering
 
-    static async renderRoll() {
-        return (await this.renderRollAttributes()) + (await this.renderRollOptions());
+    static async renderRoll(rollData) {
+        return (await this.renderRollAttributes(rollData)) + (await this.renderRollOptions(rollData));
     }
 
-    static async renderRollAttributes() {
+    static async renderRollAttributes(rollData) {
         let content = "";
         const rollActors = CONFIG.ROLL_DATA.rollActors;
         const attributeCategories = game.settings.get(CONFIG.SystemId, 'attribute_categories');
@@ -545,10 +563,7 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
         return content;
     }
 
-    static async renderRollOptions() {
-        let rollData = {};
-        rollData.dc = CONFIG.ROLL_DATA.dc;
-
+    static async renderRollOptions(rollData) {
         return await foundry.applications.handlebars.renderTemplate(`systems/vryl/templates/parts/roll/roll-options.html`, rollData);
     }
 
