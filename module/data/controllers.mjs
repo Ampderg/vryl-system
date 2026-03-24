@@ -34,7 +34,7 @@ export class VrylActor extends Actor {
             // Make modifications to data here. For example:
             const systemData = actorData.system;
 
-            const maxLevel = game.settings.get(CONFIG.SystemId, 'attribute_max_level');
+            const maxLevel = game.settings.get(CONFIG.SystemId, 'attribute-max-level');
             let xpSpent = 0;
             const attributes = Object.entries(systemData.attributes);
             for (const entry of attributes) {

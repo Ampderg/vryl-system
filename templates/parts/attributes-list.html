@@ -1,8 +1,5 @@
-<section
-  class='hide-overflow tab attribute-list {{tab.cssClass}}'
-  data-group='primary'
-  data-tab='attribute-list'
->
+<div>
+    <hr>
     {{#eachAttribute system.attributeTypes}}
     <div id="{{dataName}}" class="attribute-type fitheight">
         <div class="flexrow fitheight">
@@ -15,14 +12,15 @@
                 {{#if this.exists}}
                 {{#if (eq this.categoryDataName ../dataName)}}
                 <div id="{{dataName}}" class="attribute flexrow fitheight {{#if indexOdd}}odd-row{{/if}}">
-                    <span data-action="attribute-roll" id="{{dataName}}" class="fitflex attribute-name clickable roll attribute-list 
+                    <span data-action="attribute-roll" id="{{dataName}}"
+                        class="fitflex attribute-name clickable roll attribute-list 
                         actor-{{../../../actor.id}} attribute-type-{{../../dataName}} attribute-category-{{../dataName}} attribute-name-{{dataName}}">
                         {{name}}
                     </span>
                     {{#unless ../../../system.isTemplateActor}}
                     <span data-action="edit-attribute-pips" id="{{dataName}}"
                         class="fitwidth fitflex attribute-level clickable edit-attribute-pips attribute-list">
-                        {{#for 0 ../../../system.max_level 1}}
+                        {{#for 0 ../../../system.maxLevel 1}}
                         {{#lt index ../this.combinedHeroicLevel}}
                         <i class="fa-solid fa-plus-circle attribute-level-pip"></i>
                         {{else}}
@@ -34,7 +32,9 @@
                         {{/lt}}
                         {{/for}}
                         {{#nenull this.bonusDice 0}}
-                        <span class="align-center" style="position:relative; font-size: 8px;"><i style="position:absolute; bottom: 1em; left: 0.5em;" class="fa-solid fa-asterisk align-center" ></i></span>
+                        <span class="align-center" style="position:relative; font-size: 8px;"><i
+                                style="position:absolute; bottom: 1em; left: 0.5em;"
+                                class="fa-solid fa-asterisk align-center"></i></span>
                         {{/nenull}}
                     </span>
                     {{/unless}}
@@ -50,4 +50,4 @@
     </div>
 
     {{/eachAttribute}}
-</section>
+</div>

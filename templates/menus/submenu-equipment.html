@@ -1,0 +1,15 @@
+<div class="flexcol">
+    <div class="flexrow">
+        <b>Name</b>
+        <b>Slots</b>
+        <i class="clickable fa-solid fa-plus" data-action="addSlot"></i>
+    </div>
+    {{#each equipmentSlots}}
+    <div class="flexrow equipment-slot">
+        <input type="text" name="{{id}}" id="slotName" value="{{slotName}}">
+        <input name="{{id}}" type="number" id="slotSlots" value={{slotSlots}}>
+        <i class="clickable fa-solid fa-trash-can" data-action="deleteSlot" data-slot="{{id}}"></i>
+    </div>
+    {{/each}}
+    <button type="submit">Confirm</button>
+</div>

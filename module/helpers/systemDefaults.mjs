@@ -1,5 +1,28 @@
 export const DEFAULTS = {};
 
+DEFAULTS.equipmentSlots = [
+    {
+        slotName: "Held",
+        slotSlots: 2,
+        id: 0,
+    },
+    {
+        slotName: "Head",
+        slotSlots: 1,
+        id: 1,
+    },
+    {
+        slotName: "Body",
+        slotSlots: 1,
+        id: 2,
+    },
+    {
+        slotName: "Trinkets",
+        slotSlots: 4,
+        id: 3,
+    },
+]
+
 /**
  * The set of Ability Scores used within the system.
  * @type {Object}

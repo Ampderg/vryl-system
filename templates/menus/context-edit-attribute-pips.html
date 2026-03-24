@@ -4,7 +4,7 @@
         <span class="fitwidth">Level: </span>
         <span id="{{attribute.dataName}}" class="flex-group-center context-edit-attribute-pips">
             <i class="fa-solid fa-minus clickable context-edit-attribute-pips attribute-level minus"></i>
-            {{#for 0 max_level 1}}
+            {{#for 0 maxLevel 1}}
             {{#lt index ../attribute.heroicLevel}}
             <i id="{{index}}" class="fa-solid fa-plus-circle context-edit-attribute-pips attribute-level-pip-large"></i>
             {{else}}

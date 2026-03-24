@@ -1,0 +1,19 @@
+<div class="flex-group-center">
+    <b class="flex-group-center">Experience</b>
+    <div class="number-step flexcol flex-group-center">
+        <div class="flexrow" style="flex-wrap: nowrap;">
+            <button type="button" style="font-size: 90%;"
+                onclick="game.vrylGlobalFunctions.adjustNumberStepValue(this, -10, 2)">-10</button>
+            <button type="button" style="font-size: 90%;"
+                onclick="game.vrylGlobalFunctions.adjustNumberStepValue(this, -1, 2)">-1</button>
+            <input style="width: 4em; height: 2em;" id='xp-input' type='number' value='{{system.xp}}' placeholder='200'
+                data-action="updateXP">
+            <button type="button" style="font-size: 90%;"
+                onclick="game.vrylGlobalFunctions.adjustNumberStepValue(this, 1, 2)">+1</button>
+            <button type="button" style="font-size: 90%;"
+                onclick="game.vrylGlobalFunctions.adjustNumberStepValue(this, 10, 2)">+10</button>
+        </div>
+        <i class="flex-group-center" style="padding-top:5px">{{system.xpSpent}} Spent</i>
+    </div>
+    
+</div>

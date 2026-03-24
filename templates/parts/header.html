@@ -1,72 +1,14 @@
 <header class='sheet-header min-fit'>
-  <img class='profile-img' src='{{actor.img}}' data-edit='img' data-action='onEditImage' data-tooltip='{{actor.name}}'
-    height='150' width='150' />
+  <div class="header-left-tab">
+    <div>
+      <img class='profile-img' src='{{actor.img}}' data-tooltip='{{actor.name}}' height='150' width='150' />
+      <div class="profile-img-buttons">
+        <button type="button" data-edit='img' data-action='onEditImage'><i class="fa-solid fa-file-image"></i></button>
+      </div>
+    </div>
+  </div>
   <div class='header-fields'>
     <div class='document-name flexcol'>
       <input name='name' type='text' value='{{actor.name}}' placeholder='Name' />
-      <div class="flexrow" style="padding-top:25px">
-        <div class="flexcol">
-          <b class="flex-group-center">Experience</b>
-          <div class="number-step flexcol flex-group-center">
-            <input style="width: 100%; height: 27px;" id='xp-input' type='number' value='{{system.xp}}'
-              placeholder='200' data-action="updateXP">
-            <div class="flexrow">
-              <button type="button" style="font-size: 90%;"
-                onclick="game.vrylGlobalFunctions.adjustNumberStepValue(this, -10, 2)">-10</button>
-              <button type="button" style="font-size: 90%;"
-                onclick="game.vrylGlobalFunctions.adjustNumberStepValue(this, -1, 2)">-1</button>
-              <button type="button" style="font-size: 90%;"
-                onclick="game.vrylGlobalFunctions.adjustNumberStepValue(this, 1, 2)">+1</button>
-              <button type="button" style="font-size: 90%;"
-                onclick="game.vrylGlobalFunctions.adjustNumberStepValue(this, 10, 2)">+10</button>
-            </div>
-          </div>
-          <i class="flex-group-center" style="padding-top:5px">{{system.xpSpent}} Spent</i>
-        </div>
-        <div class="willpower flexcol">
-          <b class="flex-group-center clickable willpower-roll" title="Roll Willpower" data-action="willpowerRoll">Willpower</b>
-          <div class="willpower-pips flex-group-center clickable" data-action="edit-willpower-pips">
-            {{#for 0 system.max_willpower 1}}
-            {{#lt index ../system.willpower.bonusDice}}
-            {{#lt index ../system.willpower.level}}
-            <i id="{{index}}" class="fa-solid fa-plus-circle context-edit-willpower-pips attribute-level-pip-large"></i>
-            {{else}}
-            {{#lt index ../system.willpower.max}}
-            <i id="{{index}}"
-              class="fa-solid fa-circle-dot context-edit-willpower-pips attribute-level-pip-large"></i>
-            {{else}}
-            <i id="{{index}}"
-              class="fa-regular fa-plus-circle context-edit-willpower-pips attribute-level-pip-large"></i>
-            {{/lt}}
-            {{/lt}}
-            {{else}}
-            {{#lt index ../system.willpower.level}}
-            <i id="{{index}}" class="fa-solid fa-circle context-edit-willpower-pips attribute-level-pip-large"></i>
-            {{else}}
-            {{#lt index ../system.willpower.max}}
-            <i id="{{index}}"
-              class="fa-regular fa-circle-dot context-edit-willpower-pips attribute-level-pip-large"></i>
-            {{else}}
-            <i id="{{index}}" class="fa-regular fa-circle context-edit-willpower-pips attribute-level-pip-large"></i>
-            {{/lt}}
-            {{/lt}}
-            {{/lt}}
-            {{/for}}
-            {{#nenull system.willpower.bonusDice 0}}
-            <span class="align-center" style="position:relative; font-size: 8px;"><i
-                style="position:absolute; bottom: 1em; left: 0.5em;"
-                class="fa-solid fa-asterisk align-center"></i></span>
-            {{/nenull}}
-          </div>
-          <div class="flex-group-center flexrow" style="padding-top:4px">
-            <i class="fa-solid fa-plus-square clickable button-spacing" title="Spend Willpower for a Guaranteed Success"
-              data-action="willpowerSpend"></i>
-            <i class="fa-solid fa-campground clickable button-spacing" title="Rest" data-action="willpowerRest"></i>
-            <i class="fa-solid fa-fire clickable button-spacing" title="Burn Willpower" data-action="willpowerBurn"></i>
-            <i class="fa-solid fa-flask clickable button-spacing" title="Condition Save"
-              data-action="conditionSave"></i>
-          </div>
-        </div>
-      </div>
     </div>
 </header>

@@ -208,8 +208,8 @@ export class SubmenuAttributes extends HandlebarsApplicationMixin(ApplicationV2)
   async _prepareContext(options) {
     this.data = {
       attributes: game.settings.get(CONFIG.SystemId, 'attributes').sort((a, b) => a.sorting > b.sorting),
-      attributeCategories: game.settings.get(CONFIG.SystemId, 'attribute_categories').sort((a, b) => a.sorting > b.sorting),
-      attributeTypes: game.settings.get(CONFIG.SystemId, 'attribute_types').sort((a, b) => a.sorting > b.sorting),
+      attributeCategories: game.settings.get(CONFIG.SystemId, 'attribute-categories').sort((a, b) => a.sorting > b.sorting),
+      attributeTypes: game.settings.get(CONFIG.SystemId, 'attribute-types').sort((a, b) => a.sorting > b.sorting),
     }
 
     for (let attribute of this.data.attributes) {
@@ -236,8 +236,8 @@ export class SubmenuAttributes extends HandlebarsApplicationMixin(ApplicationV2)
     console.log(this.data);
 
     game.settings.set(CONFIG.SystemId, 'attributes', this.data.attributes);
-    game.settings.set(CONFIG.SystemId, 'attribute_categories', this.data.attributeCategories);
-    game.settings.set(CONFIG.SystemId, 'attribute_types', this.data.attributeTypes);
+    game.settings.set(CONFIG.SystemId, 'attribute-categories', this.data.attributeCategories);
+    game.settings.set(CONFIG.SystemId, 'attribute-types', this.data.attributeTypes);
 
     this.close();
     foundry.utils.debouncedReload();

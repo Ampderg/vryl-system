@@ -95,7 +95,7 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
             // classes: ['sysclass'], // Optionally add extra classes to the part for extra customization
         },
         attribute: {
-            template: `systems/vryl/templates/parts/attributes-list.html`
+            template: `systems/vryl/templates/actor/attributes.html`
         },
         effects: {
             template: `systems/vryl/templates/parts/effects.html`
@@ -251,7 +251,8 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
     static prepareAttributeData(system) {
         let attributes = system.attributes;
         const attributeData = game.settings.get(CONFIG.SystemId, 'attributes');
-        const categoryData = game.settings.get(CONFIG.SystemId, 'attribute_categories');
+        const typeData = game.settings.get(CONFIG.SystemId, 'attribute-types');
+        const categoryData = game.settings.get(CONFIG.SystemId, 'attribute-categories');
         const keysArray = Object.keys(attributes);
         keysArray.forEach(k => {
             const attributeInfo = attributeData.find(a => a.dataName == k);
@@ -270,12 +271,15 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
 
         system.attributes_array = Object.values(attributes);
 
+        categoryData.forEach(category => {
+            const typeInfo = typeData[category.type];
+            category.typeDataName = typeInfo.dataName;
+        });
 
-
-        system.attributeTypes = game.settings.get(CONFIG.SystemId, 'attribute_types');
-        system.attributeCategories = game.settings.get(CONFIG.SystemId, 'attribute_categories');
-        system.max_level = game.settings.get(CONFIG.SystemId, 'attribute_max_level');
-        system.max_willpower = game.settings.get(CONFIG.SystemId, 'max_willpower');
+        system.attributeTypes = typeData;
+        system.attributeCategories = categoryData;
+        system.maxLevel = game.settings.get(CONFIG.SystemId, 'attribute-max-level');
+        system.maxWillpower = game.settings.get(CONFIG.SystemId, 'max-willpower');
 
         for (const a of system.attributes_array) {
             const combinedLevel = a.level + a.heroicLevel + a.bonusDice;
@@ -410,7 +414,7 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
         let data = {
             attribute: this.document.system.attributes[target.id],
             source: structuredClone(this.document._source.system.attributes[target.id]),
-            max_level: game.settings.get(CONFIG.SystemId, 'attribute_max_level'),
+            max_level: game.settings.get(CONFIG.SystemId, 'attribute-max-level'),
         };
 
         const path = `systems/vryl/templates/menus/context-edit-attribute-pips.html`;
@@ -600,7 +604,7 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
         let data = {
             attribute: this.document.system.willpower,
             source: structuredClone(this.document._source.system.willpower),
-            max_level: game.settings.get(CONFIG.SystemId, 'max_willpower'),
+            max_level: game.settings.get(CONFIG.SystemId, 'max-willpower'),
         };
 
         const path = `systems/vryl/templates/menus/context-edit-willpower-pips.html`;

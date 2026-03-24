@@ -1,0 +1,44 @@
+<div class="willpower flexcol flex-group-center ">
+          <b class="flex-group-center clickable willpower-roll" title="Roll Willpower" data-action="willpowerRoll">Willpower</b>
+          <div class="willpower-pips flex-group-center clickable" data-action="edit-willpower-pips">
+            {{#for 0 system.maxWillpower 1}}
+            {{#lt index ../system.willpower.bonusDice}}
+            {{#lt index ../system.willpower.level}}
+            <i id="{{index}}" class="fa-solid fa-plus-circle context-edit-willpower-pips attribute-level-pip-large"></i>
+            {{else}}
+            {{#lt index ../system.willpower.max}}
+            <i id="{{index}}"
+              class="fa-solid fa-circle-dot context-edit-willpower-pips attribute-level-pip-large"></i>
+            {{else}}
+            <i id="{{index}}"
+              class="fa-regular fa-plus-circle context-edit-willpower-pips attribute-level-pip-large"></i>
+            {{/lt}}
+            {{/lt}}
+            {{else}}
+            {{#lt index ../system.willpower.level}}
+            <i id="{{index}}" class="fa-solid fa-circle context-edit-willpower-pips attribute-level-pip-large"></i>
+            {{else}}
+            {{#lt index ../system.willpower.max}}
+            <i id="{{index}}"
+              class="fa-regular fa-circle-dot context-edit-willpower-pips attribute-level-pip-large"></i>
+            {{else}}
+            <i id="{{index}}" class="fa-regular fa-circle context-edit-willpower-pips attribute-level-pip-large"></i>
+            {{/lt}}
+            {{/lt}}
+            {{/lt}}
+            {{/for}}
+            {{#nenull system.willpower.bonusDice 0}}
+            <span class="align-center" style="position:relative; font-size: 8px;"><i
+                style="position:absolute; bottom: 1em; left: 0.5em;"
+                class="fa-solid fa-asterisk align-center"></i></span>
+            {{/nenull}}
+          </div>
+          <div class="flex-group-center flexrow" style="padding-top:4px">
+            <i class="fa-solid fa-plus-square clickable button-spacing" title="Spend Willpower for a Guaranteed Success"
+              data-action="willpowerSpend"></i>
+            <i class="fa-solid fa-campground clickable button-spacing" title="Rest" data-action="willpowerRest"></i>
+            <i class="fa-solid fa-fire clickable button-spacing" title="Burn Willpower" data-action="willpowerBurn"></i>
+            <i class="fa-solid fa-flask clickable button-spacing" title="Condition Save"
+              data-action="conditionSave"></i>
+          </div>
+        </div>

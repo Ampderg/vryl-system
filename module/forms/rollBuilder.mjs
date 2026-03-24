@@ -226,7 +226,7 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
 
         await CONFIG.ui.rollBuilder.processPostRollActions(msg);
 
-        const coinflipWillpower = game.settings.get(CONFIG.SystemId, 'spend_willpower_coinflip');
+        const coinflipWillpower = game.settings.get(CONFIG.SystemId, 'spend-willpower-coinflip');
 
         for (const [key, actor] of CONFIG.ROLL_DATA.rollActors) {
             if (actor.willpower && !isNaN(actor.willpower.guaranteedSuccesses)) {
@@ -376,14 +376,14 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
     static getAttributeCategory(attribute) {
         if (attribute.dataName == 'willpower') return attribute;
 
-        const attributeCategories = game.settings.get(CONFIG.SystemId, 'attribute_categories');
+        const attributeCategories = game.settings.get(CONFIG.SystemId, 'attribute-categories');
         return attributeCategories[attribute.category];
     }
     static getAttributeType(attribute) {
         if (attribute.dataName == 'willpower') return attribute;
 
         const attributeCategory = this.getAttributeCategory(attribute);
-        const attributeTypes = game.settings.get(CONFIG.SystemId, 'attribute_types');
+        const attributeTypes = game.settings.get(CONFIG.SystemId, 'attribute-types');
         return attributeTypes[attributeCategory.type];
     }
     static getDefaultAttributeFromDataName(dataName) {
@@ -497,8 +497,8 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
     static async renderRollAttributes(rollData) {
         let content = "";
         const rollActors = CONFIG.ROLL_DATA.rollActors;
-        const attributeCategories = game.settings.get(CONFIG.SystemId, 'attribute_categories');
-        const attributeTypes = game.settings.get(CONFIG.SystemId, 'attribute_types');
+        const attributeCategories = game.settings.get(CONFIG.SystemId, 'attribute-categories');
+        const attributeTypes = game.settings.get(CONFIG.SystemId, 'attribute-types');
 
         async function renderAttribute(actorId, attribute) {
             if (actorId == 'global') {
@@ -693,6 +693,7 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
     }
 
     static setTargetGroupSize(amount) {
+        if(amount < 1) amount = 1;
         this.addAction(`group-roll`, `global`, `true`, { targetGroupSize: { label: `<i class="fa-solid fa-user-group"></i>`, value: amount } });
     }
 

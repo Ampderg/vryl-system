@@ -24,8 +24,8 @@ class AttributeActorDataModel extends ActorDataModel {
 
     game.settings.get(CONFIG.SystemId, 'attributes').forEach(a => {
       attributes[a.dataName] = new SchemaField({
-        level: new NumberField({ required: true, initial: 0, min: 0, max: game.settings.get(CONFIG.SystemId, 'attribute_max_level') }),
-        heroicLevel: new NumberField({ required: true, initial: 0, min: 0, max: game.settings.get(CONFIG.SystemId, 'attribute_max_level') }),
+        level: new NumberField({ required: true, initial: 0, min: 0, max: game.settings.get(CONFIG.SystemId, 'attribute-max-level') }),
+        heroicLevel: new NumberField({ required: true, initial: 0, min: 0, max: game.settings.get(CONFIG.SystemId, 'attribute-max-level') }),
         bonusDice: new NumberField({ required: true, initial: 0 }),
       });
     });
@@ -38,8 +38,8 @@ class AttributeActorDataModel extends ActorDataModel {
     schema.xp = new NumberField({ required: true, initial: 200, min: 0 })
 
     schema.willpower = new SchemaField({
-      level: new NumberField({ required: true, initial: 3, min: 0, max: game.settings.get(CONFIG.SystemId, 'max_willpower') }),
-      max: new NumberField({ required: true, initial: 3, min: 0, max: game.settings.get(CONFIG.SystemId, 'max_willpower') }),
+      level: new NumberField({ required: true, initial: 3, min: 0, max: game.settings.get(CONFIG.SystemId, 'max-willpower') }),
+      max: new NumberField({ required: true, initial: 3, min: 0, max: game.settings.get(CONFIG.SystemId, 'max-willpower') }),
       bonusDice: new NumberField({ required: true, initial: 0 }),
     });
 

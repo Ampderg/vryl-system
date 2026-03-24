@@ -1,4 +1,5 @@
 @import url("https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap");
+
 :root {
   --vryl-c-dark: #191813;
   --vryl-c-faint: #c9c7b8;
@@ -41,7 +42,8 @@
   font-family: "Roboto", sans-serif;
 }
 
-.rollable:hover, .rollable:focus {
+.rollable:hover,
+.rollable:focus {
   color: var(--vryl-c-black);
   text-shadow: 0 0 10px red;
   cursor: pointer;
@@ -252,6 +254,7 @@
 .vryl .item-form {
   font-family: "Roboto", sans-serif;
 }
+
 .vryl .sheet-header {
   flex: 0 auto;
   overflow: hidden;
@@ -261,48 +264,61 @@
   justify-content: flex-start;
   margin-bottom: 10px;
 }
+
 .vryl .sheet-header .profile-img {
-  cursor: pointer;
   flex: 0 0 150px;
   height: 150px;
   margin-right: 10px;
+  object-fit: contain;
 }
+
 .vryl .sheet-header .header-fields {
   flex: 1;
 }
+
 .vryl .sheet-tabs {
   flex: 0;
 }
+
 .vryl .sheet-body,
 .vryl .sheet-body .tab,
 .vryl .sheet-body .tab .editor {
   height: 100%;
 }
+
 .vryl .tab {
   max-height: 380px;
 }
+
 .vryl .tab.biography {
   flex: 1;
 }
+
 .vryl .tab.biography .editor {
   height: 100%;
 }
+
 .vryl .tox .tox-editor-container {
   background: var(--vryl-c-white);
 }
+
 .vryl .tox .tox-edit-area {
   padding: 0 8px;
 }
+
 .vryl .resource-label {
   font-weight: bold;
 }
+
 .vryl .ability {
   margin-bottom: 2px;
 }
+
 .vryl .ability-score,
 .vryl .ability-mod {
   flex: 0 0 44px;
 }
+
 .vryl .items-header {
   height: 28px;
   margin: 2px 0;
@@ -312,16 +328,19 @@
   border: 2px groove var(--vryl-c-groove);
   font-weight: bold;
 }
-.vryl .items-header > * {
+
+.vryl .items-header>* {
   font-size: 14px;
   text-align: center;
 }
+
 .vryl .items-header .item-name {
   font-weight: bold;
   padding-left: 5px;
   text-align: left;
   display: flex;
 }
+
 .vryl .items-list {
   list-style: none;
   margin: 0;
@@ -330,11 +349,13 @@
   scrollbar-width: thin;
   color: var(--vryl-c-tan);
 }
+
 .vryl .items-list .item-list {
   list-style: none;
   margin: 0;
   padding: 0;
 }
+
 .vryl .items-list .item-name {
   flex: 2;
   margin: 0;
@@ -344,32 +365,40 @@
   align-items: center;
   display: flex;
 }
-.vryl .items-list .item-name h3, .vryl .items-list .item-name h4 {
+
+.vryl .items-list .item-name h3,
+.vryl .items-list .item-name h4 {
   margin: 0;
   white-space: nowrap;
   overflow-x: hidden;
 }
+
 .vryl .items-list .item-controls {
   display: flex;
   flex: 0 0 100px;
   justify-content: flex-end;
 }
+
 .vryl .items-list .item-controls a {
   font-size: 12px;
   text-align: center;
   margin: 0 6px;
 }
+
 .vryl .items-list .item {
   align-items: center;
   padding: 0 2px;
   border-bottom: 1px solid var(--vryl-c-faint);
 }
+
 .vryl .items-list .item:last-child {
   border-bottom: none;
 }
+
 .vryl .items-list .item .item-name {
   color: var(--vryl-c-dark);
 }
+
 .vryl .items-list .item .item-name .item-image {
   flex: 0 0 30px;
   height: 30px;
@@ -377,12 +406,14 @@
   border: none;
   margin-right: 5px;
 }
+
 .vryl .items-list .item-prop {
   text-align: center;
   border-left: 1px solid #c9c7b8;
   border-right: 1px solid #c9c7b8;
   font-size: 12px;
 }
+
 .vryl .items-list .items-header {
   height: 28px;
   margin: 2px 0;
@@ -392,18 +423,22 @@
   border: 2px groove var(--vryl-c-groove);
   font-weight: bold;
 }
-.vryl .items-list .items-header > * {
+
+.vryl .items-list .items-header>* {
   font-size: 12px;
   text-align: center;
 }
+
 .vryl .items-list .items-header .item-name {
   padding-left: 5px;
   text-align: left;
 }
+
 .vryl .item-formula {
   flex: 0 0 200px;
   padding: 0 8px;
 }
+
 .vryl .effects-header {
   height: 28px;
   margin: 2px 0;
@@ -413,16 +448,19 @@
   border: 2px groove var(--vryl-c-groove);
   font-weight: bold;
 }
-.vryl .effects-header > * {
+
+.vryl .effects-header>* {
   font-size: 14px;
   text-align: center;
 }
+
 .vryl .effects-header .effect-name {
   font-weight: bold;
   padding-left: 5px;
   text-align: left;
   display: flex;
 }
+
 .vryl .effects-list {
   list-style: none;
   margin: 0;
@@ -431,11 +469,13 @@
   scrollbar-width: thin;
   color: var(--vryl-c-tan);
 }
+
 .vryl .effects-list .effect-list {
   list-style: none;
   margin: 0;
   padding: 0;
 }
+
 .vryl .effects-list .effect-name {
   flex: 2;
   margin: 0;
@@ -445,32 +485,40 @@
   align-items: center;
   display: flex;
 }
-.vryl .effects-list .effect-name h3, .vryl .effects-list .effect-name h4 {
+
+.vryl .effects-list .effect-name h3,
+.vryl .effects-list .effect-name h4 {
   margin: 0;
   white-space: nowrap;
   overflow-x: hidden;
 }
+
 .vryl .effects-list .effect-controls {
   display: flex;
   flex: 0 0 100px;
   justify-content: flex-end;
 }
+
 .vryl .effects-list .effect-controls a {
   font-size: 12px;
   text-align: center;
   margin: 0 6px;
 }
+
 .vryl .effects-list .effect {
   align-items: center;
   padding: 0 2px;
   border-bottom: 1px solid var(--vryl-c-faint);
 }
+
 .vryl .effects-list .effect:last-child {
   border-bottom: none;
 }
+
 .vryl .effects-list .effect .effect-name {
   color: var(--vryl-c-dark);
 }
+
 .vryl .effects-list .effect .effect-name .effect-image {
   flex: 0 0 30px;
   height: 30px;
@@ -478,12 +526,14 @@
   border: none;
   margin-right: 5px;
 }
+
 .vryl .effects-list .effect-prop {
   text-align: center;
   border-left: 1px solid #c9c7b8;
   border-right: 1px solid #c9c7b8;
   font-size: 12px;
 }
+
 .vryl .effects-list .effects-header {
   height: 28px;
   margin: 2px 0;
@@ -493,18 +543,22 @@
   border: 2px groove var(--vryl-c-groove);
   font-weight: bold;
 }
-.vryl .effects-list .effects-header > * {
+
+.vryl .effects-list .effects-header>* {
   font-size: 12px;
   text-align: center;
 }
+
 .vryl .effects-list .effects-header .effect-name {
   padding-left: 5px;
   text-align: left;
 }
+
 .vryl .effect-formula {
   flex: 0 0 200px;
   padding: 0 8px;
 }
+
 .vryl .effects .item .effect-source,
 .vryl .effects .item .effect-duration,
 .vryl .effects .item .effect-controls {
@@ -513,16 +567,20 @@
   border-right: 1px solid #c9c7b8;
   font-size: 12px;
 }
+
 .vryl .effects .item .effect-controls {
   border: none;
-}/*# sourceMappingURL=vryl.css.map */
+}
+
+/*# sourceMappingURL=vryl.css.map */
 
 .clickable {
   cursor: pointer;
   color: var(--vryl-c-clickable);
 }
 
-.clickable:hover, .clickable:focus {
+.clickable:hover,
+.clickable:focus {
   color: var(--vryl-c-clickable-hover);
   text-shadow: 0 0 3px var(--vryl-c-clickable-hover);
 }
@@ -549,6 +607,7 @@
   height: 7px;
   font-size: 10px;
 }
+
 .attribute-level-pip-large {
   width: 8px;
   height: 8px;
@@ -650,17 +709,18 @@
 }
 
 .vryl.sheet {
-  overflow: visible; /* Needed to display tabs off the sheet box */
+  overflow: visible;
+  /* Needed to display tabs off the sheet box */
 
   min-height: fit-content;
 
-  > .window-content {
+  >.window-content {
     overflow: visible;
   }
 }
 
 .vryl.sheet nav.tabs {
-    --tab-full-width: 44px;
+  --tab-full-width: 44px;
   --tab-inactive-width: 80px;
   --sheet-tabs-icon-height: 30px;
 
@@ -676,7 +736,7 @@
   text-transform: uppercase;
   z-index: -100;
 
-  > div {
+  >div {
     z-index: -99;
     display: flex;
     flex-grow: 1;
@@ -724,11 +784,11 @@
     border: 1px solid;
   }
 
-  [data-tab] > img {
+  [data-tab]>img {
     width: var(--sheet-tabs-icon-height);
   }
 
-  [data-tab] > i {
+  [data-tab]>i {
     width: var(--sheet-tabs-icon-height);
     font-size: calc(var(--sheet-tabs-icon-height) - 6px);
     text-align: center;
@@ -758,13 +818,45 @@
   width: 100%;
 }
 
-.details-dropdown {
-
-}
+.details-dropdown {}
 
 .small-button {
   height: 50%;
   min-height: 50%;
   gap: 0rem;
   padding: 0 0rem;
+}
+
+.header-left-tab {
+  overflow: visible;
+  position: absolute;
+  right: calc(100% - 20px);
+  min-width: 150px;
+
+  * {
+    position: relative;
+    display: flex;
+    justify-content: end;
+    align-items: center;
+  }
+
+  .profile-img {
+    background: no-repeat;
+    background-color: var(--vryl-c-background-highlight);
+    background-position: center;
+    background-size: auto 80%;
+    border: 1px solid;
+    border-radius: 8px;
+  }
+
+  .profile-img-buttons {
+    display: none; 
+    position: absolute;
+    left:0%;
+    bottom:0.5em;
+  }
+}
+
+.header-left-tab:hover .profile-img-buttons {
+  display: inherit;
 }
