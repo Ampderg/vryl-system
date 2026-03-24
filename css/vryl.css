@@ -566,8 +566,6 @@
   margin-left: 15px;
 }
 
-.attribute {
-}
 
 .attributes-list {
   max-width: 575px;
@@ -758,4 +756,8 @@
 
 .full-width {
   width: 100%;
+}
+
+.details-dropdown {
+  
 }

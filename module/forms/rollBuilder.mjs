@@ -4,6 +4,7 @@ const { HandlebarsApplicationMixin } = foundry.applications.api;
 const { AbstractSidebarTab } = foundry.applications.sidebar;
 const { deepClone } = foundry.utils;
 import { ROLL_ACTIONS } from '../helpers/roll-actions.mjs';
+import { VrylActorSheet } from "../data/views.mjs";
 
 export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) {
     // #region Options
@@ -20,7 +21,7 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
             openApp: this.#openApp,
             roll: this.#roll,
             print: this.#print,
-
+            clearRoll: this.clearRoll,
             "open-template-actor": this.openTemplateActor,
             "open-global-actions": this.openGlobalActions,
         },
@@ -136,7 +137,7 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
         };
     };
 
-    _getRollLevel() {
+    static _getRollLevel() {
         let totalLevels = CONFIG.ROLL_DATA.bonusDice ?? 0;
         let guaranteedSuccesses = CONFIG.ROLL_DATA.guaranteedSuccesses ?? 0;
 
@@ -180,17 +181,17 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
 
     //#region Roll
 
-    _getRollData() {
+    static _getRollData() {
         let dc = CONFIG.ROLL_DATA.dc;
 
         for (const [key, actor] of CONFIG.ROLL_DATA.rollActors) {
-            if(actor.actor.system.dcMod)
-                dc += actor.actor.system.dcMod;
+            if (actor.actor.system.dcMod)
+                dc = parseInt(dc) + (parseInt(actor.actor.system.dcMod) ?? 0);
         }
 
-        let levelData = this._getRollLevel();
-        let faces = 20;      
-        let critThreshold = faces; 
+        let levelData = CONFIG.ui.rollBuilder._getRollLevel();
+        let faces = 20;
+        let critThreshold = faces;
 
         return {
             dc: dc,
@@ -204,7 +205,7 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
     static async #roll(event, target) {
         console.log("Rolling with data: ", CONFIG.ROLL_DATA);
 
-        const rollData = this._getRollData();
+        const rollData = CONFIG.ui.rollBuilder._getRollData();
 
         let formula = `${rollData.level}d${rollData.faces}`;
         if (CONFIG.ui.rollBuilder.hasPreRollFlag(`explode-crits`))
@@ -256,6 +257,7 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
 
         for (const [key, value] of rollData.rollActors) {
             rollActors[key] = value;
+            rollActors[key].id = key;
         }
 
         let html = await RollSidebar.renderRoll();
@@ -263,14 +265,17 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
         <button class="copy-roll-replace">Copy Roll <i class="fa-solid fa-copy"></i></button>
         `;
 
-        html += `<button class="copy-roll-append">Append Actors to Roll <i class="fa-regular fa-plus-square"></i></button>`;
+        html += `<details class="full-width">
+        <summary class="align-center">Expand</summary>
+        <button class="copy-roll-append full-width">Append Actors to Roll <i class="fa-regular fa-plus-square"></i></button>
+        </details>`;
 
         html += `</div>`;
 
         const flags = {
             vryl: {
-                rollData: rollData,
-                rollActors: rollActors,
+                rollData: structuredClone(rollData),
+                rollActors: structuredClone(rollActors),
             }
         }
 
@@ -284,6 +289,37 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
     }
 
     async bindChatListeners(message, html, context) {
+
+        function getActor(actorData) {
+            if (actorData.id != 'VRYL-TEMPLATE-ACTOR')
+                return game.actors.get(actorData.id);
+
+            const controlledActor = game.user.character ?? canvas.tokens.controlled[0]?.actor;
+
+            if (controlledActor) {
+                return controlledActor;
+            }
+
+            return actorData.actor;
+        }
+
+        function updateActorSelection(actor) {
+            const rollActor = CONFIG.ROLL_DATA.rollActors.get(actor._id);
+            const attributesArray = Object.entries(actor.system.attributes);
+            for (const a of rollActor.attributes) {
+                const filtered = attributesArray.filter((b) => b[0] == a.dataName);
+                if(filtered && filtered.length > 0)
+                {
+                    const attributeData = Object.entries(filtered[0][1]);
+                    for(const d of attributeData)
+                    {
+                        a[d[0]] = d[1];
+                    }
+                    CONFIG.ui.rollBuilder.selectAttribute(actor, a);
+                }
+            }
+        }
+
         let copyButton = html.querySelector(`.copy-roll-replace`);
         if (copyButton) {
             copyButton.addEventListener('click', function () {
@@ -293,8 +329,11 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
                 CONFIG.ROLL_DATA.rollActors = new Map();
                 for (const [key, value] of rollActors) {
                     let actorData = structuredClone(value);
-                    actorData.actor = game.actors.get(value.actor._id);
-                    CONFIG.ROLL_DATA.rollActors.set(key, actorData);
+
+                    actorData.actor = getActor(actorData);
+
+                    CONFIG.ROLL_DATA.rollActors.set(actorData.actor.id, actorData);
+                    if (actorData.actor.id != key) updateActorSelection(actorData.actor);
                 }
 
                 RollSidebar.updateRollData();
@@ -321,9 +360,10 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
 
                     currentData.willpower = actorData.willpower ?? oldData.willpower;
 
-                    currentData.actor = game.actors.get(actorData.actor._id);
+                    currentData.actor = getActor(actorData);
 
-                    CONFIG.ROLL_DATA.rollActors.set(key, currentData);
+                    CONFIG.ROLL_DATA.rollActors.set(actorData.actor.id, currentData);
+                    if (actorData.actor.id != key) updateActorSelection(actorData.actor);
                 }
 
                 RollSidebar.updateRollData();
@@ -350,6 +390,14 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
     static getDefaultAttributeFromDataName(dataName) {
         const attributes = game.settings.get(CONFIG.SystemId, 'attributes');
         return attributes.filter((a) => a.dataName == dataName);
+    }
+    static populateDefaultAttributeFromDataName(attribute, dataName) {
+        const defaults = Object.entries(this.getDefaultAttributeFromDataName(dataName));
+        for(const d of defaults)
+        {
+            if(!attribute[d[0]])
+                attribute[d[0]] = d[1];
+        }
     }
 
     //#region Attribute Selection
@@ -488,11 +536,11 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
             return template;
         }
 
-        for (const [key, actor] of rollActors) {
+        for (const [key, actorData] of rollActors) {
             let actorContent = "";
             //Render attributes
-            if ((actor.attributes && actor.attributes.length > 0)) {
-                const sortedAttributes = actor.attributes.toSorted((a, b) => {
+            if ((actorData.attributes && actorData.attributes.length > 0)) {
+                const sortedAttributes = actorData.attributes.toSorted((a, b) => {
                     return this.getAttributeType(a).sorting - this.getAttributeType(b).sorting;
                 });
 
@@ -501,18 +549,18 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
                 }
             }
             //Add willpower if it is present
-            if (actor.willpower) {
-                actor.willpower.dataName = "willpower";
-                actor.willpower.name = "Willpower";
+            if (actorData.willpower) {
+                actorData.willpower.dataName = "willpower";
+                actorData.willpower.name = "Willpower";
 
-                actorContent += await renderAttribute(key, actor.willpower);
+                actorContent += await renderAttribute(key, actorData.willpower);
             }
 
             //Render actor actions
-            if ((actor.actions && actor.actions.length > 0)) {
+            if ((actorData.actions && actorData.actions.length > 0)) {
                 // if (actorContent != "")
                 //     actorContent += "<br>";
-                for (const action of actor.actions) {
+                for (const action of actorData.actions) {
                     action.actorId = key;
                     actorContent += await renderAction(action);
                 }
@@ -522,7 +570,7 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
             if (actorContent != "") {
                 content += `
                 <div class="roll-builder-actor actor-${key}"><div class="roll-builder-actor-inner">
-                <h5 class="flex-group-center">${actor.actor.name}</h5>
+                <h5 class="flex-group-center">${actorData.actor.name}</h5>
                 ${actorContent}
                 </div></div>`;
             }
@@ -641,7 +689,7 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
     updateDC(isInputChange = false) {
         console.log("Update DC");
         const elements = this.element.querySelectorAll(`.success-confidence-estimate`);
-        const levelData = this._getRollLevel();
+        const levelData = CONFIG.ui.rollBuilder._getRollLevel();
 
         CONFIG.ROLL_DATA.dc = CONFIG.ROLL_DATA.dc ?? 11;
 
@@ -753,7 +801,7 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
                 const actor = game.actors.get(key);
                 for (const action of actorData.actions) {
                     const actionData = ROLL_ACTIONS.filter((a) => a.action == action.action && a.actionType == 'postRoll')[0];
-                    if(actionData && actionData.functionName)
+                    if (actionData && actionData.functionName)
                         this[actionData.functionName](actor, msg);
                 }
             }
@@ -775,6 +823,78 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
 
     static async openTemplateActor(event, target) {
 
+        let data = {
+            id: "VRYL-TEMPLATE-ACTOR",
+            name: "Template",
+            system: {
+                attributes: {},
+                isTemplateActor: true,
+            },
+        }
+        data._id = data.id;
+        data.actor = {};
+        data.actor.id = data.id;
+
+        const defaultAttributes = game.settings.get(CONFIG.SystemId, 'attributes');
+
+        for (const a of defaultAttributes) {
+            data.system.attributes[a.dataName] = {};
+        }
+
+        VrylActorSheet.prepareAttributeData(data.system);
+
+        let content = await foundry.applications.handlebars.renderTemplate(`systems/vryl/templates/parts/attributes-list.html`, data);
+
+        const sidebarElement = document.querySelector(`aside#sidebar`);
+        const rect = sidebarElement.getBoundingClientRect();
+        content = content.replaceAll(`data-tab='attribute-list'`, '');
+
+        const dialog = new foundry.applications.api.DialogV2({
+            window: {
+                resizable: true,
+                title: 'Template Character Sheet' // Just the localization key
+            },
+            content: content,
+            buttons: [{
+                action: "apply",
+                label: "Apply",
+                default: true,
+                // callback: (event, button, dialog) => button.form.elements.choice.value
+            }],
+        });
+
+        let menu = await dialog.render({ force: true });
+        menu.setPosition({ left: rect.left - menu.element.getBoundingClientRect().width, top: rect.bottom - menu.element.getBoundingClientRect().height });
+
+        let element = menu.element;
+        element.querySelectorAll(`.form-footer`)[0].remove();
+
+        VrylActorSheet.renderSelectedAttributes(element, data.id);
+
+        Hooks.on(`vryl-rollDataUpdated`, () => {
+            console.log("Roll data updated for actor: " + data.id);
+            VrylActorSheet.renderSelectedAttributes(element, data.id);
+        });
+
+        async function clickAttribute(target) {
+            const attributesArray = Object.values(data.system.attributes);
+            const attribute = attributesArray.filter((a) => a.dataName == target.id)[0];
+            await CONFIG.ui.rollBuilder.toggleAttribute(data, attribute, false);
+
+            CONFIG.ui.rollBuilder.goToRollBuilder();
+            CONFIG.ui.rollBuilder.updateRollData();
+            VrylActorSheet.renderSelectedAttributes(element, data.id);
+        }
+
+        const clickable = element.querySelectorAll('.attribute-name:not(.listeners_bound)');
+
+        for (let c of clickable) {
+            c.addEventListener('click', async (event) => {
+                clickAttribute(c);
+            });
+
+            c.classList.add('listeners_bound');
+        }
     }
 
     //#region Actions Menu
@@ -784,8 +904,8 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
     }
 
     static async openActions(actor) {
-        const actionList = actor == 'global' ? ROLL_ACTIONS.filter((a) => a.actionOwner == 'global' || a.actionOwner == 'both') 
-        : ROLL_ACTIONS.filter((a) => a.actionOwner == 'actor' || a.actionOwner == 'both') ;
+        const actionList = actor == 'global' ? ROLL_ACTIONS.filter((a) => a.actionOwner == 'global' || a.actionOwner == 'both')
+            : ROLL_ACTIONS.filter((a) => a.actionOwner == 'actor' || a.actionOwner == 'both');
 
         let content = "";
 
@@ -812,7 +932,7 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
         });
 
         let menu = await dialog.render({ force: true });
-        menu.setPosition({left: rect.left - menu.element.getBoundingClientRect().width, top: rect.bottom - menu.element.getBoundingClientRect().height});
+        menu.setPosition({ left: rect.left - menu.element.getBoundingClientRect().width, top: rect.bottom - menu.element.getBoundingClientRect().height });
 
         let element = menu.element;
         element.querySelectorAll(`.form-footer`)[0].remove();

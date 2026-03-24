@@ -8,7 +8,7 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
 
         Hooks.on(`vryl-rollDataUpdated`, () => {
             console.log("Roll data updated for actor: " + this.document.id);
-            this.renderSelectedAttributes();
+            VrylActorSheet.renderSelectedAttributes(this.element, this.document.id);
         });
     }
 
@@ -125,7 +125,7 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
         let xpElement = this.element.querySelector("input#xp-input");
         xpElement.addEventListener('change', (event) => { this.updateXP() });
 
-        this.renderSelectedAttributes();
+        VrylActorSheet.renderSelectedAttributes(this.element, this.document.id);
     }
 
     //#region Prepare Context
@@ -147,20 +147,9 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
         }
 
         // Add the actor's data to context.data for easier access, as well as flags.
+        
         context.system = context.actor.system;
         context.flags = context.actor.flags;
-
-        context.system.attributeTypes = game.settings.get(CONFIG.SystemId, 'attribute_types');
-        context.system.attributeCategories = game.settings.get(CONFIG.SystemId, 'attribute_categories');
-        context.system.max_level = game.settings.get(CONFIG.SystemId, 'attribute_max_level');
-        context.system.max_willpower = game.settings.get(CONFIG.SystemId, 'max_willpower');
-
-        for (const a of context.system.attributes_array) {
-            const combinedLevel = a.level + a.heroicLevel + a.bonusDice;
-            a.combinedLevel = Math.min(Math.max(combinedLevel, 0), 5);
-            a.combinedHeroicLevel = Math.min(Math.max(combinedLevel - 5, 0), 5);
-        }
-
 
         // Add roll data for TinyMCE editors.
         context.rollData = context.actor.getRollData();
@@ -256,7 +245,11 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
      * @return {undefined}
      */
     _prepareCharacterData(context) {
-        let attributes = context.actor.system.attributes;
+        VrylActorSheet.prepareAttributeData(context.actor.system);
+    }
+
+    static prepareAttributeData(system) {
+        let attributes = system.attributes;
         const attributeData = game.settings.get(CONFIG.SystemId, 'attributes');
         const categoryData = game.settings.get(CONFIG.SystemId, 'attribute_categories');
         const keysArray = Object.keys(attributes);
@@ -274,7 +267,21 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
                 attributes[k].exists = false;
             }
         });
-        context.actor.system.attributes_array = Object.values(attributes);
+        
+        system.attributes_array = Object.values(attributes);
+
+
+
+        system.attributeTypes = game.settings.get(CONFIG.SystemId, 'attribute_types');
+        system.attributeCategories = game.settings.get(CONFIG.SystemId, 'attribute_categories');
+        system.max_level = game.settings.get(CONFIG.SystemId, 'attribute_max_level');
+        system.max_willpower = game.settings.get(CONFIG.SystemId, 'max_willpower');
+
+        for (const a of system.attributes_array) {
+            const combinedLevel = a.level + a.heroicLevel + a.bonusDice;
+            a.combinedLevel = Math.min(Math.max(combinedLevel, 0), 5);
+            a.combinedHeroicLevel = Math.min(Math.max(combinedLevel - 5, 0), 5);
+        }
     }
 
     prepareActiveEffectCategories(effects) {
@@ -354,22 +361,22 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
 
     //#region Roll
 
-    async renderSelectedAttributes() {
-        if (!this.element) return;
+    static async renderSelectedAttributes(element, actorId) {
+        if (!element) return;
 
 
 
-        let allSelected = this.element.querySelectorAll(`.attribute-name.selected.actor-${this.document.id}.attribute-name, .willpower-roll`);
+        let allSelected = element.querySelectorAll(`.attribute-name.selected.actor-${actorId}.attribute-name, .willpower-roll`);
         for (const element of allSelected) {
             element.classList.remove(`selected`);
         }
 
-        if (!CONFIG.ROLL_DATA.rollActors.has(this.document.id)) return;
-        const actor = CONFIG.ROLL_DATA.rollActors.get(this.document.id);
+        if (!CONFIG.ROLL_DATA.rollActors.has(actorId)) return;
+        const actor = CONFIG.ROLL_DATA.rollActors.get(actorId);
         const selectedAttributes = actor.attributes;
 
         for (const a of selectedAttributes) {
-            let selectedElements = this.element.querySelectorAll(`.attribute-name.actor-${this.document.id}.attribute-name-${a.dataName}`);
+            let selectedElements = element.querySelectorAll(`.attribute-name.actor-${actorId}.attribute-name-${a.dataName}`);
 
             for (let a of selectedElements) {
                 a.classList.add(`selected`);
@@ -377,7 +384,7 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
         }
 
         if (actor.willpower && !isNaN(actor.willpower.level)) {
-            this.element.querySelector(`.willpower-roll`).classList.add(`selected`);
+            element.querySelector(`.willpower-roll`).classList.add(`selected`);
         }
     }
 
@@ -388,7 +395,7 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
 
         CONFIG.ui.rollBuilder.goToRollBuilder();
         CONFIG.ui.rollBuilder.updateRollData();
-        await this.renderSelectedAttributes();
+        VrylActorSheet.renderSelectedAttributes(this.element, this.document.id);
     }
 
 
@@ -453,7 +460,7 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
         }
 
         function updateBonusDice(bonusDice) {
-            if(isNaN(bonusDice) || bonusDice == null) bonusDice = 0;
+            if (isNaN(bonusDice) || bonusDice == null) bonusDice = 0;
             const num = element.querySelector('.context-edit-attribute-pips .bonus-dice-num');
             num.innerHTML = ((bonusDice >= 0) ? "+" : "") + bonusDice;
         }
@@ -537,15 +544,14 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
     }
 
     static async _conditionSave(event, target) {
-        
+
     }
 
-    static async _rest(event, target) {      
+    static async _rest(event, target) {
         CONFIG.ui.rollBuilder.clearRoll(false);
 
-        const missingWillpower = this.document.system.willpower.max - this.document.system.willpower.level;     
-        if(missingWillpower > 0)
-        {   
+        const missingWillpower = this.document.system.willpower.max - this.document.system.willpower.level;
+        if (missingWillpower > 0) {
             CONFIG.ROLL_DATA.guaranteedSuccesses = 1;
             CONFIG.ROLL_DATA.bonusDice = missingWillpower - 1;
         }
@@ -556,7 +562,7 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
         CONFIG.ui.rollBuilder.goToRollBuilder();
         CONFIG.ui.rollBuilder.updateRollData();
     }
-        
+
 
     static async _willpowerBurn(event, target) {
         CONFIG.ui.rollBuilder.clearRoll(false);
@@ -583,7 +589,7 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
 
         CONFIG.ui.rollBuilder.goToRollBuilder();
 
-        await this.renderSelectedAttributes();
+        await VrylActorSheet.renderSelectedAttributes(this.element, this.document.id);
     }
 
     static async _editWillpowerPips(event, target) {
@@ -644,7 +650,7 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
         }
 
         function updateBonusDice(bonusDice) {
-            if(isNaN(bonusDice) || bonusDice == null) bonusDice = 0;
+            if (isNaN(bonusDice) || bonusDice == null) bonusDice = 0;
             const num = element.querySelector('.context-edit-willpower-pips .bonus-dice-num');
             num.innerHTML = ((bonusDice >= 0) ? "+" : "") + bonusDice;
         }
@@ -673,7 +679,7 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
                 const oldSpent = data.source.max - data.source.level;
                 data.source[prop] += change;
 
-                if(prop != 'bonusDice')
+                if (prop != 'bonusDice')
                     data.source[prop] = Math.max(Math.min(data.source[prop], 10), 0)
 
                 if (prop == 'level')
