@@ -655,7 +655,7 @@
   overflow: visible; /* Needed to display tabs off the sheet box */
 
   min-height: fit-content;
-  
+
   > .window-content {
     overflow: visible;
   }
@@ -745,4 +745,17 @@
 
 .roll-action {
   font-size: 85%;
+  padding-bottom: 0.5em;
+}
+
+.roll-action:last-child {
+  padding-bottom: 0em;
+}
+
+.roll-builder-row {
+  padding-top: 0.5em;
+}
+
+.full-width {
+  width: 100%;
 }

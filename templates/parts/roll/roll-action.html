@@ -1,33 +1,27 @@
-<div class="roll-builder-attribute roll-action flexcol flex-group-center action-name-{{action}} actor-{{actorId}}">
+<div class="roll-builder-attribute roll-action flexcol flex-group-left align-left full-width action-name-{{action}} actor-{{actorId}}">
     <!-- Narrative baseline features -->
-    {{#if (eq action "narrative-result")}}
-    <span class="flex-group-center"><i>
-        - This roll will include a narrative result.
-    </i></span>
-    {{/if}}
+    <span class="flex-group-left align-left full-width">
+        <i>- 
+            {{#if (eq action "narrative-result")}}
+            This roll will include a narrative result.
+            {{/if}}
 
+            <!-- Roll Dice modification -->
+            {{#if (eq action "no-level-zero")}}
+            No dice will be rolled at roll level zero and below.
+            {{/if}}
+            {{#if (eq action "explode-crits")}}
+            Each Crit explodes, rolling an additional die.
+            {{/if}}
 
-    <!-- Roll Dice modification -->
-    {{#if (eq action "no-level-zero")}}
-    <span class="flex-group-center"><i>
-        - No dice will be rolled at roll level zero and below.
-    </i></span>
-    {{/if}}
-    {{#if (eq action "explode-crits")}}
-    <span class="flex-group-center"><i>
-        - Each Crit explodes, rolling an additional die.
-    </i></span>
-    {{/if}}
-    
-    <!-- Willpower -->
-    {{#if (eq action "successes-regenerate-willpower")}}
-    <span class="flex-group-center"><i>
-        - Regain one Willpower for every <b>Success</b>.
-    </i></span>
-    {{/if}}
-    {{#if (eq action "failures-lose-willpower")}}
-    <span class="flex-group-center"><i>
-        - Lose one Willpower for every <b>Failure</b>.
-    </i></span>
-    {{/if}}
+            <!-- Willpower -->
+            {{#if (eq action "successes-regenerate-willpower")}}
+            Regain one Willpower for every <b>Success</b>.
+            {{/if}}
+            {{#if (eq action "failures-lose-willpower")}}
+            Lose one Willpower for every <b>Failure</b>.
+
+            {{/if}}
+        </i>
+    </span>
 </div>

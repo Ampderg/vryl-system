@@ -4,7 +4,7 @@
 		<div class="header-actions action-buttons flexrow">
 			<button type="button" class="roll-builder-print-to-chat" data-action="print">
 				<i class="fa-solid fa-paste" inert=""></i>
-				<span>Print</span>
+				<span>Send</span>
 			</button>
 			<button type="button" class="roll-builder-roll-to-chat" data-action="roll">
 				<i class="fa-solid fa-dice-d20" inert=""></i>
@@ -13,7 +13,17 @@
 		</div>
 	</header>
 	<div class="flexcol roll-builder-options">
-		<div class="flexrow roll-builder-input-fields">
+		<div class="flexrow roll-builder-row roll-builder-buttons">
+			<button type="button" data-action="open-template-actor">
+				<i class="fa-solid fa-circle-user" inert=""></i>
+				<span>Placeholder</span>
+			</button>
+			<button type="button" data-action="open-global-actions">
+				<i class="fa-solid fa-flag" inert=""></i>
+				<span>Flags</span>
+			</button>
+		</div>
+		<div class="flexrow roll-builder-row roll-builder-input-fields">
 			<b class="fitwidth" style="padding: 0 1em;"><i class="fa-solid fa-dice-d20"></i></b>
 			<div class="number-step flexrow">
 				<button type="button" onclick="CONFIG.ui.rollBuilder.adjustRollData('bonusDice', -1)">-</button>
@@ -25,7 +35,7 @@
 				<button type="button" onclick="CONFIG.ui.rollBuilder.adjustRollData('guaranteedSuccesses', 1)">+</button>
 			</div>
 		</div>
-		<div class="flexrow roll-builder-dc flex-group-center">
+		<div class="flexrow roll-builder-row roll-builder-dc flex-group-center">
 			<div class="flexrow flex-group-center">
 				<b class="fitwidth" style="padding-right:1em;">DC</b>
 				<div class="number-step flexrow">

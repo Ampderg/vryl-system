@@ -20,6 +20,9 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
             openApp: this.#openApp,
             roll: this.#roll,
             print: this.#print,
+
+            "open-template-actor": this.openTemplateActor,
+            "open-global-actions": this.openGlobalActions,
         },
     };
 
@@ -238,10 +241,13 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
         }
 
         let html = await RollSidebar.renderRoll();
-        html += `<div class="copy-roll flexrow">
+        html += `<div class="copy-roll flexcol">
         <button class="copy-roll-replace">Copy Roll <i class="fa-solid fa-copy"></i></button>
-        <button class="copy-roll-append">Append Roll <i class="fa-regular fa-plus-square"></i></button>
-        </div>`;
+        `;
+
+        html += `<button class="copy-roll-append">Append Actors to Roll <i class="fa-regular fa-plus-square"></i></button>`;
+
+        html += `</div>`;
 
         const flags = {
             vryl: {
@@ -451,7 +457,7 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
                 attribute.hasLevel = true;
                 attribute.bonusDiceString = attribute.bonusDice && attribute.bonusDice != 0 ? bonusDiceContent : "";
             }
-            if (attribute.guaranteedSuccesses > 0)
+            if (!isNaN(attribute.guaranteedSuccesses) && attribute.guaranteedSuccesses != 0)
                 attribute.hasFlat = true;
 
             const template = await foundry.applications.handlebars.renderTemplate(`systems/vryl/templates/parts/roll/roll-attribute.html`, attribute);
@@ -591,6 +597,7 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
     //#region DC
 
     static _getDiceProbability(n, successThreshold, dc, sides = 20) {
+        dc -= 1;
         // Probability of success on a single die
         const p = (sides - dc) / sides;
 
@@ -714,7 +721,7 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
 
         if (rollData.globalActions && rollData.globalActions.length > 0) {
             for (const action of rollData.globalActions) {
-                if (ROLL_ACTIONS.globalActions.preRoll.filter((a) => a.action == action.action).length > 0)
+                if (ROLL_ACTIONS.globalActions.filter((a) => a.action == action.action && a.actionType == 'preRoll').length > 0)
                     flags.push(action.action);
             }
         }
@@ -729,7 +736,7 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
             if (actorData.actions && actorData.actions.length > 0) {
                 const actor = game.actors.get(key);
                 for (const action of actorData.actions) {
-                    const actionData = ROLL_ACTIONS.actorActions.postRoll.filter((a) => a.action == action.action)[0];
+                    const actionData = ROLL_ACTIONS.actorActions.filter((a) => a.action == action.action && a.actionType == 'postRoll')[0];
                     this[actionData.functionName](actor, msg);
                 }
             }
@@ -745,6 +752,101 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
         if (newWillpower > actor._source.system.willpower.level)
             return;
         actor.update({ [`system.willpower.level`]: newWillpower });
+    }
+
+    //#region Template Actor
+
+    static async openTemplateActor(event, target) {
+
+    }
+
+    static async openGlobalActions(event, target) {
+        CONFIG.ui.rollBuilder.openActions('global');
+    }
+
+    static async openActions(actor) {
+        const actionList = actor == 'global' ? ROLL_ACTIONS.globalActions : ROLL_ACTIONS.actorActions;
+
+
+
+        let content = "";
+
+        for (const action of actionList) {
+            content += await foundry.applications.handlebars.renderTemplate(`systems/vryl/templates/parts/roll/roll-action.html`, action);
+        }
+
+        content = content.replaceAll(`flex-group-center`, `flex-group-left align-left full-width`);
+
+        const dialog = new foundry.applications.api.DialogV2({
+            window: {
+                title: "Roll Actions",
+            },
+            content: content,
+            buttons: [{
+                action: "apply",
+                label: "Apply",
+                default: true,
+                // callback: (event, button, dialog) => button.form.elements.choice.value
+            }],
+        });
+
+        let menu = await dialog.render({ force: true });
+
+        let element = menu.element;
+        element.querySelectorAll(`.form-footer`)[0].remove();
+
+        const clickable = element.querySelectorAll('.roll-action:not(.listeners_bound)');
+
+        function attributePresent(c) {
+            let activeActions;
+            if (actor == 'global') {
+                if (!CONFIG.ROLL_DATA.globalActions)
+                    CONFIG.ROLL_DATA.globalActions = [];
+                activeActions = CONFIG.ROLL_DATA.globalActions
+            }
+            else {
+                this.populateRollActor(actor);
+                const actorData = CONFIG.ROLL_DATA.rollActors.get(actor._id);
+                activeActions = actorData.action;
+            }
+
+            let clickedActionName;
+            c.classList.forEach((c) => {
+                if (c.startsWith(`action-name-`)) clickedActionName = c.replace(`action-name-`, ``);
+            })
+            return { name: clickedActionName, present: (activeActions.filter((a) => a.action == clickedActionName).length > 0) };
+        }
+
+        function onActionsUpdate() {
+            for (let c of clickable) {
+                if (attributePresent(c).present)
+                    c.classList.add('selected');
+                else
+                    c.classList.remove('selected');
+            }
+        }
+
+        for (let c of clickable) {
+            c.classList.add('clickable');
+
+            c.addEventListener('click', async (event) => {
+                const a = attributePresent(c);
+                if (a.present) {
+                    this.removeAction(a.name, actor);
+                }
+                else {
+                    this.addAction(a.name, actor);
+                }
+            });
+
+            c.classList.add('listeners_bound');
+        }
+
+        Hooks.on(`vryl-rollDataUpdated`, () => {
+            onActionsUpdate();
+        })
+
+        onActionsUpdate();
     }
 
 }
