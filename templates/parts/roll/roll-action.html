@@ -8,10 +8,10 @@
 
             <!-- Roll Dice modification -->
             {{#if (eq action "roll-level-zero")}}
-            Use Disadvantage at 0 dice.
+            <b title="When rolling 0 dice, instead roll 2 dice and suffer -1 Guaranteed Success.">"0 Dice" Rule</b>
             {{/if}}
             {{#if (eq action "explode-crits")}}
-            <b>Exploding Crits</b>
+            <b title="Every 'Crit' grants a Bonus Die.">Exploding Crits</b>
             {{/if}}
 
             <!-- Willpower -->

@@ -267,7 +267,7 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
                 attributes[k].exists = false;
             }
         });
-        
+
         system.attributes_array = Object.values(attributes);
 
 

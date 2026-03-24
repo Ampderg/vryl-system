@@ -308,11 +308,9 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
             const attributesArray = Object.entries(actor.system.attributes);
             for (const a of rollActor.attributes) {
                 const filtered = attributesArray.filter((b) => b[0] == a.dataName);
-                if(filtered && filtered.length > 0)
-                {
+                if (filtered && filtered.length > 0) {
                     const attributeData = Object.entries(filtered[0][1]);
-                    for(const d of attributeData)
-                    {
+                    for (const d of attributeData) {
                         a[d[0]] = d[1];
                     }
                     CONFIG.ui.rollBuilder.selectAttribute(actor, a);
@@ -393,9 +391,8 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
     }
     static populateDefaultAttributeFromDataName(attribute, dataName) {
         const defaults = Object.entries(this.getDefaultAttributeFromDataName(dataName));
-        for(const d of defaults)
-        {
-            if(!attribute[d[0]])
+        for (const d of defaults) {
+            if (!attribute[d[0]])
                 attribute[d[0]] = d[1];
         }
     }
@@ -512,9 +509,13 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
 
             let content = "";
             const bonusDiceContent = ` ${attribute.bonusDice > 0 ? "+" : "-"} ${Math.abs(attribute.bonusDice)}`;
-            attribute.combinedLevel = attribute.level ?? 0;
+            attribute.combinedLevelWithoutBonus = attribute.level ?? 0;
             if (attribute.heroicLevel && !isNaN(attribute.heroicLevel))
-                attribute.combinedLevel += attribute.heroicLevel;
+                attribute.combinedLevelWithoutBonus += attribute.heroicLevel;
+
+            attribute.combinedLevel = attribute.combinedLevelWithoutBonus;
+            if (attribute.bonusDice && !isNaN(attribute.bonusDice))
+                attribute.combinedLevel += attribute.bonusDice;
 
             attribute.actorId = actorId;
             attribute.dataName = attribute.dataName;
@@ -855,13 +856,21 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
                 title: 'Template Character Sheet' // Just the localization key
             },
             content: content,
+            form: {
+                submitOnClose: true,
+            },
             buttons: [{
                 action: "apply",
                 label: "Apply",
                 default: true,
-                // callback: (event, button, dialog) => button.form.elements.choice.value
-            }],
+            }]
         });
+
+        const windowHooks = [];
+        dialog.addEventListener('close', () => {
+            for (const hook of windowHooks)
+                Hooks.off(hook.name, hook.id);
+        })
 
         let menu = await dialog.render({ force: true });
         menu.setPosition({ left: rect.left - menu.element.getBoundingClientRect().width, top: rect.bottom - menu.element.getBoundingClientRect().height });
@@ -871,9 +880,12 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
 
         VrylActorSheet.renderSelectedAttributes(element, data.id);
 
-        Hooks.on(`vryl-rollDataUpdated`, () => {
-            console.log("Roll data updated for actor: " + data.id);
-            VrylActorSheet.renderSelectedAttributes(element, data.id);
+        windowHooks.push({
+            name: `vryl-rollDataUpdated`,
+            id: Hooks.on(`vryl-rollDataUpdated`, () => {
+                console.log("Roll data updated for actor: " + data.id);
+                VrylActorSheet.renderSelectedAttributes(element, data.id);
+            })
         });
 
         async function clickAttribute(target) {
@@ -895,6 +907,8 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
 
             c.classList.add('listeners_bound');
         }
+
+
     }
 
     //#region Actions Menu
@@ -930,6 +944,12 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
                 // callback: (event, button, dialog) => button.form.elements.choice.value
             }],
         });
+
+        const windowHooks = [];
+        dialog.addEventListener('close', () => {
+            for (const hook of windowHooks)
+                Hooks.off(hook.name, hook.id);
+        })
 
         let menu = await dialog.render({ force: true });
         menu.setPosition({ left: rect.left - menu.element.getBoundingClientRect().width, top: rect.bottom - menu.element.getBoundingClientRect().height });
@@ -984,9 +1004,13 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
             c.classList.add('listeners_bound');
         }
 
-        Hooks.on(`vryl-rollDataUpdated`, () => {
-            onActionsUpdate();
-        })
+        windowHooks.push({
+            name: `vryl-rollDataUpdated`,
+            id: Hooks.on(`vryl-rollDataUpdated`, () => {
+                            onActionsUpdate();
+
+            })
+        });
 
         onActionsUpdate();
     }
