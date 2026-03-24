@@ -760,6 +760,8 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
 
     }
 
+    //#region Actions Menu
+
     static async openGlobalActions(event, target) {
         CONFIG.ui.rollBuilder.openActions('global');
     }
@@ -777,6 +779,9 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
 
         content = content.replaceAll(`flex-group-center`, `flex-group-left align-left full-width`);
 
+        const sidebarElement = document.querySelector(`aside#sidebar`);
+        const rect = sidebarElement.getBoundingClientRect();
+
         const dialog = new foundry.applications.api.DialogV2({
             window: {
                 title: "Roll Actions",
@@ -791,6 +796,7 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
         });
 
         let menu = await dialog.render({ force: true });
+        menu.setPosition({left: rect.left - menu.element.getBoundingClientRect().width, top: rect.bottom - menu.element.getBoundingClientRect().height});
 
         let element = menu.element;
         element.querySelectorAll(`.form-footer`)[0].remove();
