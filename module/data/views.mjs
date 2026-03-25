@@ -147,7 +147,7 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
 
         // Prepare character data and items.
         if (context.actor.type == 'character') {
-            // this._prepareItems(context);
+            this._prepareItems(context);
             this._prepareCharacterData(context);
         }
 
@@ -223,10 +223,10 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
         const gear = [];
 
         // Iterate through items, allocating to containers
-        for (let i of context.items) {
+        for (let i of context.document.items) {
             i.img = i.img || DEFAULT_TOKEN;
             if (i.type === 'combatAbility') {
-                gear.push(i);
+                tacticalActions.push(i);
             }
             else if (i.type === 'status') {
                 statuses.push(i);
@@ -390,7 +390,7 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
         let data = {
             attribute: this.document.system.attributes[target.id],
             source: structuredClone(this.document._source.system.attributes[target.id]),
-            max_level: game.settings.get(CONFIG.SystemId, 'attribute-max-level'),
+            maxLevel: game.settings.get(CONFIG.SystemId, 'attribute-max-level'),
         };
 
         const path = `systems/vryl/templates/menus/context-edit-attribute-pips.html`;
@@ -580,7 +580,7 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
         let data = {
             attribute: this.document.system.willpower,
             source: structuredClone(this.document._source.system.willpower),
-            max_level: game.settings.get(CONFIG.SystemId, 'max-willpower'),
+            maxLevel: game.settings.get(CONFIG.SystemId, 'max-willpower'),
         };
 
         const path = `systems/vryl/templates/menus/context-edit-willpower-pips.html`;
@@ -716,7 +716,7 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
     }
 
     //#region Active Effects
-
+    
     /**
    * Renders an embedded document's sheet
    *

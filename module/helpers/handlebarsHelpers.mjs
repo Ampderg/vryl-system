@@ -81,27 +81,27 @@ export class VrylHandlebarsHelpers {
         //#endregion
         
         //#region Comparison
-        Handlebars.registerHelper('lt', function (a, b) {
-            var next = arguments[arguments.length - 1];
-            return (a < b) ? next.fn(this) : next.inverse(this);
-        });
-        Handlebars.registerHelper('lte', function (a, b) {
-            var next = arguments[arguments.length - 1];
-            return (a <= b) ? next.fn(this) : next.inverse(this);
-        });
-        Handlebars.registerHelper('gt', function (a, b) {
-            var next = arguments[arguments.length - 1];
-            return (a > b) ? next.fn(this) : next.inverse(this);
-        });
-        Handlebars.registerHelper('gte', function (a, b) {
-            var next = arguments[arguments.length - 1];
-            return (a >= b) ? next.fn(this) : next.inverse(this);
-        });
-        Handlebars.registerHelper('ne', function (a, b) {
-            var next = arguments[arguments.length - 1];
-            let result = a != b;
-            return result ? next.fn(this) : next.inverse(this);
-        });
+        // Handlebars.registerHelper('lt', function (a, b) {
+        //     var next = arguments[arguments.length - 1];
+        //     return (a < b) ? next.fn(this) : next.inverse(this);
+        // });
+        // Handlebars.registerHelper('lte', function (a, b) {
+        //     var next = arguments[arguments.length - 1];
+        //     return (a <= b) ? next.fn(this) : next.inverse(this);
+        // });
+        // Handlebars.registerHelper('gt', function (a, b) {
+        //     var next = arguments[arguments.length - 1];
+        //     return (a > b) ? next.fn(this) : next.inverse(this);
+        // });
+        // Handlebars.registerHelper('gte', function (a, b) {
+        //     var next = arguments[arguments.length - 1];
+        //     return (a >= b) ? next.fn(this) : next.inverse(this);
+        // });
+        // Handlebars.registerHelper('ne', function (a, b) {
+        //     var next = arguments[arguments.length - 1];
+        //     let result = a != b;
+        //     return result ? next.fn(this) : next.inverse(this);
+        // });
 
         Handlebars.registerHelper('nenull', function (a, b) {
             var next = arguments[arguments.length - 1];

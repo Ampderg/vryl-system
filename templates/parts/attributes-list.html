@@ -21,15 +21,15 @@
                     <span data-action="edit-attribute-pips" id="{{dataName}}"
                         class="fitwidth fitflex attribute-level clickable edit-attribute-pips attribute-list">
                         {{#for 0 ../../../system.maxLevel 1}}
-                        {{#lt index ../this.combinedHeroicLevel}}
+                        {{#if (lt index ../this.combinedHeroicLevel)}}
                         <i class="fa-solid fa-plus-circle attribute-level-pip"></i>
                         {{else}}
-                        {{#lt index ../this.combinedLevel}}
+                        {{#if (lt index ../this.combinedLevel)}}
                         <i class="fa-solid fa-circle attribute-level-pip"></i>
                         {{else}}
                         <i class="fa-regular fa-circle attribute-level-pip"></i>
-                        {{/lt}}
-                        {{/lt}}
+                        {{/if}}
+                        {{/if}}
                         {{/for}}
                         {{#nenull this.bonusDice 0}}
                         <span class="align-center" style="position:relative; font-size: 8px;"><i

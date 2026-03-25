@@ -7,17 +7,17 @@
         {{{tooltip}}}
         <h4 class="dice-total">
             {{total}}
-            {{#gt crits 0}}
+            {{#if (gt crits 0)}}
             <span
                 style="position: absolute; top: 11%; right: 10px; font-size: 80%; height: 100%; align-items: center;"><i>{{crits}}
-                    Crit{{#gt crits 1}}s{{/gt}}!!</i></span>
-            {{/gt}}
+                    Crit{{#if (gt crits 1}}s{{/if}}!!</i></span>
+            {{/if}}
         </h4>
         {{../type}}
         {{#if flags.vryl.narrativeResult}}
-        {{#lte total 0}}
+        {{#if (lte total 0)}}
         <b>Failure</b>, with a <b>Twist</b> to be the worst possible result.
-        {{/lte}}
+        {{/if}}
         {{#if (eq total 1)}}
         <b>Failure</b>, but your efforts result in something else happening.
         {{/if}}
@@ -27,9 +27,9 @@
         {{#if (eq total 3)}}
         <b>Success</b>. You achieve your goal without complication.
         {{/if}}
-        {{#gte total 4}}
+        {{#if (gte total 4)}}
         <b>Success</b>, with a <b>Boon</b> to be the best possible result.
-        {{/gte}}
+        {{/if}}
         {{/if}}
     </div>
 </div>

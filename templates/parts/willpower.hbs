@@ -2,30 +2,30 @@
           <b class="flex-group-center clickable willpower-roll" title="Roll Willpower" data-action="willpowerRoll">Willpower</b>
           <div class="willpower-pips flex-group-center clickable" data-action="edit-willpower-pips">
             {{#for 0 system.maxWillpower 1}}
-            {{#lt index ../system.willpower.bonusDice}}
-            {{#lt index ../system.willpower.level}}
+            {{#if (lt index ../system.willpower.bonusDice)}}
+            {{#if (lt index ../system.willpower.level)}}
             <i id="{{index}}" class="fa-solid fa-plus-circle context-edit-willpower-pips attribute-level-pip-large"></i>
             {{else}}
-            {{#lt index ../system.willpower.max}}
+            {{#if (lt index ../system.willpower.max)}}
             <i id="{{index}}"
               class="fa-solid fa-circle-dot context-edit-willpower-pips attribute-level-pip-large"></i>
             {{else}}
             <i id="{{index}}"
               class="fa-regular fa-plus-circle context-edit-willpower-pips attribute-level-pip-large"></i>
-            {{/lt}}
-            {{/lt}}
+            {{/if}}
+            {{/if}}
             {{else}}
-            {{#lt index ../system.willpower.level}}
+            {{#if (lt index ../system.willpower.level)}}
             <i id="{{index}}" class="fa-solid fa-circle context-edit-willpower-pips attribute-level-pip-large"></i>
             {{else}}
-            {{#lt index ../system.willpower.max}}
+            {{#if (lt index ../system.willpower.max)}}
             <i id="{{index}}"
               class="fa-regular fa-circle-dot context-edit-willpower-pips attribute-level-pip-large"></i>
             {{else}}
             <i id="{{index}}" class="fa-regular fa-circle context-edit-willpower-pips attribute-level-pip-large"></i>
-            {{/lt}}
-            {{/lt}}
-            {{/lt}}
+            {{/if}}
+            {{/if}}
+            {{/if}}
             {{/for}}
             {{#nenull system.willpower.bonusDice 0}}
             <span class="align-center" style="position:relative; font-size: 8px;"><i

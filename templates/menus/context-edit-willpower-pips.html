@@ -2,16 +2,16 @@
     <b class="flex-group-center">Willpower</b>
     <div id="willpower" class="flex-group-center context-edit-willpower-pips">
             {{#for 0 maxLevel 1}}
-            {{#lt index ../attribute.level}}
+            {{#if (lt index ../attribute.level)}}
             <i id="{{index}}" class="fa-solid fa-circle context-edit-willpower-pips attribute-level-pip-large"></i>
             {{else}}
-            {{#lt index ../attribute.max}}
+            {{#if (lt index ../attribute.max)}}
             <i id="{{index}}"
                 class="fa-regular fa-circle-dot context-edit-willpower-pips attribute-level-pip-large"></i>
             {{else}}
             <i id="{{index}}" class="fa-regular fa-circle context-edit-willpower-pips attribute-level-pip-large"></i>
-            {{/lt}}
-            {{/lt}}
+            {{/if}}
+            {{/if}}
             {{/for}}
     </div>
     <div class="flexcol">
