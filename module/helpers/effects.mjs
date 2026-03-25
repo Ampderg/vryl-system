@@ -6,27 +6,33 @@
 export function prepareActiveEffectCategories(effects) {
   // Define effect header categories
   const categories = {
-    temporary: {
-      type: 'temporary',
-      label: game.i18n.localize('VRYL.Effect.Temporary'),
+    // temporary: {
+    //   type: 'temporary',
+    //   label: game.i18n.localize('VRYL.Effect.Temporary'),
+    //   effects: [],
+    // },
+    instant: {
+      type: 'instant',
+      label: "Instant",
       effects: [],
     },
     passive: {
       type: 'passive',
-      label: game.i18n.localize('VRYL.Effect.Passive'),
+      label: "Passive",
       effects: [],
     },
-    inactive: {
-      type: 'inactive',
-      label: game.i18n.localize('VRYL.Effect.Inactive'),
-      effects: [],
-    },
+    // inactive: {
+    //   type: 'inactive',
+    //   label: game.i18n.localize('VRYL.Effect.Inactive'),
+    //   effects: [],
+    // },
   };
 
   // Iterate over active effects, classifying them into categories
   for (const e of effects) {
-    if (e.disabled) categories.inactive.effects.push(e);
-    else if (e.isTemporary) categories.temporary.effects.push(e);
+    //if (e.disabled) categories.inactive.effects.push(e);
+    if (e.getFlag(CONFIG.SystemId, `isInstant`)) categories.instant.effects.push(e);
+    //else if (e.isTemporary) categories.temporary.effects.push(e);
     else categories.passive.effects.push(e);
   }
 

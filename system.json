@@ -22,10 +22,10 @@
         }
     },
     "Item": {
-        "item": {
+        "gear": {
             "htmlFields": ["description"]
         },
-        "status": {
+        "aspect": {
             "htmlFields": ["description"]
         },
         "combatAbility": {

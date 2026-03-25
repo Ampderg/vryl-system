@@ -84,32 +84,149 @@ export class VrylActor extends Actor {
     }
     //#endregion
 
+    //#region Items
+    /**
+   * Organize and classify Items for Actor sheets.
+   *
+   * @param {object} context The context object to mutate
+   */
+    _prepareItems(context) {
+        // Initialize containers.
+        // You can just use `this.document.itemTypes` instead
+        // if you don't need to subdivide a given type like
+        // this sheet does with spells
+        const gear = [];
+
+        // Iterate through items, allocating to containers
+        for (let i of this.document.items) {
+            // Append to gear.
+            if (i.type === 'item') {
+                gear.push(i);
+            }
+            // Append to features.
+            else if (i.type === 'feature') {
+                features.push(i);
+            }
+            // Append to spells.
+            else if (i.type === 'spell') {
+                if (i.system.spellLevel != undefined) {
+                    spells[i.system.spellLevel].push(i);
+                }
+            }
+        }
+
+        for (const s of Object.values(spells)) {
+            s.sort((a, b) => (a.sort || 0) - (b.sort || 0));
+        }
+
+        // Sort then assign
+        context.gear = gear.sort((a, b) => (a.sort || 0) - (b.sort || 0));
+        context.features = features.sort((a, b) => (a.sort || 0) - (b.sort || 0));
+        context.spells = spells;
+    }
+
     //#region Update
     async update(data = {}, operation = {}) {
         await super.update(data, operation);
 
+        this._updateRollActorData();
+        //this.prepareDerivedData();
+    }
+
+    _updateRollActorData() {
         const actorData = CONFIG.ROLL_DATA.rollActors.get(this.id);
-        if(actorData)
-        {
-            if(actorData.willpower)
-            {
-                if(!isNaN(actorData.willpower.level))
-                    actorData.willpower.level = this.system.willpower.level;
-                if(!isNaN(actorData.willpower.bonusDice))
-                    actorData.willpower.bonusDice = this.system.willpower.bonusDice;
-                if(!isNaN(actorData.willpower.guaranteedSuccesses))
-                    actorData.willpower.guaranteedSuccesses = this.system.willpower.guaranteedSuccesses;
+
+        function updateLevels(attributeData, realAttribute) {
+            if (!isNaN(attributeData.level))
+                attributeData.level = realAttribute.level;
+            if (!isNaN(attributeData.bonusDice))
+                attributeData.bonusDice = realAttribute.bonusDice;
+            if (!isNaN(attributeData.guaranteedSuccesses))
+                attributeData.guaranteedSuccesses = realAttribute.guaranteedSuccesses;
+        }
+
+        if (actorData) {
+            if (actorData.willpower) {
+                updateLevels(actorData.willpower, this.system.willpower);
             }
-            for(let i = 0; i < actorData.attributes.length; i++)
-            {
-                actorData.attributes[i] = this.system.attributes[actorData.attributes[i].dataName];
+            for (const a of actorData.attributes) {
+                updateLevels(a, this.system.attributes[a.dataName]);
             }
             CONFIG.ui.rollBuilder.updateRollData();
         }
-        //this.prepareDerivedData();
+    }
+
+    applyActiveEffects() {
+        const overrides = {};
+        this.statuses.clear();
+
+        // Organize non-disabled effects by their application priority
+        const changes = [];
+        const applicableEffects = this.allApplicableEffects().filter((effect) => {
+            if (effect.getFlag(CONFIG.SystemId, `isInstant`)) {
+                return effect.getFlag(CONFIG.SystemId, `isInstantApplied`)
+            }
+            return true;
+        });
+
+        for (const effect of applicableEffects) {
+            if (!effect.active) continue;
+            changes.push(...effect.changes.map(change => {
+                const c = foundry.utils.deepClone(change);
+                c.effect = effect;
+                c.priority = c.priority ?? (c.mode * 10);
+                return c;
+            }));
+            for (const statusId of effect.statuses) this.statuses.add(statusId);
+        }
+        changes.sort((a, b) => a.priority - b.priority);
+
+        // Apply all changes
+        for (const change of changes) {
+            if (!change.key) continue;
+            const changes = change.effect.apply(this, change);
+            Object.assign(overrides, changes);
+        }
+
+        // Expand the set of final overrides
+        this.overrides = foundry.utils.expandObject(overrides);
+
+        this._updateRollActorData();
     }
 }
 
+//#region Item
+
 export class VrylItem extends Item {
+
+    getRollData() {
+        // Starts off by populating the roll data with a shallow copy of `this.system`
+        const rollData = { ...this.system };
+
+        // Quit early if there's no parent actor
+        if (!this.actor) return rollData;
+
+        // If present, add the actor's roll data
+        rollData.actor = this.actor.getRollData();
+
+        return rollData;
+    }
+
+    prepareDerivedData() {
+        const itemData = this;
+        const systemData = itemData.system;
+        const flags = itemData.flags.vryl || {};
+
+        console.log("Preparing derived data for " + itemData.name);
+
+        this._prepareInventoryItemData(itemData);
+
+        this.system = systemData;
+        this.flags.vryl = flags;
+    }
+
+    _prepareInventoryItemData(itemData) {
+
+    }
 
 }

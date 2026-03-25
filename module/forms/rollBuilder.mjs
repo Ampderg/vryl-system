@@ -525,8 +525,13 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
                 attribute.hasLevel = true;
                 attribute.bonusDiceString = attribute.bonusDice && attribute.bonusDice != 0 ? bonusDiceContent : "";
             }
+            else
+                attribute.hasLevel = false;
+
             if (!isNaN(attribute.guaranteedSuccesses) && attribute.guaranteedSuccesses != 0)
                 attribute.hasFlat = true;
+            else
+                attribute.hasFlat = false;
 
             const template = await foundry.applications.handlebars.renderTemplate(`systems/vryl/templates/parts/roll/roll-attribute.html`, attribute);
             content += template;
@@ -576,8 +581,6 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
                 ${actorContent}
                 </div></div>`;
             }
-
-
         }
 
         //Global content
@@ -602,10 +605,6 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
             }
         }
 
-        if (CONFIG.ROLL_DATA.targetGroupSize != undefined) {
-
-        }
-
         if (globalContent != "") {
             content += `
             <div class="roll-builder-actor global"><div class="roll-builder-actor-inner">
@@ -625,9 +624,12 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
 
     static async clearRoll(replaceWithDefault = true) {
         console.log("Clearing roll data...");
+
+        this._clearInstantEffects();
         CONFIG.ROLL_DATA = {};
         CONFIG.ROLL_DATA.rollActors = new Map();
         CONFIG.ROLL_DATA.globalActions = [];
+        CONFIG.ROLL_DATA.rollItemEffects = []
 
         let allSelected = document.querySelectorAll(`.selected.attribute-name`);
         for (let a of allSelected) {
@@ -1090,6 +1092,19 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
         });
 
         onActionsUpdate();
+    }
+
+    //#region Active Effects
+
+    static _clearInstantEffects() {
+        for(const [key, value] of CONFIG.ROLL_DATA.rollActors)
+        {
+            for(const effect of value.actor.appliedEffects)
+            {
+                if(effect.getFlag(CONFIG.SystemId, `isInstant`))
+                    effect.setFlag(CONFIG.SystemId, `isInstantApplied`, false);
+            }
+        }
     }
 
 }

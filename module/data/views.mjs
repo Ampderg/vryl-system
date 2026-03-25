@@ -40,6 +40,8 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
             "willpowerRoll": this._willpowerRoll,
             "edit-willpower-pips": this._editWillpowerPips,
 
+            toggleInstantEffect: this._toggleInstantEffect,
+
         },
         // Custom property that's merged into `this.options`
         // dragDrop: [{ dragSelector: '.draggable', dropSelector: null }],
@@ -97,8 +99,11 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
         attribute: {
             template: `systems/vryl/templates/actor/attributes.html`
         },
+        inventory: {
+            template: `systems/vryl/templates/actor/inventory.html`
+        },
         effects: {
-            template: `systems/vryl/templates/parts/effects.html`
+            template: `systems/vryl/templates/parts/effects.hbs`
         },
     }
 
@@ -215,26 +220,26 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
         // Initialize containers.
         const tacticalActions = [];
         const statuses = [];
-        const items = [];
+        const gear = [];
 
         // Iterate through items, allocating to containers
         for (let i of context.items) {
             i.img = i.img || DEFAULT_TOKEN;
-            if (i.type === 'tactical_action') {
+            if (i.type === 'combatAbility') {
                 gear.push(i);
             }
             else if (i.type === 'status') {
                 statuses.push(i);
             }
-            else if (i.type === 'item') {
-                items.push(i);
+            else if (i.type === 'gear') {
+                gear.push(i);
             }
         }
 
         // Assign and return
         context.tacticalActions = tacticalActions;
         context.statuses = statuses;
-        context.items = items;
+        context.gear = gear;
     }
 
     /**
@@ -286,35 +291,6 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
             a.combinedLevel = Math.min(Math.max(combinedLevel, 0), 5);
             a.combinedHeroicLevel = Math.min(Math.max(combinedLevel - 5, 0), 5);
         }
-    }
-
-    prepareActiveEffectCategories(effects) {
-        // Define effect header categories
-        const categories = {
-            temporary: {
-                type: 'temporary',
-                label: game.i18n.localize('VRYL.Effect.Temporary'),
-                effects: [],
-            },
-            passive: {
-                type: 'passive',
-                label: game.i18n.localize('VRYL.Effect.Passive'),
-                effects: [],
-            },
-            inactive: {
-                type: 'inactive',
-                label: game.i18n.localize('VRYL.Effect.Inactive'),
-                effects: [],
-            },
-        };
-
-        // Iterate over active effects, classifying them into categories
-        for (let e of effects) {
-            if (e.disabled) categories.inactive.effects.push(e);
-            else if (e.isTemporary) categories.temporary.effects.push(e);
-            else categories.passive.effects.push(e);
-        }
-        return categories;
     }
 
     //#endregion
@@ -786,18 +762,35 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
                 parent: this.actor,
             }),
         };
+
+        const flags = {
+        };
+
         // Loop through the dataset and add it to our docData
         for (const [dataKey, value] of Object.entries(target.dataset)) {
-            // These data attributes are reserved for the action handling
-            if (['action', 'documentClass'].includes(dataKey)) continue;
-            // Nested properties require dot notation in the HTML, e.g. anything with `system`
-            // An example exists in spells.hbs, with `data-system.spell-level`
-            // which turns into the dataKey 'system.spellLevel'
-            foundry.utils.setProperty(docData, dataKey, value);
+            if(dataKey.startsWith("vrylFlags"))
+            {
+                const flagKey = dataKey.replace("vrylFlags.", "");
+                flags[flagKey] = value;
+            }
+            else
+            {
+                // These data attributes are reserved for the action handling
+                if (['action', 'documentClass'].includes(dataKey)) continue;
+                // Nested properties require dot notation in the HTML, e.g. anything with `system`
+                // An example exists in spells.hbs, with `data-system.spell-level`
+                // which turns into the dataKey 'system.spellLevel'
+                foundry.utils.setProperty(docData, dataKey, value);
+            }
         }
 
         // Finally, create the embedded document!
-        await docCls.create(docData, { parent: this.actor });
+        const embDoc = await docCls.create(docData, { parent: this.actor });
+
+        for(const flag of Object.entries(flags))
+        {
+            embDoc.setFlag(CONFIG.SystemId, flag[0], flag[1]);
+        }
     }
 
     /**
@@ -811,6 +804,12 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
     static async _toggleEffect(event, target) {
         const effect = this._getEmbeddedDocument(target);
         await effect.update({ disabled: !effect.disabled });
+    }
+
+    static async _toggleInstantEffect(event, target) {
+        const effect = this._getEmbeddedDocument(target);
+        const isApplied = effect.getFlag(CONFIG.SystemId, `isInstantApplied`);
+        effect.setFlag(CONFIG.SystemId, `isInstantApplied`, !isApplied);
     }
 }
 

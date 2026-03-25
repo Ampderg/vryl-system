@@ -1,6 +1,7 @@
 import { VrylActor, VrylItem } from "./data/controllers.mjs";
 import { VrylActorSheet } from "./data/views.mjs";
-import { CharacterActorDataModel } from "./data/models.mjs";
+import { CharacterActorDataModel, VrylInventoryItem } from "./data/models.mjs";
+import "./data/active-effect.mjs";
 import { RollSidebar } from "./forms/rollBuilder.mjs";
 import { AttributeRoll } from "./helpers/vrylRoll.mjs";
 
@@ -42,6 +43,13 @@ Hooks.once("init", () => {
     character: CharacterActorDataModel
   };
 
+  CONFIG.Item.documentClass = VrylItem;
+  CONFIG.Item.dataModels = {
+    gear: VrylInventoryItem,
+    //aspect
+    //tactical ability
+  };
+
   // Register sheet application classes
   collections.Actors.unregisterSheet('core', sheets.ActorSheet);
   collections.Actors.registerSheet('vryl', VrylActorSheet, {
@@ -49,17 +57,13 @@ Hooks.once("init", () => {
     label: 'VRYL.SheetLabels.Actor',
   });
 
+  //#region Register Effects
 
   // Active Effects are never copied to the Actor,
   // but will still apply to the Actor from within the Item
   // if the transfer property on the Active Effect is true.
   CONFIG.ActiveEffect.legacyTransferral = false;
 
-
-  // CONFIG.Item.dataModels = {
-  //   weapon: WeaponDataModel,
-  //   spell: SpellDataModel
-  // };
 
   // Configure trackable attributes.
   // CONFIG.Actor.trackableAttributes = {
@@ -68,6 +72,8 @@ Hooks.once("init", () => {
   //     value: ["progress"]
   //   }
   // };
+
+  //#region Register Tabs
 
   // Art sidebar tab
   CONFIG.ui.sidebar.TABS.rollBuilder = {
@@ -78,6 +84,7 @@ Hooks.once("init", () => {
   CONFIG.ui.rollBuilder = RollSidebar;
   CONFIG.ROLL_DATA = {
     rollActors: new Map(),
+    rollItemEffects: [],
     bonusDice: 0,
     guaranteedSuccesses: 0,
   };

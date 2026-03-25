@@ -120,6 +120,10 @@ export class VrylHandlebarsHelpers {
             attributesList: "systems/vryl/templates/parts/attributes-list.html",
             willpower: "systems/vryl/templates/parts/willpower.hbs",
             xp: "systems/vryl/templates/parts/xp.hbs",
+
+            equipmentSlots: "systems/vryl/templates/parts/items/equipmentSlots.hbs",
+            equipmentLoadouts: "systems/vryl/templates/parts/items/equipmentLoadouts.hbs",
+            inventory: "systems/vryl/templates/parts/items/inventory.hbs",
         });
     }
 }
