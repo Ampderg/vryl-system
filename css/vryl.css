@@ -860,3 +860,9 @@
 .header-left-tab:hover .profile-img-buttons {
   display: inherit;
 }
+
+.equipment-slot {
+  > * {
+    margin: 0 0.5em;
+  }
+}

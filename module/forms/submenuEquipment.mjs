@@ -28,7 +28,6 @@ export class SubmenuEquipment extends HandlebarsApplicationMixin(ApplicationV2) 
     form: {
       handler: SubmenuEquipment.#onSubmitForm,
       closeOnSubmit: true,
-      submitOnChange: true
     },
     actions: {
       addSlot: this._addSlot,
@@ -53,20 +52,21 @@ export class SubmenuEquipment extends HandlebarsApplicationMixin(ApplicationV2) 
 
 
   static async #onSubmitForm(event, form, formData) {
-    for(const slot of this.equipmentSlots)
-    {
-      slot.slotName = form.querySelector(`#slotName[name="${slot.id}"]`).value;
-      slot.slotSlots = parseInt(form.querySelector(`#slotSlots[name="${slot.id}"]`).value);
+    this._update();
+  }
+
+  async _update() {
+    for (const slot of this.equipmentSlots) {
+      slot.slotName = this.element.querySelector(`#slotName[name="${slot.id}"]`).value;
+      slot.slotSlots = parseInt(this.element.querySelector(`#slotSlots[name="${slot.id}"]`).value);
     }
     game.settings.set(CONFIG.SystemId, 'equipment-slots', this.equipmentSlots);
   }
 
-  getNextId()
-  {
+  getNextId() {
     let max = 0;
-    for(const slot in this.equipmentSlots)
-    {
-      if(slot.id > max)
+    for (const slot of this.equipmentSlots) {
+      if (slot.id > max)
         max = slot.id;
     }
     return max + 1;
@@ -78,22 +78,22 @@ export class SubmenuEquipment extends HandlebarsApplicationMixin(ApplicationV2) 
       slotSlots: 1,
       id: this.getNextId(),
     })
-    
-    game.settings.set(CONFIG.SystemId, 'equipment-slots', this.equipmentSlots);
+
+    this._update();
 
     this.render(true);
   }
 
   static async _removeSlot(event, target) {
-    
-    const index = this.equipmentSlots.findIndex((a) => a.id == event.data.slot);
+
+    const index = this.equipmentSlots.findIndex((a) => a.id == target.dataset.slot);
 
     if (index > -1) {
-        this.equipmentSlots.splice(index, 1); // 2nd parameter means remove one item only
+      this.equipmentSlots.splice(index, 1); // 2nd parameter means remove one item only
 
-        game.settings.set(CONFIG.SystemId, 'equipment-slots', equipmentSlots);
+      this._update();
 
-    this.render(true);
+      this.render(true);
     }
 
   }

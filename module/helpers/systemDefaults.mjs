@@ -18,7 +18,7 @@ DEFAULTS.equipmentSlots = [
     },
     {
         slotName: "Trinkets",
-        slotSlots: 4,
+        slotSlots: 3,
         id: 3,
     },
 ]
