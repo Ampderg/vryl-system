@@ -90,7 +90,7 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
     static async updateRollData() {
         const containers = document.querySelectorAll(".roll-builder-attribute-container");
         containers.forEach(async (container) => {
-            container.innerHTML = await CONFIG.ui.rollBuilder.renderRollAttributes();
+            container.innerHTML = await CONFIG.ui.rollBuilder.renderRollAttributes(null, true);
             let attributeElements = container.querySelectorAll(`.roll-builder-attribute`);
             for (let element of attributeElements) {
                 element.classList.add("attribute-deletable");
@@ -490,11 +490,11 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
 
     //#region Attribute Rendering
 
-    static async renderRoll(rollData) {
-        return (await this.renderRollAttributes(rollData)) + (await this.renderRollOptions(rollData));
+    static async renderRoll(rollData, inSidebar = false) {
+        return (await this.renderRollAttributes(rollData, inSidebar)) + (await this.renderRollOptions(rollData, inSidebar));
     }
 
-    static async renderRollAttributes(rollData) {
+    static async renderRollAttributes(rollData, inSidebar = false) {
         let content = "";
         const rollActors = CONFIG.ROLL_DATA.rollActors;
         const attributeCategories = game.settings.get(CONFIG.SystemId, 'attribute-categories');
@@ -543,6 +543,24 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
             return template;
         }
 
+        async function renderItemEffects(actorId) {
+            const actorItems = CONFIG.ROLL_DATA.rollItemEffects.filter((a) => a.actor == actorId);
+            actorItems.push({
+                name: "Test",
+                isApplied: false,
+            });
+            
+            let content = "";
+
+            for(const item of actorItems)
+            {
+                if(item.isApplied || inSidebar)
+                    content += await foundry.applications.handlebars.renderTemplate(`systems/vryl/templates/parts/roll/roll-usePrompt.html`, item);
+            }
+
+            return content;
+        }
+
         for (const [key, actorData] of rollActors) {
             let actorContent = "";
             //Render attributes
@@ -572,6 +590,8 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
                     actorContent += await renderAction(action);
                 }
             }
+
+            actorContent += await renderItemEffects(key);
 
             //Combine all renderings
             if (actorContent != "") {
@@ -616,7 +636,7 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
         return content;
     }
 
-    static async renderRollOptions(rollData) {
+    static async renderRollOptions(rollData, inSidebar = false) {
         return await foundry.applications.handlebars.renderTemplate(`systems/vryl/templates/parts/roll/roll-options.html`, rollData);
     }
 
@@ -625,7 +645,7 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
     static async clearRoll(replaceWithDefault = true) {
         console.log("Clearing roll data...");
 
-        this._clearInstantEffects();
+        CONFIG.ui.rollBuilder._clearInstantEffects();
         CONFIG.ROLL_DATA = {};
         CONFIG.ROLL_DATA.rollActors = new Map();
         CONFIG.ROLL_DATA.globalActions = [];

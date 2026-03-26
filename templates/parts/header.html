@@ -1,14 +1,17 @@
 <header class='sheet-header min-fit'>
   <div class="header-left-tab">
     <div>
-      <img class='profile-img' src='{{actor.img}}' data-tooltip='{{actor.name}}' height='150' width='150' />
+      <img class='profile-img' src='{{img}}' data-tooltip='{{name}}' height='150' width='150' />
       <div class="profile-img-buttons">
         <button type="button" data-edit='img' data-action='onEditImage'><i class="fa-solid fa-file-image"></i></button>
       </div>
     </div>
+    {{#if actor.inCombat}}
+    cool bars go here
+    {{/if}}
   </div>
   <div class='header-fields'>
     <div class='document-name flexcol'>
-      <input name='name' type='text' value='{{actor.name}}' placeholder='Name' />
+      <input name='name' type='text' value='{{name}}' placeholder='Name' />
     </div>
 </header>

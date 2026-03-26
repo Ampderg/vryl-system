@@ -10,6 +10,14 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
             console.log("Roll data updated for actor: " + this.document.id);
             VrylActorSheet.renderSelectedAttributes(this.element, this.document.id);
         });
+
+        Hooks.on("combatStart", (combat) => {
+            this.render();
+        });
+
+        Hooks.on("deleteCombat", (combat, options, userId) => {
+            this.render();
+        });
     }
 
 
@@ -144,6 +152,8 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
 
         // Use a safe clone of the actor data for further operations.
         context.actor = this.actor;
+        context.img = this.actor.img;
+        context.name = this.actor.name;
 
         // Prepare character data and items.
         if (context.actor.type == 'character') {
@@ -453,17 +463,25 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
 
                 if (c.classList.contains(`attribute-level`)) {
                     console.log("Add pip");
-
-                    let combinedLevel = data.source.level + data.source.heroicLevel + change;
-                    combinedLevel = Math.min(Math.max(combinedLevel, 0), 10);
-
-                    if (combinedLevel != data.source.level + data.source.heroicLevel) {
-                        data.source.level = Math.min(Math.max(combinedLevel, 0), 5);
-                        this.document.update({ [`system.attributes.${data.attribute.dataName}.level`]: data.source.level });
-                        data.source.heroicLevel = Math.min(Math.max(combinedLevel - 5, 0), 5);
-                        this.document.update({ [`system.attributes.${data.attribute.dataName}.heroicLevel`]: data.source.heroicLevel });
-
+                    
+                    data.source.level += change;
+                    let diff = data.source.level - 5;
+                    if(diff > 0)
+                    {
+                        data.source.level = 5;
+                        data.source.heroicLevel += diff;
                     }
+                    else
+                    {
+                        diff = Math.min(Math.abs(diff), data.source.heroicLevel)
+                        data.source.heroicLevel -= diff;
+                        data.source.level += diff; 
+                    }
+                    
+                    this.document.update({ [`system.attributes.${data.attribute.dataName}.level`]: data.source.level });
+                    this.document.update({ [`system.attributes.${data.attribute.dataName}.heroicLevel`]: data.source.heroicLevel });
+
+                    //}
                     updatePips();
                 }
                 else if (c.classList.contains(`attribute-bonus-dice`)) {

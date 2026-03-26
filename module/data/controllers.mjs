@@ -139,6 +139,8 @@ export class VrylActor extends Actor {
         function updateLevels(attributeData, realAttribute) {
             if (!isNaN(attributeData.level))
                 attributeData.level = realAttribute.level;
+            if (!isNaN(attributeData.heroicLevel))
+                attributeData.heroicLevel = realAttribute.heroicLevel;
             if (!isNaN(attributeData.bonusDice))
                 attributeData.bonusDice = realAttribute.bonusDice;
             if (!isNaN(attributeData.guaranteedSuccesses))

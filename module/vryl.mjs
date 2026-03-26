@@ -1,6 +1,7 @@
 import { VrylActor, VrylItem } from "./data/controllers.mjs";
 import { VrylActorSheet } from "./data/views.mjs";
-import { CharacterActorDataModel, VrylInventoryItem } from "./data/models.mjs";
+import { VrylItemSheet } from "./data/itemViews.mjs";
+import { CharacterActorDataModel, VrylInventoryItem, VrylUsableEffect } from "./data/models.mjs";
 import "./data/active-effect.mjs";
 import { RollSidebar } from "./forms/rollBuilder.mjs";
 import { AttributeRoll } from "./helpers/vrylRoll.mjs";
@@ -45,6 +46,7 @@ Hooks.once("init", () => {
 
   CONFIG.Item.documentClass = VrylItem;
   CONFIG.Item.dataModels = {
+    usableEffect: VrylUsableEffect,
     gear: VrylInventoryItem,
     //aspect
     //tactical ability
@@ -55,6 +57,12 @@ Hooks.once("init", () => {
   collections.Actors.registerSheet('vryl', VrylActorSheet, {
     makeDefault: true,
     label: 'VRYL.SheetLabels.Actor',
+  });
+
+  collections.Items.unregisterSheet('core', sheets.ItemSheet);
+  collections.Items.registerSheet('vryl', VrylItemSheet, {
+    makeDefault: true,
+    label: 'VRYL.SheetLabels.Item',
   });
 
   //#region Register Effects

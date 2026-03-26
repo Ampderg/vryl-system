@@ -647,6 +647,28 @@
   margin: 5px;
 }
 
+.roll-builder-prompt {
+  margin: 10px;
+  border: 1px dashed;
+  border-color: var(--vryl-c-black);
+  background-color: var(--vryl-c-background-highlight);
+  /* padding-bottom: 10px; */
+}
+
+.roll-builder-prompt:hover:not(.selected) {
+  border-style: solid;
+  text-shadow: 0 0 3px var(--vryl-c-clickable-hover);
+}
+
+.roll-builder-prompt.selected {
+  border-style: solid;
+}
+
+.prompt .inner {
+  margin: 5px;
+}
+
+.roll-builder-prompt.selected:hover,
 .attribute-deletable:hover {
   outline: 2px solid var(--vryl-c-dark);
   background-image: linear-gradient(45deg, var(--vryl-c-dark) 6.25%, transparent 6.25%, transparent 50%, var(--vryl-c-dark) 50%, var(--vryl-c-dark) 56.25%, transparent 56.25%, transparent 100%);

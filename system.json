@@ -22,6 +22,9 @@
         }
     },
     "Item": {
+        "usableEffect": {
+            "htmlFields": ["description"]
+        },
         "gear": {
             "htmlFields": ["description"]
         },

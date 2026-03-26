@@ -82,7 +82,14 @@ export class VrylItemCard extends VrylItemBase {
   }
 }
 
-export class VrylInventoryItem extends VrylItemCard {
+export class VrylUsableEffect extends VrylItemCard {
+
+}
+
+export class VrylUsableItem extends VrylItemCard {
+}
+
+export class VrylInventoryItem extends VrylUsableItem {
 
   static defineSchema() {
     const requiredInteger = { required: true, nullable: false, integer: true };
