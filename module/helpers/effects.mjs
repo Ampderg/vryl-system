@@ -1,5 +1,5 @@
 /**
- * Prepare the data structure for Active Effects which are currently embedded in an Actor or Item.
+ * Prepare the data structure for Active Effects which are currently embedded in an document or Item.
  * @param {ActiveEffect[]} effects    A collection or generator of Active Effect documents to prepare sheet data for
  * @return {object}                   Data for rendering
  */
@@ -42,3 +42,120 @@ export function prepareActiveEffectCategories(effects) {
   }
   return categories;
 }
+
+
+//#region Embedded Documents
+
+/**
+* Fetches the embedded document representing the containing HTML element
+*
+* @param {HTMLElement} target    The element subject to search
+* @returns {Item | ActiveEffect} The embedded Item or ActiveEffect
+*/
+export function _getEmbeddedDocument(target, sheet) {
+  const docRow = target.closest('li[data-document-class]');
+  if (docRow.dataset.documentClass === 'Item') {
+    return sheet.document.items.get(docRow.dataset.itemId);
+  } else if (docRow.dataset.documentClass === 'ActiveEffect') {
+    const parent =
+      docRow.dataset.parentId === sheet.document.id
+        ? sheet.document
+        : sheet.document.items.get(docRow?.dataset.parentId);
+    return parent.effects.get(docRow?.dataset.effectId);
+  } else return console.warn('Could not find document class');
+}
+
+export async function viewDoc(event, target) {
+  const doc = _getEmbeddedDocument(target, this);
+  doc.sheet.render(true);
+}
+
+export async function deleteDoc(event, target) {
+  const doc = _getEmbeddedDocument(target, this);
+  await doc.delete();
+}
+
+export async function createDoc(event, target) {
+  // Retrieve the configured document class for Item or ActiveEffect
+  const docCls = getDocumentClass(target.dataset.documentClass);
+  // Prepare the document creation data by initializing it a default name.
+  const docData = {
+    name: docCls.defaultName({
+      // defaultName handles an undefined type gracefully
+      type: target.dataset.type,
+      parent: this.document,
+    }),
+  };
+
+  const flags = {
+  };
+
+  // Loop through the dataset and add it to our docData
+  for (const [dataKey, value] of Object.entries(target.dataset)) {
+    if (dataKey.startsWith("vrylFlags")) {
+      const flagKey = dataKey.replace("vrylFlags.", "");
+      flags[flagKey] = value;
+    }
+    else {
+      // These data attributes are reserved for the action handling
+      if (['action', 'documentClass'].includes(dataKey)) continue;
+      // Nested properties require dot notation in the HTML, e.g. anything with `system`
+      // An example exists in spells.hbs, with `data-system.spell-level`
+      // which turns into the dataKey 'system.spellLevel'
+      foundry.utils.setProperty(docData, dataKey, value);
+    }
+  }
+
+  // Finally, create the embedded document!
+  const embDoc = await docCls.create(docData, { parent: this.document });
+
+  for (const flag of Object.entries(flags)) {
+    embDoc.setFlag(CONFIG.SystemId, flag[0], flag[1]);
+  }
+}
+
+export async function toggleEffectByUUID(uuid) {
+  const effect = await fromUuid(uuid);
+  _toggleInstantEffect(effect);
+}
+
+export async function toggleEffect(event, target) {
+  const effect = _getEmbeddedDocument(target, this);
+  await effect.update({ disabled: !effect.disabled });
+}
+
+export async function toggleInstantEffect(event, target) {
+  const effect = _getEmbeddedDocument(target, this);
+  _toggleInstantEffect(effect);
+  //CONFIG.ui.rollBuilder.updateRollData();
+}
+
+function _toggleInstantEffect(effect) {
+  const isApplied = !effect.getFlag(CONFIG.SystemId, `isInstantApplied`);
+  effect.setFlag(CONFIG.SystemId, `isInstantApplied`, isApplied);
+}
+
+//#region Edit Image
+
+export async function onEditImage(event, target) {
+  const attr = 'img';
+  const current = foundry.utils.getProperty(this.document, attr);
+  const { img } =
+    this.document.constructor.getDefaultArtwork?.(this.document.toObject()) ??
+    {};
+  const fp = new FilePicker({
+    current,
+    type: 'image',
+    redirectToRoot: img ? [img] : [],
+    callback: (path) => {
+      this.document.update({ [attr]: path });
+    },
+    top: this.position.top + 40,
+    left: this.position.left + 10,
+  });
+  return fp.browse();
+}
+
+Hooks.once("init", () => {
+
+});

@@ -500,6 +500,8 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
         const attributeCategories = game.settings.get(CONFIG.SystemId, 'attribute-categories');
         const attributeTypes = game.settings.get(CONFIG.SystemId, 'attribute-types');
 
+        CONFIG.ui.rollBuilder._populateActorEffects();
+
         async function renderAttribute(actorId, attribute) {
             if (actorId == 'global') {
                 if (attribute.level == 0)
@@ -544,18 +546,16 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
         }
 
         async function renderItemEffects(actorId) {
-            const actorItems = CONFIG.ROLL_DATA.rollItemEffects.filter((a) => a.actor == actorId);
-            actorItems.push({
-                name: "Test",
-                isApplied: false,
-            });
-            
+            const actorItems = CONFIG.ROLL_DATA.rollItemEffects.filter((a) => a.actor.id == actorId);
+
             let content = "";
 
-            for(const item of actorItems)
-            {
-                if(item.isApplied || inSidebar)
+            for (const item of actorItems) {
+                if (item.isApplied || inSidebar)
+                {
+                    item.inSidebar = inSidebar;
                     content += await foundry.applications.handlebars.renderTemplate(`systems/vryl/templates/parts/roll/roll-usePrompt.html`, item);
+                }
             }
 
             return content;
@@ -715,7 +715,7 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
     }
 
     static setTargetGroupSize(amount) {
-        if(amount < 1) amount = 1;
+        if (amount < 1) amount = 1;
         this.addAction(`group-roll`, `global`, `true`, { targetGroupSize: { label: `<i class="fa-solid fa-user-group"></i>`, value: amount } });
     }
 
@@ -741,7 +741,7 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
         }
 
         const elements = document.querySelectorAll(`.groupRollContainer`);
-        for(const e of elements)
+        for (const e of elements)
             e.outerHTML = content;
     }
 
@@ -1022,7 +1022,7 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
         let content = "";
 
         for (const action of actionList) {
-            if(action.presentInMenu !== false)
+            if (action.presentInMenu !== false)
                 content += await foundry.applications.handlebars.renderTemplate(`systems/vryl/templates/parts/roll/roll-action.html`, action);
         }
 
@@ -1116,12 +1116,56 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
 
     //#region Active Effects
 
+    static _populateActorEffects() {
+        CONFIG.ROLL_DATA.rollItemEffects = [];
+
+        for (const [actorId, actorData] of CONFIG.ROLL_DATA.rollActors) {
+            if(actorData.actor.id == 'VRYL-TEMPLATE-ACTOR')
+                continue;
+
+            for (const effect of actorData.actor.appliedEffects) {
+                if (effect.getFlag(CONFIG.SystemId, `isInstant`)) {
+
+                    let isApplied = effect.getFlag(CONFIG.SystemId, `isInstantApplied`);
+                    let isPrompted = false;
+
+                    if(!isApplied)
+                    {
+                        for(const change of effect.changes)
+                        {
+                            if(change.key.startsWith(`system.attributes.`))
+                            {
+                                const attributeChanged = change.key.replace(`system.attributes.`, ``).split(`.`)[0];
+                                for(const attribute of actorData.attributes)
+                                {
+                                    if(attribute.dataName == attributeChanged)
+                                        isPrompted = true;
+                                }
+                            }
+                        }
+                    }
+
+                    if(!isApplied && !isPrompted)
+                        continue;
+
+                    const effectData = {
+                        name: effect.name,
+                        isApplied: isApplied,
+                        uuid: effect.uuid,
+                        effect: effect,
+                        actor: effect.target,
+                        effectDescription: effect.description.replaceAll(/<\/?p>/g, ``),
+                    }
+                    CONFIG.ROLL_DATA.rollItemEffects.push(effectData);
+                }
+            }
+        }
+    }
+
     static _clearInstantEffects() {
-        for(const [key, value] of CONFIG.ROLL_DATA.rollActors)
-        {
-            for(const effect of value.actor.appliedEffects)
-            {
-                if(effect.getFlag(CONFIG.SystemId, `isInstant`))
+        for (const [key, value] of CONFIG.ROLL_DATA.rollActors) {
+            for (const effect of value.actor.appliedEffects) {
+                if (effect.getFlag(CONFIG.SystemId, `isInstant`))
                     effect.setFlag(CONFIG.SystemId, `isInstantApplied`, false);
             }
         }

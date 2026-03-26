@@ -8,6 +8,7 @@ import { AttributeRoll } from "./helpers/vrylRoll.mjs";
 
 // Import helper/utility classes and constants.
 import { DEFAULTS } from './helpers/systemDefaults.mjs';
+import * as effectsFunctions from './helpers/effects.mjs';
 
 // Helpers
 import { VrylHandlebarsHelpers } from "./helpers/handlebarsHelpers.mjs";
@@ -66,6 +67,7 @@ Hooks.once("init", () => {
   });
 
   //#region Register Effects
+  CONFIG.effectsFunctions = effectsFunctions;
 
   // Active Effects are never copied to the Actor,
   // but will still apply to the Actor from within the Item

@@ -124,6 +124,8 @@ export class VrylHandlebarsHelpers {
             equipmentSlots: "systems/vryl/templates/parts/items/equipmentSlots.hbs",
             equipmentLoadouts: "systems/vryl/templates/parts/items/equipmentLoadouts.hbs",
             inventory: "systems/vryl/templates/parts/items/inventory.hbs",
+
+            effectsList: "systems/vryl/templates/parts/effects-list.hbs",
         });
     }
 }

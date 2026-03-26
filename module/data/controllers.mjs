@@ -163,8 +163,9 @@ export class VrylActor extends Actor {
         this.statuses.clear();
 
         // Organize non-disabled effects by their application priority
+        const allEffects = this.allApplicableEffects();
         const changes = [];
-        const applicableEffects = this.allApplicableEffects().filter((effect) => {
+        const applicableEffects = allEffects.filter((effect) => {
             if (effect.getFlag(CONFIG.SystemId, `isInstant`)) {
                 return effect.getFlag(CONFIG.SystemId, `isInstantApplied`)
             }

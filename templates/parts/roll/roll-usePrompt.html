@@ -1,6 +1,9 @@
-<div class="roll-builder-prompt {{#if isApplied}}selected{{/if}} flexcol flex-group-center roll-item-uuid-{{uuid}}">
-    <div class="inner">
-        <b>{{name}}</b>
-        Item Prompt
+<div class="roll-builder-prompt {{#if inSidebar}}inSidebar{{/if}} {{#if isApplied}}selected{{/if}} flexcol flex-group-center roll-item-uuid-{{uuid}}" 
+{{#if inSidebar}}onclick="CONFIG.effectsFunctions.toggleEffectByUUID('{{uuid}}')"{{/if}}>
+    <div class="inner flexcol" style="margin:0.5em;">
+        <span><u><b>{{effect.parent.name}}</b> - {{name}}</u></span>
+        <div class="flex-group-center" style="font-size:85%;">
+            {{effectDescription}}
+        </div>
     </div>
 </div>

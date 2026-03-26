@@ -1,5 +1,5 @@
 const { api, sheets } = foundry.applications;
-import { prepareActiveEffectCategories } from '../helpers/effects.mjs';
+import * as effectsFunctions from '../helpers/effects.mjs';
 
 export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorSheetV2) {
 
@@ -33,11 +33,13 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
             title: 'Character Sheet' // Just the localization key
         },
         actions: {
-            onEditImage: this._onEditImage,
-            viewDoc: this._viewDoc,
-            createDoc: this._createDoc,
-            deleteDoc: this._deleteDoc,
-            toggleEffect: this._toggleEffect,
+            onEditImage: effectsFunctions.onEditImage,
+            viewDoc: effectsFunctions.viewDoc,
+            createDoc: effectsFunctions.createDoc,
+            deleteDoc: effectsFunctions.deleteDoc,
+            toggleEffect: effectsFunctions.toggleEffect,
+            toggleInstantEffect: effectsFunctions.toggleInstantEffect,
+
             "attribute-roll": VrylActorSheet._attributeRoll,
             "edit-attribute-pips": VrylActorSheet._editAttributePips,
 
@@ -48,7 +50,7 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
             "willpowerRoll": this._willpowerRoll,
             "edit-willpower-pips": this._editWillpowerPips,
 
-            toggleInstantEffect: this._toggleInstantEffect,
+            
 
         },
         // Custom property that's merged into `this.options`
@@ -111,7 +113,7 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
             template: `systems/vryl/templates/actor/inventory.html`
         },
         effects: {
-            template: `systems/vryl/templates/parts/effects.hbs`
+            template: `systems/vryl/templates/actor/effects.hbs`
         },
     }
 
@@ -154,6 +156,8 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
         context.actor = this.actor;
         context.img = this.actor.img;
         context.name = this.actor.name;
+        context.system = context.actor.system;
+        context.flags = context.actor.flags;
 
         // Prepare character data and items.
         if (context.actor.type == 'character') {
@@ -162,15 +166,14 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
         }
 
         // Add the actor's data to context.data for easier access, as well as flags.
-        
-        context.system = context.actor.system;
-        context.flags = context.actor.flags;
+
+
 
         // Add roll data for TinyMCE editors.
         context.rollData = context.actor.getRollData();
 
         // Prepare active effects
-        context.effects = prepareActiveEffectCategories(
+        context.effects = effectsFunctions.prepareActiveEffectCategories(
             // A generator that returns all effects stored on the actor
             // as well as any items
             this.actor.allApplicableEffects()
@@ -198,12 +201,6 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
                 break;
             case 'effects':
                 context.tab = context.tabs[partId];
-                // Prepare active effects
-                context.effects = prepareActiveEffectCategories(
-                    // A generator that returns all effects stored on the actor
-                    // as well as any items
-                    this.actor.allApplicableEffects()
-                );
                 break;
             default:
         }
@@ -354,8 +351,6 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
     static async renderSelectedAttributes(element, actorId) {
         if (!element) return;
 
-
-
         let allSelected = element.querySelectorAll(`.attribute-name.selected.actor-${actorId}.attribute-name, .willpower-roll`);
         for (const element of allSelected) {
             element.classList.remove(`selected`);
@@ -463,21 +458,19 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
 
                 if (c.classList.contains(`attribute-level`)) {
                     console.log("Add pip");
-                    
+
                     data.source.level += change;
                     let diff = data.source.level - 5;
-                    if(diff > 0)
-                    {
+                    if (diff > 0) {
                         data.source.level = 5;
                         data.source.heroicLevel += diff;
                     }
-                    else
-                    {
+                    else {
                         diff = Math.min(Math.abs(diff), data.source.heroicLevel)
                         data.source.heroicLevel -= diff;
-                        data.source.level += diff; 
+                        data.source.level += diff;
                     }
-                    
+
                     this.document.update({ [`system.attributes.${data.attribute.dataName}.level`]: data.source.level });
                     this.document.update({ [`system.attributes.${data.attribute.dataName}.heroicLevel`]: data.source.heroicLevel });
 
@@ -499,27 +492,6 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
         }
         updatePips();
         updateBonusDice(data.source.bonusDice);
-    }
-
-    //#region Edit Image
-
-    static async _onEditImage(event, target) {
-        const attr = target.dataset.edit;
-        const current = foundry.utils.getProperty(this.document, attr);
-        const { img } =
-            this.document.constructor.getDefaultArtwork?.(this.document.toObject()) ??
-            {};
-        const fp = new FilePicker({
-            current,
-            type: 'image',
-            redirectToRoot: img ? [img] : [],
-            callback: (path) => {
-                this.document.update({ [attr]: path });
-            },
-            top: this.position.top + 40,
-            left: this.position.left + 10,
-        });
-        return fp.browse();
     }
 
     //#region Willpower
@@ -712,123 +684,8 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
         }
     }
 
-    //#region Embedded Documents
-
-    /**
-   * Fetches the embedded document representing the containing HTML element
-   *
-   * @param {HTMLElement} target    The element subject to search
-   * @returns {Item | ActiveEffect} The embedded Item or ActiveEffect
-   */
-    _getEmbeddedDocument(target) {
-        const docRow = target.closest('li[data-document-class]');
-        if (docRow.dataset.documentClass === 'Item') {
-            return this.actor.items.get(docRow.dataset.itemId);
-        } else if (docRow.dataset.documentClass === 'ActiveEffect') {
-            const parent =
-                docRow.dataset.parentId === this.actor.id
-                    ? this.actor
-                    : this.actor.items.get(docRow?.dataset.parentId);
-            return parent.effects.get(docRow?.dataset.effectId);
-        } else return console.warn('Could not find document class');
-    }
-
     //#region Active Effects
-    
-    /**
-   * Renders an embedded document's sheet
-   *
-   * @this BoilerplateActorSheet
-   * @param {PointerEvent} event   The originating click event
-   * @param {HTMLElement} target   The capturing HTML element which defined a [data-action]
-   * @protected
-   */
-    static async _viewDoc(event, target) {
-        const doc = this._getEmbeddedDocument(target);
-        doc.sheet.render(true);
-    }
 
-    /**
-     * Handles item deletion
-     *
-     * @this BoilerplateActorSheet
-     * @param {PointerEvent} event   The originating click event
-     * @param {HTMLElement} target   The capturing HTML element which defined a [data-action]
-     * @protected
-     */
-    static async _deleteDoc(event, target) {
-        const doc = this._getEmbeddedDocument(target);
-        await doc.delete();
-    }
-
-    /**
-     * Handle creating a new Owned Item or ActiveEffect for the actor using initial data defined in the HTML dataset
-     *
-     * @this BoilerplateActorSheet
-     * @param {PointerEvent} event   The originating click event
-     * @param {HTMLElement} target   The capturing HTML element which defined a [data-action]
-     * @private
-     */
-    static async _createDoc(event, target) {
-        // Retrieve the configured document class for Item or ActiveEffect
-        const docCls = getDocumentClass(target.dataset.documentClass);
-        // Prepare the document creation data by initializing it a default name.
-        const docData = {
-            name: docCls.defaultName({
-                // defaultName handles an undefined type gracefully
-                type: target.dataset.type,
-                parent: this.actor,
-            }),
-        };
-
-        const flags = {
-        };
-
-        // Loop through the dataset and add it to our docData
-        for (const [dataKey, value] of Object.entries(target.dataset)) {
-            if(dataKey.startsWith("vrylFlags"))
-            {
-                const flagKey = dataKey.replace("vrylFlags.", "");
-                flags[flagKey] = value;
-            }
-            else
-            {
-                // These data attributes are reserved for the action handling
-                if (['action', 'documentClass'].includes(dataKey)) continue;
-                // Nested properties require dot notation in the HTML, e.g. anything with `system`
-                // An example exists in spells.hbs, with `data-system.spell-level`
-                // which turns into the dataKey 'system.spellLevel'
-                foundry.utils.setProperty(docData, dataKey, value);
-            }
-        }
-
-        // Finally, create the embedded document!
-        const embDoc = await docCls.create(docData, { parent: this.actor });
-
-        for(const flag of Object.entries(flags))
-        {
-            embDoc.setFlag(CONFIG.SystemId, flag[0], flag[1]);
-        }
-    }
-
-    /**
-     * Determines effect parent to pass to helper
-     *
-     * @this BoilerplateActorSheet
-     * @param {PointerEvent} event   The originating click event
-     * @param {HTMLElement} target   The capturing HTML element which defined a [data-action]
-     * @private
-     */
-    static async _toggleEffect(event, target) {
-        const effect = this._getEmbeddedDocument(target);
-        await effect.update({ disabled: !effect.disabled });
-    }
-
-    static async _toggleInstantEffect(event, target) {
-        const effect = this._getEmbeddedDocument(target);
-        const isApplied = effect.getFlag(CONFIG.SystemId, `isInstantApplied`);
-        effect.setFlag(CONFIG.SystemId, `isInstantApplied`, !isApplied);
-    }
 }
 
 //#region Init

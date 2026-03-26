@@ -1,15 +1,10 @@
 const { api, sheets } = foundry.applications;
-import { prepareActiveEffectCategories } from '../helpers/effects.mjs';
+import * as effectsFunctions from '../helpers/effects.mjs';
 
 export class VrylItemSheet extends api.HandlebarsApplicationMixin(sheets.ItemSheetV2) {
 
     constructor(options = {}) {
         super(options);
-
-        Hooks.on(`vryl-rollDataUpdated`, () => {
-            console.log("Roll data updated for actor: " + this.document.id);
-            VrylActorSheet.renderSelectedAttributes(this.element, this.document.id);
-        });
     }
 
     /** @override */
@@ -24,13 +19,12 @@ export class VrylItemSheet extends api.HandlebarsApplicationMixin(sheets.ItemShe
             title: 'Item Sheet' // Just the localization key
         },
         actions: {
-            onEditImage: this._onEditImage,
-            viewDoc: this._viewDoc,
-            createDoc: this._createDoc,
-            deleteDoc: this._deleteDoc,
-            toggleEffect: this._toggleEffect,
-
-            toggleInstantEffect: this._toggleInstantEffect,
+            onEditImage: effectsFunctions.onEditImage,
+            viewDoc: effectsFunctions.viewDoc,
+            createDoc: effectsFunctions.createDoc,
+            deleteDoc: effectsFunctions.deleteDoc,
+            toggleEffect: effectsFunctions.toggleEffect,
+            toggleInstantEffect: effectsFunctions.toggleInstantEffect,
 
         },
         // Custom property that's merged into `this.options`
@@ -46,26 +40,35 @@ export class VrylItemSheet extends api.HandlebarsApplicationMixin(sheets.ItemShe
             template: `systems/vryl/templates/parts/header.html`
         },
         effects: {
-            template: `systems/vryl/templates/parts/effects.hbs`
+            template: `systems/vryl/templates/items/effects.hbs`
         },
     }
 
     /** @override */
   async _prepareContext(options) {
-    const context = {
-      // Validates both permissions and compendium status
-      editable: this.isEditable,
-      owner: this.document.isOwner,
-      limited: this.document.limited,
-      // Add the item document.
-      item: this.document,
-      // Adding system and flags for easier access
-      system: this.document.system,
-      flags: this.document.flags,
-    };
+    const context = await super._prepareContext(options);
+    // const context = {
+    //   // Validates both permissions and compendium status
+    //   editable: this.isEditable,
+    //   owner: this.document.isOwner,
+    //   limited: this.document.limited,
+    //   // Add the item document.
+    //   item: this.document,
+    //   actor: this.document,
+    //   // Adding system and flags for easier access
+    //   system: this.document.system,
+    //   flags: this.document.flags,
+    // };
 
+
+    context.actor = this.document;
     context.img = this.document.img;
     context.name = this.document.name;
+    context.system = context.document.system;
+    context.flags = context.document.flags;
+
+    context.effects = effectsFunctions.prepareActiveEffectCategories(this.document.effects);
+    context.isItemSheet = true;
 
     return context;
   }

@@ -3,7 +3,7 @@
     <ol class='items-list'>
         <li class='item flexrow items-header'>
             <div class='item-name'>{{localize 'Name'}}</div>
-            <div class='item-formula'>{{localize 'BOILERPLATE.Item.Gear.FIELDS.rollFormula.label'}}</div>
+            {{!-- <div class='item-formula'>{{localize 'BOILERPLATE.Item.Gear.FIELDS.rollFormula.label'}}</div> --}}
             <div class='item-controls'>
                 {{#if @root.editable}}
                 <a class='item-control item-create' data-tooltip='{{localize "DOCUMENT.Create" type=' Item'}}'
@@ -24,7 +24,7 @@
                 </div>
                 <div>{{item.name}}</div>
             </div>
-            <div class='item-formula item-prop'>{{item.system.formula}}</div>
+            {{!-- <div class='item-formula item-prop'>{{item.system.formula}}</div> --}}
             <div class='item-controls'>
                 <a class='item-control item-edit' data-tooltip='{{localize "DOCUMENT.Update" type=' Gear'}}'
                     data-action='viewDoc'>
