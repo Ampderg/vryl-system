@@ -125,8 +125,12 @@ export class VrylItemSheet extends api.HandlebarsApplicationMixin(sheets.ItemShe
     // That you may want to implement yourself.
     const selectEquipSlotElement = this.element.querySelector(`select#equipSlotSelector`);
     selectEquipSlotElement.addEventListener("change", () => {
-      console.log(selectEquipSlotElement.value);
       this.document.update({ [`system.equipment.slotDataName`]: selectEquipSlotElement.value });
+    });
+
+    const equipSlotSlotsElement = this.element.querySelector(`input#equipSlotSlots`);
+    equipSlotSlotsElement.addEventListener("change", () => {
+      this.document.update({ [`system.equipment.slotsFilled`]: equipSlotSlotsElement.value });
     });
   }
 
