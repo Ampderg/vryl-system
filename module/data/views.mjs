@@ -694,7 +694,6 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
             item.update({[`system.equipment.isEquipped`]: false });
             return;
         }
-        console.log(equipSlot);
         const equipItemSlot = this.document.system.equipment.slotItems[`${item.system.equipment.slotDataName}`];
         let occupiedSlots = 0;
         for(let slot of equipItemSlot)

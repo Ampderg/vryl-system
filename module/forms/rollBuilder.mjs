@@ -157,6 +157,8 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
         }
 
         for (const actor of rollActorsValues) {
+            if(actor.actor?.system?.bonusDice)
+                totalLevels += actor.actor.system.bonusDice;
             if (actor.attributes) {
                 for (const attribute of actor.attributes) {
                     addAttribute(attribute);
@@ -183,6 +185,7 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
     }
 
     static _getRollData() {
+        let levelData = CONFIG.ui.rollBuilder._getRollLevel();
         let dc = CONFIG.ROLL_DATA.dc;
 
         for (const [key, actor] of CONFIG.ROLL_DATA.rollActors) {
@@ -190,7 +193,6 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
                 dc = parseInt(dc) + (parseInt(actor.actor.system.dcMod) ?? 0);
         }
 
-        let levelData = CONFIG.ui.rollBuilder._getRollLevel();
         let faces = 20;
         let critThreshold = faces;
 
@@ -606,12 +608,29 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
                     actorContent += await renderAttribute(key, attribute);
                 }
             }
+
             //Add willpower if it is present
             if (actorData.willpower) {
                 actorData.willpower.dataName = "willpower";
                 actorData.willpower.name = "Willpower";
 
                 actorContent += await renderAttribute(key, actorData.willpower);
+            }
+
+            //Add actor bonuses if present
+            {
+                let actorBonuses = { };
+
+                if(actorData.actor?.system?.bonusDice != undefined && actorData.actor?.system?.bonusDice != 0)
+                    actorBonuses.bonusDice = actorData.actor.system.bonusDice;
+
+                if(Object.keys(actorBonuses).length > 0)
+                {
+                    actorBonuses.dataName = "actor_" + key;
+                    actorBonuses.name = "Bonuses";
+
+                    actorContent += await renderAttribute(key, actorBonuses);
+                }
             }
 
             //Render actor actions
