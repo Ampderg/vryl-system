@@ -10,7 +10,7 @@ export class SubmenuEquipment extends HandlebarsApplicationMixin(ApplicationV2) 
 
   static PARTS = {
     form: {
-      template: `systems/vryl/templates/menus/submenu-equipment.html`
+      template: `systems/vryl/templates/menus/submenu-equipment.hbs`
     },
   }
 

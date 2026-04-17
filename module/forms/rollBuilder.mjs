@@ -167,9 +167,9 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
                 addAttribute(actor.willpower);
         }
 
-        const groupRollData = CONFIG.ui.rollBuilder.getRollFlagData(`group-roll`, `global`);
-        if (groupRollData)
-            totalLevels = Math.ceil(totalLevels / parseFloat(groupRollData.targetGroupSize.value));
+        const groupChallenge = CONFIG.ui.rollBuilder.getRollFlagValue(`group-roll`, `global`, `targetGroupSize`);
+        if (groupChallenge)
+            totalLevels = Math.ceil(totalLevels / parseFloat(groupChallenge));
 
         if (totalLevels <= 0 && CONFIG.ui.rollBuilder.hasRollFlag(`roll-level-zero`, 'global', 'preRoll')) {
             guaranteedSuccesses -= 1 - totalLevels;
@@ -203,19 +203,52 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
         }
     }
 
+    // static _applyExposure(roll, critThreshold = 20) {
+    //     let exposure = CONFIG.ui.rollBuilder.getRollFlagValue(`exposure`, `global`, `amount`);
+    //     if (exposure == 0)
+    //         return;
+
+    //     for (let term of roll.terms) {
+    //         if (!(term instanceof Die))
+    //             continue;
+
+    //         for (let die of term.results) {
+    //             if (die.success && die.result < critThreshold) {
+    //                 die.result = 20;
+
+
+    //                 exposure--;
+    //                 if (exposure <= 0)
+    //                     return;
+    //             }
+    //         }
+    //     }
+    // }
+
+
     static async #roll(event, target) {
         console.log("Rolling with data: ", CONFIG.ROLL_DATA);
 
         const rollData = CONFIG.ui.rollBuilder._getRollData();
 
         let formula = `${rollData.level}d${rollData.faces}`;
+
+        if (CONFIG.ui.rollBuilder.hasRollFlag(`exposure`, 'global', 'preRoll')) {
+            const exposure = CONFIG.ui.rollBuilder.getRollFlagValue(`exposure`, `global`, `amount`);
+            formula += `exposure|${exposure}|${rollData.dc}|${rollData.critThreshold}`
+        }
+
         if (CONFIG.ui.rollBuilder.hasRollFlag(`explode-crits`, 'global', 'preRoll'))
             formula += `x>=${rollData.critThreshold}`;
+
         formula += `cs>=${rollData.dc}`;
         formula += `sa`;
         formula += ` + ${rollData.guaranteedSuccesses}`;
         let roll = new CONFIG.Dice.AttributeRoll(formula);
         roll.options.flavor = await CONFIG.ui.rollBuilder.renderRoll(rollData);
+
+        await roll.roll();
+
         let msg = await roll.toMessage({
             flags: {
                 vryl: {
@@ -535,13 +568,14 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
             else
                 attribute.hasFlat = false;
 
-            const template = await foundry.applications.handlebars.renderTemplate(`systems/vryl/templates/parts/roll/roll-attribute.html`, attribute);
+            const template = await foundry.applications.handlebars.renderTemplate(`systems/vryl/templates/parts/roll/roll-attribute.hbs`, attribute);
             content += template;
             return content;
         }
 
         async function renderAction(action) {
-            const template = await foundry.applications.handlebars.renderTemplate(`systems/vryl/templates/parts/roll/roll-action.html`, action);
+            action.inSidebar = inSidebar;
+            const template = await foundry.applications.handlebars.renderTemplate(`systems/vryl/templates/parts/roll/roll-action.hbs`, action);
             return template;
         }
 
@@ -551,10 +585,9 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
             let content = "";
 
             for (const item of actorItems) {
-                if (item.isApplied || inSidebar)
-                {
+                if (item.isApplied || inSidebar) {
                     item.inSidebar = inSidebar;
-                    content += await foundry.applications.handlebars.renderTemplate(`systems/vryl/templates/parts/roll/roll-usePrompt.html`, item);
+                    content += await foundry.applications.handlebars.renderTemplate(`systems/vryl/templates/parts/roll/roll-usePrompt.hbs`, item);
                 }
             }
 
@@ -585,7 +618,7 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
             if ((actorData.actions && actorData.actions.length > 0)) {
                 // if (actorContent != "")
                 //     actorContent += "<br>";
-                for (const action of actorData.actions) {
+                for (const action of actorData.actions.toSorted((a, b) => a.sorting - b.sorting)) {
                     action.actorId = key;
                     actorContent += await renderAction(action);
                 }
@@ -619,7 +652,7 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
         if (CONFIG.ROLL_DATA.globalActions && CONFIG.ROLL_DATA.globalActions.length > 0) {
             // if (globalContent != "")
             //     globalContent += "<hr>";
-            for (const action of CONFIG.ROLL_DATA.globalActions) {
+            for (const action of CONFIG.ROLL_DATA.globalActions.toSorted((a, b) => a.sorting - b.sorting)) {
                 action.actorId = 'global';
                 globalContent += await renderAction(action);
             }
@@ -637,7 +670,7 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
     }
 
     static async renderRollOptions(rollData, inSidebar = false) {
-        return await foundry.applications.handlebars.renderTemplate(`systems/vryl/templates/parts/roll/roll-options.html`, rollData);
+        return await foundry.applications.handlebars.renderTemplate(`systems/vryl/templates/parts/roll/roll-options.hbs`, rollData);
     }
 
     //#region Clear Roll
@@ -659,7 +692,6 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
         if (replaceWithDefault) {
             CONFIG.ui.rollBuilder.addAction('narrative-result', 'global', false);
             CONFIG.ui.rollBuilder.addAction(`roll-level-zero`, 'global', false);
-            CONFIG.ui.rollBuilder.toggleGroupRoll(undefined, undefined, false);
         }
         CONFIG.ui.rollBuilder.updateRollData();
     }
@@ -701,22 +733,59 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
 
     //#region Group Roll
 
-    static adjustTargetGroupSize(change) {
+    static adjustRollFlagNumber(change, action, actor, flag, event = undefined) {
         let amount;
-        const data = this.getRollFlagData(`group-roll`, `global`);
-        if (!data || !data.targetGroupSize.value)
-            amount = 1;
+        const val = CONFIG.ui.rollBuilder.getRollFlagValue(action, actor, flag);
+        const flagSettings = CONFIG.ui.rollBuilder.getRollFlagSettings(action, flag);
+        if (val == undefined)
+            amount = flagSettings.initial;
         else
-            amount = data.targetGroupSize.value;
+            amount = val;
 
         amount += change;
 
-        this.setTargetGroupSize(amount);
+        this.setRollFlagNumber(amount, action, actor, flag, event);
     }
 
-    static setTargetGroupSize(amount) {
-        if (amount < 1) amount = 1;
-        this.addAction(`group-roll`, `global`, `true`, { targetGroupSize: { label: `<i class="fa-solid fa-user-group"></i>`, value: amount } });
+    static getRollFlagSettings(action, flag) {
+        const actionData = ROLL_ACTIONS.filter((a) => a.action == action)[0];
+        if (!actionData) {
+            console.log("WARNING: setting roll action flag for action that has no data: " + action + ", " + flag);
+            return;
+        }
+        const flagData = actionData.flags[flag];
+        if (!flagData) {
+            console.log("WARNING: setting roll action flag for action that is missing the flag: " + action + ", " + flag);
+            return;
+        }
+        return flagData;
+    }
+
+    static getInitialRollFlagValue(action, flag) {
+        return CONFIG.ui.rollBuilder.getRollFlagSettings(action, flag).initial;
+    }
+
+    static getRollFlagValue(action, actor, flag) {
+        const actionData = CONFIG.ui.rollBuilder.getRollActionData(action, actor);
+        if (actionData == undefined)
+            return CONFIG.ui.rollBuilder.getInitialRollFlagValue(action, flag);
+
+        const flagData = actionData.flags.filter((f) => f.flag == flag)[0];
+        if (flagData == undefined || flagData.value == undefined)
+            return CONFIG.ui.rollBuilder.getInitialRollFlagValue(action, flag);
+        return flagData.value;
+    }
+
+    static setRollFlagNumber(amount, action, actor, flag, event = undefined) {
+        if (event != undefined)
+            event.stopPropagation();
+
+        const flagSettings = CONFIG.ui.rollBuilder.getRollFlagSettings(action, flag);
+
+        if (flagSettings.min != undefined && amount < flagSettings.min) amount = flagSettings.min;
+        if (flagSettings.max != undefined && amount > flagSettings.max) amount = flagSettings.max;
+
+        this.addAction(action, actor, `true`, { [`${flag}`]: { value: amount } });
     }
 
     static toggleGroupRoll(event, target, force = undefined) {
@@ -725,11 +794,11 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
             content = `
             <div class="groupRollContainer flexrow" style="padding: 0 0.58em;">    
                 <b class="fitwidth clickable" style="padding-right: 0.3em;" data-action="groupRoll"><i class="fa-solid fa-user-group"></i></b>
-                <button class="small-button" type="button" onclick="CONFIG.ui.rollBuilder.adjustTargetGroupSize(-1)">-</button>
-                <button class="small-button" type="button" onclick="CONFIG.ui.rollBuilder.adjustTargetGroupSize(1)">+</button>
+                <button class="small-button" type="button" onclick="CONFIG.ui.rollBuilder.adjustRollFlagNumber(-1, 'group-roll', 'global', 'targetGroupSize')">-</button>
+                <button class="small-button" type="button" onclick="CONFIG.ui.rollBuilder.adjustRollFlagNumber(1, 'group-roll', 'global', 'targetGroupSize')">+</button>
             </div>`;
 
-            CONFIG.ui.rollBuilder.setTargetGroupSize(1);
+            CONFIG.ui.rollBuilder.setRollFlagNumber(1, `group-roll`, `global`, `targetGroupSize`);
         }
         else {
             content = `
@@ -835,16 +904,43 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
         return CONFIG.ROLL_DATA.globalActions;
     }
 
-    static addAction(actionName, actor = 'global', render = true, data = undefined) {
+    static addAction(actionName, actor = 'global', render = true, flagData = {}) {
         const actionsArray = this.getActionArray(actor);
 
+        let sorting = Math.max(...actionsArray.map((a) => a.sorting), -1) + 1;
+
         if (actionsArray.filter((a) => a.action == actionName).length > 0) {
+            const prevActionInstance = actionsArray.filter((a) => a.action == actionName)[0];
+            sorting = prevActionInstance.sorting;
             this.removeAction(actionName, actor, render);
+        }
+
+        const data = {
+            flags: [],
+        }
+
+        const actionSettings = ROLL_ACTIONS.filter((a) => a.action == actionName)[0];
+
+        if (actionSettings.flags != undefined) {
+            for (const [flag, flagSettings] of Object.entries(actionSettings.flags)) {
+                let value;
+                if (flagData[flag] != undefined)
+                    value = flagData[flag].value;
+                else
+                    value = CONFIG.ui.rollBuilder.getRollFlagValue(actionName, actor, flag);
+
+                data.flags.push({
+                    flag: flag,
+                    value: value,
+                    settings: flagSettings,
+                });
+            }
         }
 
         actionsArray.push({
             action: actionName,
             actor: actor,
+            sorting: sorting,
             data: data,
         })
 
@@ -870,7 +966,7 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
         return flags.filter((a) => a.action == flag).length > 0;
     }
 
-    static getRollFlagData(flag, actor = 'global', actionType = 'preRoll') {
+    static getRollActionData(flag, actor = 'global', actionType = 'preRoll') {
         const flags = this.getRollActionFlags(actor, actionType);
         const flagData = flags.filter((a) => a.action == flag)[0];
         if (flagData)
@@ -942,7 +1038,7 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
 
         VrylActorSheet.prepareAttributeData(data.system);
 
-        let content = await foundry.applications.handlebars.renderTemplate(`systems/vryl/templates/parts/attributes-list.html`, data);
+        let content = await foundry.applications.handlebars.renderTemplate(`systems/vryl/templates/parts/attributes-list.hbs`, data);
 
         const sidebarElement = document.querySelector(`aside#sidebar`);
         const rect = sidebarElement.getBoundingClientRect();
@@ -1023,7 +1119,7 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
 
         for (const action of actionList) {
             if (action.presentInMenu !== false)
-                content += await foundry.applications.handlebars.renderTemplate(`systems/vryl/templates/parts/roll/roll-action.html`, action);
+                content += await foundry.applications.handlebars.renderTemplate(`systems/vryl/templates/parts/roll/roll-action.hbs`, action);
         }
 
         content = content.replaceAll(`flex-group-center`, `flex-group-left align-left full-width`);
@@ -1120,7 +1216,7 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
         CONFIG.ROLL_DATA.rollItemEffects = [];
 
         for (const [actorId, actorData] of CONFIG.ROLL_DATA.rollActors) {
-            if(actorData.actor.id == 'VRYL-TEMPLATE-ACTOR')
+            if (actorData.actor.id == 'VRYL-TEMPLATE-ACTOR')
                 continue;
 
             for (const effect of actorData.actor.appliedEffects) {
@@ -1129,23 +1225,31 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
                     let isApplied = effect.getFlag(CONFIG.SystemId, `isInstantApplied`);
                     let isPrompted = false;
 
-                    if(!isApplied)
-                    {
-                        for(const change of effect.changes)
-                        {
-                            if(change.key.startsWith(`system.attributes.`))
-                            {
-                                const attributeChanged = change.key.replace(`system.attributes.`, ``).split(`.`)[0];
-                                for(const attribute of actorData.attributes)
-                                {
-                                    if(attribute.dataName == attributeChanged)
-                                        isPrompted = true;
+                    if (!isApplied) {
+                        const promptSetting = effect.getFlag(CONFIG.SystemId, `promptSetting`);
+                        switch (promptSetting) {
+                            case "always":
+                                isPrompted = true;
+                                break;
+                            case "attacking":
+                                isPrompted = CONFIG.ui.rollBuilder.hasRollFlag('is-attack', 'global');
+                                break;
+                            case "attributesAffected":
+                                for (const change of effect.changes) {
+                                    if (change.key.startsWith(`system.attributes.`)) {
+                                        const attributeChanged = change.key.replace(`system.attributes.`, ``).split(`.`)[0];
+                                        for (const attribute of actorData.attributes) {
+                                            if (attribute.dataName == attributeChanged)
+                                                isPrompted = true;
+                                        }
+                                    }
                                 }
-                            }
+                                break;
                         }
+
                     }
 
-                    if(!isApplied && !isPrompted)
+                    if (!isApplied && !isPrompted)
                         continue;
 
                     const effectData = {
@@ -1164,6 +1268,9 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
 
     static _clearInstantEffects() {
         for (const [key, value] of CONFIG.ROLL_DATA.rollActors) {
+            if(key == 'VRYL-TEMPLATE-ACTOR')
+                continue;
+            
             for (const effect of value.actor.appliedEffects) {
                 if (effect.getFlag(CONFIG.SystemId, `isInstant`))
                     effect.setFlag(CONFIG.SystemId, `isInstantApplied`, false);

@@ -1,4 +1,4 @@
-
+import { ROLL_ACTIONS } from '../helpers/roll-actions.mjs';
 
 function renderActiveEffectsChanges(activeEffectConfig, html, data) {
     const section = html.querySelector("section[data-tab='effects']");
@@ -35,7 +35,134 @@ function renderActiveEffectsChanges(activeEffectConfig, html, data) {
     section.appendChild(datalist);
 }
 
+function renderChanges(activeEffectConfig, html, data) {
 
+    CONFIG.ui.vrylAddEffectFlag = async function (documentUuid) {
+
+        const document = await fromUuid(documentUuid);
+
+        const appliedRollActions = document.getFlag('vryl', 'appliedRollActions');
+
+        const actionData = {
+            flags: [],
+        }
+
+        const targetAction = {
+            action: "n-a",
+            actor: 'global',
+            data: actionData,
+        }
+        appliedRollActions.push(targetAction);
+        document.setFlag('vryl', 'appliedRollActions', appliedRollActions);
+
+        return targetAction;
+    }
+
+    CONFIG.ui.vrylUpdateEffectActionFlags = async function (field, actionName, documentUuid) {
+
+        const document = await fromUuid(documentUuid);
+
+        const appliedRollActions = document.getFlag('vryl', 'appliedRollActions');
+
+        let targetAction = appliedRollActions[parseInt(field.name)];
+        if (targetAction == undefined) {
+            targetAction = CONFIG.ui.vrylAddEffectFlag(documentUuid);
+        }
+
+        let key = field.id;
+
+        if (key == 'action') {
+            targetAction.action = field.value;
+
+            const actionSettings = ROLL_ACTIONS.filter((a) => a.action == actionName)[0];
+
+            targetAction.actor = actionSettings.actionOwner == 'global' ? 'global' : document.actor;
+
+            const actionData = {
+                flags: [],
+            }
+
+            if (actionSettings.flags) {
+                for (const [flag, flagSettings] of Object.entries(actionSettings.flags)) {
+                    let value;
+                    if (actionData.flags[flag] != undefined)
+                        value = actionData.flags[flag].value;
+                    else
+                        value = CONFIG.ui.rollBuilder.getInitialRollFlagValue(actionName, flag);
+
+                    actionData.flags.push({
+                        flag: flag,
+                        value: value,
+                        settings: flagSettings,
+                    });
+                }
+            }
+
+            targetAction.data = actionData;
+
+        }
+        else {
+            if (key.startsWith('data.')) {
+                const tokens = key.split('.');
+                const flag = targetAction.data.filter((f) => f.flag == tokens[1]);
+                if (flag) {
+                    flag[tokens[2]] = field.value;
+                }
+            }
+        }
+
+        document.setFlag('vryl', 'appliedRollActions', appliedRollActions);
+    }
+
+    const section = html.querySelector("section[data-tab='changes']");
+    if (!section) return;
+
+    let appliedRollActions = data.document.getFlag('vryl', 'appliedRollActions');
+    let content = '';
+
+    if (appliedRollActions == undefined) {
+        appliedRollActions = [];
+        data.document.setFlag('vryl', 'appliedRollActions', appliedRollActions);
+    }
+
+    let i = 0;
+    for (const action of appliedRollActions) {
+        let lineContent = `<div class='flexcol'>`;
+        lineContent += `<select name='${i}' id="action" onchange="CONFIG.ui.vrylUpdateEffectActionFlags(this, this.value, '${data.document.uuid}')">`
+        lineContent += `<option name='${i}' value='n-a' ${action.action == 'n-a' ? "selected" : ""}></option>`;
+        for (const actionSetting of ROLL_ACTIONS) {
+            lineContent += `<option value='${actionSetting.action}' ${action.action == actionSetting.action ? "selected" : ""}>${actionSetting.action}</option>`;
+        }
+        lineContent += `</select>`;
+
+        const actionSettings = ROLL_ACTIONS.filter((a) => a.action == action.action)[0];
+        if (actionSettings && actionSettings.flags != undefined && Object.keys(actionSettings.flags).length > 0) {
+            lineContent += '<div>';
+            for (const [flag, flagSettings] of Object.entries(actionSettings.flags)) {
+                lineContent += '<div class="flexrow" style="margin-left: 4em">';
+                lineContent += `<span class="fitwidth">${flagSettings.label}</span>`;
+                lineContent += `<input name='${i}' style="width: 75%;" id='data.${flag}.value' type='text' onchange="CONFIG.ui.vrylUpdateEffectActionFlags(this, '${action.action}', '${data.document.uuid}')"'>`
+                lineContent += '</div>';
+            }
+            lineContent += '</div>';
+        }
+        lineContent += `</div>`;
+        content += lineContent;
+        i++;
+    }
+
+    section.innerHTML += `
+    <div>
+    <header>
+    <span>Roll Flags</span>
+    <span></span>
+    <span></span>
+    <span></span>
+    <span onclick="CONFIG.ui.vrylAddEffectFlag('${data.document.uuid}')"><i class="fa-regular fa-square-plus"></i></span>
+    </header>
+    ${content}
+    </div>`;
+}
 
 function renderDuration(activeEffectConfig, html, data) {
     CONFIG.ui.vrylEffectShowHideSection = function vrylEffectShowHideSection(dropdown, container, selector, uuid) {
@@ -57,9 +184,14 @@ function renderDuration(activeEffectConfig, html, data) {
 
         fromUuid(uuid).then(results => {
             results.setFlag('vryl', 'isInstant', dropdown.value == "instant");
-            results.isTemporary = dropdown.value == "temporary";
+            //results.isTemporary = dropdown.value == "temporary";
         });
     }
+
+    CONFIG.ui.vrylSetEffectFlag = async function (flag, value, documentUuid) {
+        const document = await fromUuid(documentUuid);
+        document.setFlag(CONFIG.SystemId, flag, value);
+        }
 
     const section = html.querySelector("section[data-tab='duration']");
     if (!section) return;
@@ -71,8 +203,23 @@ function renderDuration(activeEffectConfig, html, data) {
 
     const temporaryHTML = section.innerHTML;
     let currentType = "passive";
+    
+    let instantContent = '';
     if (data.document.getFlag('vryl', 'isInstant'))
+    {
         currentType = "instant";
+
+        const promptSetting = data.document.getFlag(CONFIG.SystemId, 'promptSetting');
+        instantContent += `<span>Roll Prompt</span>
+        <div>
+        <select onchange="CONFIG.ui.vrylSetEffectFlag('promptSetting', this.value, '${data.document.uuid}')">
+            <option value="never" ${(!promptSetting || promptSetting == "never") ? "selected" : ""} >Never</option>
+            <option value="attributesAffected" ${promptSetting == "attributesAffected" ? "selected" : ""}>When Attributes are Affected</option>
+            <option value="attacking" ${promptSetting == "attacking" ? "selected" : ""}>When Attacking</option>
+            <option value="always" ${promptSetting == "always" ? "selected" : ""}>Always</option>
+        </select>
+        </div>`;
+    }
     else if (data.document.isTemporary)
         currentType = "temporary";
 
@@ -83,6 +230,7 @@ function renderDuration(activeEffectConfig, html, data) {
         <option value="instant" ${currentType == "instant" ? "selected" : ""}>Instant</option>
     </select>
     <div class="durationSection flexcol" data-dropdown-section="instant">
+        ${instantContent}
     </div>
     <div class="durationSection flexcol" data-dropdown-section="temporary">
         ${temporaryHTML}
@@ -104,6 +252,7 @@ Hooks.on("renderActiveEffectConfig", (activeEffectConfig, html, data) => {
     console.log(data);
 
     renderDuration(activeEffectConfig, html, data);
+    renderChanges(activeEffectConfig, html, data);
 });
 
 Hooks.on("updateActiveEffect", (effect, changes, options, userId) => {

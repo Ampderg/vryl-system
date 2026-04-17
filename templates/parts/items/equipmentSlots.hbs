@@ -1,3 +1,28 @@
-<div class="flex-group-center">
-    Slots
+<div style="margin-bottom:auto">
+    <div class="flexcol">
+        <b class="flex-group-center">Slots</b>
+        <div class="flexrow">
+            {{#each system.equipment.slots as |slot|}}
+            {{#with (lookup ../system.equipment.slotItems slot.dataName) as |slotItem|}}
+            <div class="flexcol">
+                <span class="flex-group-center">{{slot.name}}</span>
+                <span class="flex-group-center flexrow">
+                    {{#for 0 slot.slots 1}}
+                    <div class="item-image fitwidth">
+                        {{#if (lookup slotItem index)}}
+                        {{#with (lookup slotItem index) as |slotItemElement|}}
+                        <img class="fullBox" src="{{slotItemElement.img}}" data-tooltip="{{slotItemElement.name}}" width="24" height="24">
+                        {{/with}}
+                        {{else}}
+                        <div class="emptyBox" data-tooltip="Empty" width="30" height="30"></div>
+                        {{/if}}
+                    </div>
+
+                    {{/for}}
+                </span>
+            </div>
+            {{/with}}
+            {{/each}}
+        </div>
+    </div>
 </div>

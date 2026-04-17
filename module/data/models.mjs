@@ -7,10 +7,32 @@ const { BooleanField, HTMLField, NumberField, SchemaField, StringField, ArrayFie
 class ActorDataModel extends foundry.abstract.TypeDataModel {
   static defineSchema() {
 
-    // All Actors have resources.
-    return {
+    const schema = {};
 
-    };
+    const equipmentSlots = {};
+
+    const sortedSlotSettings = game.settings.get(CONFIG.SystemId, 'equipment-slots').toSorted((a, b) => a.id - b.id);
+
+    for(const slot of sortedSlotSettings)
+    {
+      let dataName = slot.slotName;
+      dataName = dataName.replaceAll(' ', '');
+      dataName = dataName.substring(0, 1).toLowerCase() + dataName.substring(1);
+      equipmentSlots[dataName] = new SchemaField({
+        name: new StringField({ required: true, initial: slot.slotName }),
+        dataName: new StringField({ required: true, initial: dataName }),
+        slots: new NumberField({ required: true, initial: slot.slotSlots, min: 0 }),
+        id: new NumberField({ required: true, initial: slot.id, min: 0 }),
+      });
+    }
+    
+    schema.equipment = new SchemaField({
+      slots: new SchemaField(equipmentSlots),
+      loadouts: new SchemaField({}),
+    });
+
+    // All Actors have resources.
+    return schema;
   }
 }
 
@@ -75,8 +97,9 @@ export class VrylItemBase extends foundry.abstract
 export class VrylItemCard extends VrylItemBase {
   static defineSchema() {
     const schema = {};
-
-    schema.cardSummary = new HTMLField();
+    
+    schema.summary = new HTMLField();
+    schema.description = new HTMLField();
 
     return schema;
   }
@@ -143,6 +166,14 @@ export class VrylInventoryItem extends VrylUsableItem {
     });
 
     schema.weapon = new SchemaField(weaponSchema);
+
+    // Equipment slots
+
+    
+    schema.equipment = new SchemaField({
+        slotDataName: new StringField({ required: true }),
+        slotsFilled: new NumberField({ initial: 1, required: true }),
+    });
 
     return schema;
   }

@@ -99,18 +99,18 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
 
     static PARTS = {
         header: {
-            template: `systems/vryl/templates/parts/header.html`
+            template: `systems/vryl/templates/parts/header.hbs`
         },
         tabs: {
             // Foundry-provided generic template
-            template: 'systems/vryl/templates/parts/side-tabs.html',
+            template: 'systems/vryl/templates/parts/side-tabs.hbs',
             // classes: ['sysclass'], // Optionally add extra classes to the part for extra customization
         },
         attribute: {
-            template: `systems/vryl/templates/actor/attributes.html`
+            template: `systems/vryl/templates/actor/attributes.hbs`
         },
         inventory: {
-            template: `systems/vryl/templates/actor/inventory.html`
+            template: `systems/vryl/templates/actor/inventory.hbs`
         },
         effects: {
             template: `systems/vryl/templates/actor/effects.hbs`
@@ -398,7 +398,7 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
             maxLevel: game.settings.get(CONFIG.SystemId, 'attribute-max-level'),
         };
 
-        const path = `systems/vryl/templates/menus/context-edit-attribute-pips.html`;
+        const path = `systems/vryl/templates/menus/context-edit-attribute-pips.hbs`;
 
         const rect = target.parentElement.getBoundingClientRect();
 
@@ -573,7 +573,7 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
             maxLevel: game.settings.get(CONFIG.SystemId, 'max-willpower'),
         };
 
-        const path = `systems/vryl/templates/menus/context-edit-willpower-pips.html`;
+        const path = `systems/vryl/templates/menus/context-edit-willpower-pips.hbs`;
 
         const rect = target.parentElement.getBoundingClientRect();
 

@@ -117,7 +117,7 @@ export class VrylHandlebarsHelpers {
 
         //#region Partials
         foundry.applications.handlebars.loadTemplates({
-            attributesList: "systems/vryl/templates/parts/attributes-list.html",
+            attributesList: "systems/vryl/templates/parts/attributes-list.hbs",
             willpower: "systems/vryl/templates/parts/willpower.hbs",
             xp: "systems/vryl/templates/parts/xp.hbs",
 

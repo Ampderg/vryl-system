@@ -19,6 +19,7 @@ export class VrylActor extends Actor {
 
         console.log("Preparing derived data for " + actorData.name);
         this._prepareCharacterData(actorData);
+        this._prepareInventoryData(actorData);
 
         this.system = systemData;
         this.flags.vryl = flags;
@@ -50,6 +51,36 @@ export class VrylActor extends Actor {
                 }
             }
             systemData.xpSpent = xpSpent;
+        }
+    }
+
+    _prepareInventoryData(actorData) {
+        const systemData = actorData.system;
+        const equipData = systemData.equipment;
+
+        if(!equipData) return;
+
+        equipData.slotItems = {};
+        for(const [dataName, slot] of Object.entries(equipData.slots))
+        {
+            let slotArray = new Array(slot.slots);
+            let i = 0;
+            for(const item of actorData.items.contents)
+            {
+                if(item.system.equipment.slotDataName == dataName)
+                {
+                    for(let j = 0; j < item.system.equipment.slotsFilled; j++)
+                    {
+                        if(i >= slot.slots)
+                            console.log(`ERROR: Slot ${slot.name} is full but is still getting equipped to by ${item.name}`);
+
+                        slotArray[i] = item;
+                        i++;
+                        
+                    }
+                }
+            }
+            equipData.slotItems[dataName] = slotArray;
         }
     }
     //#endregion
@@ -162,18 +193,21 @@ export class VrylActor extends Actor {
         const overrides = {};
         this.statuses.clear();
 
+        CONFIG.ROLL_DATA.globalActions = CONFIG.ROLL_DATA.globalActions?.filter((a) => a.activeEffectAppliedByActor != this.id);
+        const actorData = CONFIG.ROLL_DATA.rollActors?.get(this.id);
+        if (actorData)
+            actorData.actions?.filter((a) => a.activeEffectAppliedByActor != this.id);
+
         // Organize non-disabled effects by their application priority
         const allEffects = this.allApplicableEffects();
         const changes = [];
-        const applicableEffects = allEffects.filter((effect) => {
-            if (effect.getFlag(CONFIG.SystemId, `isInstant`)) {
-                return effect.getFlag(CONFIG.SystemId, `isInstantApplied`)
-            }
-            return true;
-        });
 
-        for (const effect of applicableEffects) {
+        for (const effect of allEffects) {
             if (!effect.active) continue;
+
+            if (effect.getFlag(CONFIG.SystemId, `isInstant`) && !effect.getFlag(CONFIG.SystemId, `isInstantApplied`))
+                continue;
+
             changes.push(...effect.changes.map(change => {
                 const c = foundry.utils.deepClone(change);
                 c.effect = effect;
@@ -181,6 +215,15 @@ export class VrylActor extends Actor {
                 return c;
             }));
             for (const statusId of effect.statuses) this.statuses.add(statusId);
+
+            //Apply roll flags
+            const appliedRollActions = effect.getFlag('vryl', 'appliedRollActions');
+
+            for (const appliedRollAction of appliedRollActions) {
+                const actionArray = CONFIG.ui.rollBuilder.getActionArray(appliedRollAction.actor);
+                appliedRollAction.activeEffectAppliedByActor = this.id;
+                actionArray.push(appliedRollAction);
+            }
         }
         changes.sort((a, b) => a.priority - b.priority);
 
@@ -229,7 +272,25 @@ export class VrylItem extends Item {
     }
 
     _prepareInventoryItemData(itemData) {
+        //TODO: this is kinda messy, maybe change how slots are handled to be a little better
+        const defaultSlotSettings = {};
 
+        const sortedSlotSettings = game.settings.get(CONFIG.SystemId, 'equipment-slots').toSorted((a, b) => a.id - b.id);
+
+        for(const slot of sortedSlotSettings)
+        {
+            let dataName = slot.slotName;
+            dataName = dataName.replaceAll(' ', '');
+            dataName = dataName.substring(0, 1).toLowerCase() + dataName.substring(1);
+            defaultSlotSettings[dataName] = {
+                name: slot.slotName,
+                dataName: dataName,
+                slots: slot.slots,
+                id: slot.id,
+            }
+        }
+
+        itemData.system.equipment.defaultSlotSettings = defaultSlotSettings;
     }
 
 }

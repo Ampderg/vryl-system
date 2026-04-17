@@ -1,7 +1,8 @@
-<div class="roll-builder-attribute roll-action flexcol flex-group-left align-left full-width action-name-{{action}} actor-{{actorId}}">
+<div
+    class="roll-builder-attribute roll-action flexcol flex-group-left align-left full-width action-name-{{action}} actor-{{actorId}}">
     <!-- Narrative baseline features -->
     <span class="flex-group-left align-left full-width">
-        <i>- 
+        <i>-
             {{#if (eq action "narrative-result")}}
             <b>Narrative Result</b>
             {{/if}}
@@ -14,6 +15,15 @@
             <b title="Every 'Crit' grants a Bonus Die.">Exploding Crits</b>
             {{/if}}
 
+            <!-- Combat -->
+            {{#if (eq action "is-attack")}}
+            This roll is an <b>Attack</b>
+            {{/if}}
+            {{#if (eq action "exposure")}}
+            <b
+                title="A number of Successes (that aren't already Crits) will be treated as if they rolled the highest possible die face, becoming Crits.">Exposure</b>
+            {{/if}}
+
             <!-- Willpower -->
             {{#if (eq action "no-willpower-spend")}}
             You cannot spend Willpower to gain Guaranteed Successes
@@ -24,17 +34,27 @@
             {{#if (eq action "failures-lose-willpower")}}
             Lose one Willpower for every <b>Failure</b>
             {{/if}}
-            
+
             <!-- Group Roll -->
             {{#if (eq action "group-roll")}}
             <b title="This roll's Level will be divided by the target group size before rolling.">Group Challenge</b>
             {{/if}}
         </i>
     </span>
-    {{#each data}}
-    <span>
-        <span>{{{label}}}</span>
+    {{#each data.flags}}
+    <span class='flexrow roll-action-flag' style="flex-wrap: nowrap;">
+        <span>{{{settings.label}}}</span>
+
         <span>{{value}}</span>
-    </span>
-    {{/each}}
+        {{#if ../inSidebar}}
+        {{#if settings.isAdjustable}}
+            <button class="small-button" type="button"
+                onclick="CONFIG.ui.rollBuilder.adjustRollFlagNumber(-1, '{{../action}}', '{{../actor}}', '{{flag}}', event)">-</button>
+            <button class="small-button" type="button"
+                onclick="CONFIG.ui.rollBuilder.adjustRollFlagNumber(1, '{{../action}}', '{{../actor}}', '{{flag}}', event)">+</button>
+        {{/if}}
+        {{/if}}
+
+</span>
+{{/each}}
 </div>

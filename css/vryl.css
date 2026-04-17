@@ -677,8 +677,8 @@
   margin: 5px;
 }
 
-.roll-builder-prompt.selected:hover.inSidebar,
-.attribute-deletable:hover {
+.roll-builder-prompt.selected:hover.inSidebar:not(:has(button:hover)),
+.attribute-deletable:hover:not(:has(button:hover)) {
   outline: 2px solid var(--vryl-c-dark);
   background-image: linear-gradient(45deg, var(--vryl-c-dark) 6.25%, transparent 6.25%, transparent 50%, var(--vryl-c-dark) 50%, var(--vryl-c-dark) 56.25%, transparent 56.25%, transparent 100%);
   background-size: 11.31px 11.31px;
@@ -854,8 +854,12 @@
 .small-button {
   height: 50%;
   min-height: 50%;
-  gap: 0rem;
-  padding: 0 0rem;
+}
+
+.roll-action-flag {
+  > * {
+    padding: 0 0.5em;
+  }
 }
 
 .header-left-tab {
@@ -905,4 +909,47 @@
   >* {
     margin: 0 0.5em;
   }
+}
+
+
+/*
+.prosemirror menu,
+prose-mirror menu {
+  max-width: 100%;
+  height: fit-content;
+  gap: 0px;
+}
+
+.prosemirror menu button i, prose-mirror menu button i {
+    font-size: 75%;
+}
+
+.prosemirror menu .pm-dropdown>span,
+prose-mirror menu .pm-dropdown>span {
+  font-size: 75%;
+} */
+
+.prosemirror .editor-content,
+prose-mirror .editor-content {
+  position: inherit;
+}
+
+.prosemirror.active {
+  min-height: 220px;
+}
+.prosemirror.inactive {
+  min-height: fit-content;
+  min-height: 50px;
+}
+
+.emptyBox {
+  border: 1px dashed var(--vryl-c-dark);
+  min-width: 30px;
+  min-height: 30px;
+}
+
+.fullBox {
+  border: 1px solid var(--vryl-c-dark);
+  min-width: 30px;
+  min-height: 30px;
 }

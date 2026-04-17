@@ -99,6 +99,9 @@ Hooks.once("init", () => {
     guaranteedSuccesses: 0,
   };
 
+  CONFIG.Dice.functions["exposure"] = exposureDice;
+  CONFIG.Dice.terms.d.prototype.constructor.MODIFIERS.exposure = exposureDice;
+
   _initSystemSettings();
 });
 
@@ -214,3 +217,45 @@ Hooks.once("ready", function () {
   // Include steps that need to happen after Foundry has fully loaded here.
 });
 
+
+Hooks.on("createMacro", async (macro, options, userId) => {
+  console.log(`Macro ${macro.name} was created by user ${userId}`);
+  
+  if(macro.command.startsWith(`await foundry.applications.ui.Hotbar.toggleDocumentSheet("`))
+  {
+    let actorId = macro.command.replace(`await foundry.applications.ui.Hotbar.toggleDocumentSheet("`, '').slice(0, -3);
+    let actor = await fromUuid(actorId);
+    macro.update({ [`img`]: actor.img })
+  }
+});
+
+
+//#region Dice Terms
+
+
+function exposureDice(modifier) {
+    const term = 'exposure';
+    const match = modifier.split('|');
+    const max = this.faces;
+
+    let stacks = match[1];
+    const dc = match[2];
+    const critThreshold = match[3] ?? max;
+
+    const currentResults = [...this.results].toSorted((a, b) => a.result - b.result);
+    for(let r of currentResults) {
+        if(stacks > 0 && r.result >= dc && r.result < critThreshold) {
+            r.rerolled = true;
+            r.active = false;
+            r.hidden = true;
+            stacks--;
+
+            this.results.push({
+                result: max,
+                active: true
+            })
+        }
+    }
+
+    return this.results;
+}
