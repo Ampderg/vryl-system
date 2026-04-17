@@ -329,3 +329,12 @@ export class VrylItemSheet extends api.HandlebarsApplicationMixin(sheets.ItemShe
 Hooks.once(`init`, () => {
 
 });
+
+Hooks.on("updateItem", (item, changes, options, userId) => {
+  if (changes.system?.equipment !== undefined) {
+    for(let effect of item.effects)
+    {
+      effect.update({ transfer: changes.system?.equipment.isEquipped });
+    }
+  }
+});

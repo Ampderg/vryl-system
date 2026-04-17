@@ -173,6 +173,7 @@ export class VrylInventoryItem extends VrylUsableItem {
     schema.equipment = new SchemaField({
         slotDataName: new StringField({ required: true }),
         slotsFilled: new NumberField({ initial: 1, required: true }),
+        isEquipped: new BooleanField({ initial: false, required: true }),
     });
 
     return schema;

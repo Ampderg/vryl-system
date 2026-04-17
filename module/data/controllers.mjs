@@ -67,7 +67,7 @@ export class VrylActor extends Actor {
             let i = 0;
             for(const item of actorData.items.contents)
             {
-                if(item.system.equipment.slotDataName == dataName)
+                if(item.system.equipment.slotDataName == dataName && item.system.equipment.isEquipped)
                 {
                     for(let j = 0; j < item.system.equipment.slotsFilled; j++)
                     {
@@ -138,12 +138,6 @@ export class VrylActor extends Actor {
             else if (i.type === 'feature') {
                 features.push(i);
             }
-            // Append to spells.
-            else if (i.type === 'spell') {
-                if (i.system.spellLevel != undefined) {
-                    spells[i.system.spellLevel].push(i);
-                }
-            }
         }
 
         for (const s of Object.values(spells)) {
@@ -153,7 +147,6 @@ export class VrylActor extends Actor {
         // Sort then assign
         context.gear = gear.sort((a, b) => (a.sort || 0) - (b.sort || 0));
         context.features = features.sort((a, b) => (a.sort || 0) - (b.sort || 0));
-        context.spells = spells;
     }
 
     //#region Update

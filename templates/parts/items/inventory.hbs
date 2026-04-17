@@ -26,6 +26,18 @@
             </div>
             {{!-- <div class='item-formula item-prop'>{{item.system.formula}}</div> --}}
             <div class='item-controls'>
+                {{#if @root.editable}}
+                {{#if (ne item.system.equipment.slotDataName "")}}
+                <a class='item-control item-equip' data-tooltip='Equip Gear'
+                    data-action='equipItem'>
+                    {{#if item.system.equipment.isEquipped}}
+                    <i class='fa-solid fa-shield'></i>
+                    {{else}}
+                    <i class='fa-light fa-shield'></i>
+                    {{/if}}
+                </a>
+                {{/if}}
+                {{/if}}
                 <a class='item-control item-edit' data-tooltip='{{localize "DOCUMENT.Update" type=' Gear'}}'
                     data-action='viewDoc'>
                     <i class='fas fa-edit'></i>

@@ -52,7 +52,7 @@ export function prepareActiveEffectCategories(effects) {
 * @param {HTMLElement} target    The element subject to search
 * @returns {Item | ActiveEffect} The embedded Item or ActiveEffect
 */
-export function _getEmbeddedDocument(target, sheet) {
+export function getEmbeddedDocument(target, sheet) {
   const docRow = target.closest('li[data-document-class]');
   if (docRow.dataset.documentClass === 'Item') {
     return sheet.document.items.get(docRow.dataset.itemId);
@@ -66,12 +66,12 @@ export function _getEmbeddedDocument(target, sheet) {
 }
 
 export async function viewDoc(event, target) {
-  const doc = _getEmbeddedDocument(target, this);
+  const doc = getEmbeddedDocument(target, this);
   doc.sheet.render(true);
 }
 
 export async function deleteDoc(event, target) {
-  const doc = _getEmbeddedDocument(target, this);
+  const doc = getEmbeddedDocument(target, this);
   await doc.delete();
 }
 
@@ -120,12 +120,12 @@ export async function toggleEffectByUUID(uuid) {
 }
 
 export async function toggleEffect(event, target) {
-  const effect = _getEmbeddedDocument(target, this);
+  const effect = getEmbeddedDocument(target, this);
   await effect.update({ disabled: !effect.disabled });
 }
 
 export async function toggleInstantEffect(event, target) {
-  const effect = _getEmbeddedDocument(target, this);
+  const effect = getEmbeddedDocument(target, this);
   _toggleInstantEffect(effect);
   //CONFIG.ui.rollBuilder.updateRollData();
 }
