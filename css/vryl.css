@@ -953,3 +953,7 @@ prose-mirror .editor-content {
   min-width: 30px;
   min-height: 30px;
 }
+
+.flexcol.flexmargin:not(:last-child) {
+  margin-bottom: 0.5em;
+}

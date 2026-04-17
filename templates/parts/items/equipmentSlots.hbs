@@ -1,12 +1,12 @@
-<div style="margin-bottom:auto">
+<div style="margin-bottom:auto;">
     <div class="flexcol">
         <b class="flex-group-center">Slots</b>
-        <div class="flexrow">
+        <div class="flexrow" style="flex-wrap: wrap; gap: 0.5em;">
             {{#each system.equipment.slots as |slot|}}
             {{#with (lookup ../system.equipment.slotItems slot.dataName) as |slotItem|}}
             <div class="flexcol">
                 <span class="flex-group-center">{{slot.name}}</span>
-                <span class="flex-group-center flexrow">
+                <span class="flex-group-center flexrow" style="flex-wrap: nowrap;">
                     {{#for 0 slot.slots 1}}
                     <div class="item-image fitwidth">
                         {{#if (lookup slotItem index)}}

@@ -689,26 +689,24 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
     static async _equipItem(event, target) {
         const item = effectsFunctions.getEmbeddedDocument(target, this);
         const equipSlot = this.document.system.equipment.slots[`${item.system.equipment.slotDataName}`];
-        if(!equipSlot)
-        {
-            item.update({[`system.equipment.isEquipped`]: false });
+        if (!equipSlot) {
+            item.update({ [`system.equipment.isEquipped`]: false });
             return;
         }
-        const equipItemSlot = this.document.system.equipment.slotItems[`${item.system.equipment.slotDataName}`];
-        let occupiedSlots = 0;
-        for(let slot of equipItemSlot)
-        {
-            if(slot != undefined && slot != null)
-                occupiedSlots++;
+        if (!item.system.equipment.isEquipped) {
+            const equipItemSlot = this.document.system.equipment.slotItems[`${item.system.equipment.slotDataName}`];
+            let occupiedSlots = 0;
+            for (let slot of equipItemSlot) {
+                if (slot != undefined && slot != null)
+                    occupiedSlots++;
+            }
+            if (occupiedSlots + item.system.equipment.slotsFilled > equipSlot.slots) {
+                item.update({ [`system.equipment.isEquipped`]: false });
+                ui.notifications.info(`There are not enough ${equipSlot.name} slots available to equip that item!`);
+                return;
+            }
         }
-        if(occupiedSlots + item.system.equipment.slotsFilled > equipSlot.slots)
-        {
-            item.update({[`system.equipment.isEquipped`]: false });
-            ui.notifications.info(`There are not enough ${equipSlot.name} slots available to equip that item!`);
-            return;
-        }
-        
-        item.update({[`system.equipment.isEquipped`]: !item.system.equipment.isEquipped });
+        item.update({ [`system.equipment.isEquipped`]: !item.system.equipment.isEquipped });
     }
 
     //#endregion

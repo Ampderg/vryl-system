@@ -2,7 +2,7 @@ export class VrylHandlebarsHelpers {
     static registerHandlebarsHelpers() {
 
         //#region Loops
-        
+
         Handlebars.registerHelper('for', function (from, to, incr, block) {
             var accum = '';
             for (var i = from; i < to; i += incr) {
@@ -55,13 +55,12 @@ export class VrylHandlebarsHelpers {
             return ret;
         });
 
-        Handlebars.registerHelper('entries', function(object) {
+        Handlebars.registerHelper('entries', function (object) {
 
             const entries = Object.entries(object);
             const arr = [];
 
-            for(const e of entries)
-            {
+            for (const e of entries) {
                 e[1].key = e[0];
                 arr.push(e[1]);
             }
@@ -69,18 +68,42 @@ export class VrylHandlebarsHelpers {
             return arr;
         });
 
-        Handlebars.registerHelper('sort', function(array) {
+        Handlebars.registerHelper('sort', function (array) {
 
             return array.toSorted((a, b) => {
-                if(a.sorting != undefined)
+                if (a.sorting != undefined)
                     return a.sorting - b.sorting;
                 return a - b;
             });
         });
 
         //#endregion
-        
+
         //#region Comparison
+
+        /**
+ * Tests whether a string begins with the given prefix.
+ *
+ * ```handlebars
+ * {{#startsWith "Goodbye" "Hello, world!"}}
+ *   Whoops
+ * {{else}}
+ *   Bro, do you even hello world?
+ * {{/startsWith}}
+ * ```
+ * @contributor Dan Fox <http://github.com/iamdanfox>
+ * @param {String} `prefix`
+ * @param {String} `testString`
+ * @param {String} `options`
+ * @return {String}
+ * @block
+ * @api public
+ */
+
+        Handlebars.registerHelper('startsWith', function (str, str2) {
+            return str.startsWith(str2);
+        });
+
         // Handlebars.registerHelper('lt', function (a, b) {
         //     var next = arguments[arguments.length - 1];
         //     return (a < b) ? next.fn(this) : next.inverse(this);
@@ -106,11 +129,11 @@ export class VrylHandlebarsHelpers {
         Handlebars.registerHelper('nenull', function (a, b) {
             var next = arguments[arguments.length - 1];
             let result = a != b;
-            if(a == null || a == undefined) result = false;
+            if (a == null || a == undefined) result = false;
             return result ? next.fn(this) : next.inverse(this);
         });
 
-        Handlebars.registerHelper("add", function(a, b) {
+        Handlebars.registerHelper("add", function (a, b) {
             return a + b;
         });
         //#endregion
