@@ -128,6 +128,11 @@ export class VrylItemSheet extends api.HandlebarsApplicationMixin(sheets.ItemShe
       this.document.update({ [`system.equipment.slotDataName`]: selectEquipSlotElement.value });
     });
 
+    const selectEquipTimeElement = this.element.querySelector(`select#equipTimeSelector`);
+    selectEquipTimeElement.addEventListener("change", () => {
+      this.document.update({ [`system.equipment.equipTime`]: selectEquipTimeElement.value });
+    });
+
     const equipSlotSlotsElement = this.element.querySelector(`input#equipSlotSlots`);
     equipSlotSlotsElement.addEventListener("change", () => {
       this.document.update({ [`system.equipment.slotsFilled`]: equipSlotSlotsElement.value });

@@ -1,20 +1,36 @@
 {{! Description Tab }}
-<section style="max-height:fit-content;"
-class="flexcol"
->
+<section style="max-height:fit-content;" class="flexcol">
   {{#if editable}}
-  <div class="flexrow">
-    <b>Equipment Slot</b>
-    <select id="equipSlotSelector" data-action="equipSlotChanged">
-      <option value="" {{#if (eq system.equipment.slotDataName "")}}selected{{/if}}>Not Equippable</option>
+
+  <div class="flexrow" style="flex: 3; gap: 1em;">
+    <b class="fitwidth">Equipment Slot</b>
+    <select id="equipSlotSelector">
+      <option value="" {{#if (eq system.equipment.slotDataName "" )}}selected{{/if}}>Not Equippable</option>
       {{#each system.equipment.defaultSlotSettings as |slot|}}
-        <option value="{{slot.dataName}}" {{#if (eq ../system.equipment.slotDataName slot.dataName)}}selected{{/if}}>{{slot.name}}</option>
+      <option value="{{slot.dataName}}" {{#if (eq ../system.equipment.slotDataName slot.dataName)}}selected{{/if}}>
+        {{slot.name}}</option>
       {{/each}}
     </select>
   </div>
-  <div class="flexrow">
-    <b>Slots Taken</b>
-    <input id="equipSlotSlots" type="number" value="{{system.equipment.slotsFilled}}">
+  {{#unless (eq system.equipment.slotDataName "")}}
+  <div class="flexrow" style="gap: 1em;">
+    <div class="flexrow">
+      <b>Slots Taken</b>
+      <input id="equipSlotSlots" type="number" value="{{system.equipment.slotsFilled}}">
+    </div>
+
+    <div class="flexrow" style="min-width:min-content">
+      <b>Equip Time</b>
+      <select id="equipTimeSelector">
+        <option value="instant" {{#if (eq system.equipment.equipTime "instant" )}}selected{{/if}}>Instant</option>
+        <option value="actions_1" {{#if (eq system.equipment.equipTime "actions_1" )}}selected{{/if}}>1 Action</option>
+        <option value="actions_2" {{#if (eq system.equipment.equipTime "actions_2" )}}selected{{/if}}>2 Actions</option>
+        <option value="actions_3" {{#if (eq system.equipment.equipTime "actions_3" )}}selected{{/if}}>3 Actions</option>
+        <option value="scene" {{#if (eq system.equipment.equipTime "scene" )}}selected{{/if}}>Scene</option>
+        <option value="rest" {{#if (eq system.equipment.equipTime "rest" )}}selected{{/if}}>Rest</option>
+      </select>
+    </div>
   </div>
+  {{/unless}}
   {{/if}}
 </section>

@@ -58,25 +58,21 @@ export class VrylActor extends Actor {
         const systemData = actorData.system;
         const equipData = systemData.equipment;
 
-        if(!equipData) return;
+        if (!equipData) return;
 
         equipData.slotItems = {};
-        for(const [dataName, slot] of Object.entries(equipData.slots))
-        {
+        for (const [dataName, slot] of Object.entries(equipData.slots)) {
             let slotArray = new Array(slot.slots);
             let i = 0;
-            for(const item of actorData.items.contents)
-            {
-                if(item.system.equipment.slotDataName == dataName && item.system.equipment.isEquipped)
-                {
-                    for(let j = 0; j < item.system.equipment.slotsFilled; j++)
-                    {
-                        if(i >= slot.slots)
+            for (const item of actorData.items.contents) {
+                if (item.system.equipment.slotDataName == dataName && item.system.equipment.isEquipped) {
+                    for (let j = 0; j < item.system.equipment.slotsFilled; j++) {
+                        if (i >= slot.slots)
                             console.log(`ERROR: Slot ${slot.name} is full but is still getting equipped to by ${item.name}`);
 
                         slotArray[i] = item;
                         i++;
-                        
+
                     }
                 }
             }
@@ -212,10 +208,12 @@ export class VrylActor extends Actor {
             //Apply roll flags
             const appliedRollActions = effect.getFlag('vryl', 'appliedRollActions');
 
-            for (const appliedRollAction of appliedRollActions) {
-                const actionArray = CONFIG.ui.rollBuilder.getActionArray(appliedRollAction.actor);
-                appliedRollAction.activeEffectAppliedByActor = this.id;
-                actionArray.push(appliedRollAction);
+            if (appliedRollActions) {
+                for (const appliedRollAction of appliedRollActions) {
+                    const actionArray = CONFIG.ui.rollBuilder.getActionArray(appliedRollAction.actor);
+                    appliedRollAction.activeEffectAppliedByActor = this.id;
+                    actionArray.push(appliedRollAction);
+                }
             }
         }
         changes.sort((a, b) => a.priority - b.priority);
@@ -270,8 +268,7 @@ export class VrylItem extends Item {
 
         const sortedSlotSettings = game.settings.get(CONFIG.SystemId, 'equipment-slots').toSorted((a, b) => a.id - b.id);
 
-        for(const slot of sortedSlotSettings)
-        {
+        for (const slot of sortedSlotSettings) {
             let dataName = slot.slotName;
             dataName = dataName.replaceAll(' ', '');
             dataName = dataName.substring(0, 1).toLowerCase() + dataName.substring(1);

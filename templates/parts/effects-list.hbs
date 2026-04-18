@@ -34,7 +34,7 @@
             {{/if}}
             ' height="24" width="24" />
                 {{#if (startsWith effect.name "Active Effect")}}
-                <div class='effect-source flex-group-center'><b>{{effect.sourceName}}</b></div>
+                <div class='effect-source flex-group-center'>{{#unless @root.isItemSheet}}<b>{{/unless}}{{effect.sourceName}}{{#unless @root.isItemSheet}}</b>{{/unless}}</div>
                 {{else}}
                 <div class='effect-source  flex-group-center'>{{#unless @root.isItemSheet}}<b>{{effect.sourceName}}</b>
                     - {{/unless}}{{effect.name}}</div>

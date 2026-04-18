@@ -133,6 +133,7 @@ export async function toggleInstantEffect(event, target) {
 function _toggleInstantEffect(effect) {
   const isApplied = !effect.getFlag(CONFIG.SystemId, `isInstantApplied`);
   effect.setFlag(CONFIG.SystemId, `isInstantApplied`, isApplied);
+  CONFIG.ui.rollBuilder.populateRollActor(effect.target);
 }
 
 //#region Edit Image
