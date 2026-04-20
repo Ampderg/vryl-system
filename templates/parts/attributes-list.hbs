@@ -3,7 +3,7 @@
     {{#eachAttribute system.attributeTypes}}
     <div id="{{dataName}}" class="attribute-type fitheight">
         <div class="flexrow fitheight">
-            <b class="flex-group-center fitwidth typeOptions" style="writing-mode: vertical-lr;">{{name}}</b>
+            <b class="flex-group-center fitwidth typeOptions" style="max-width: 1.5em; writing-mode: vertical-lr;">{{name}}</b>
             {{#eachAttribute ../system.attributeCategories}}
             {{#if (eq typeDataName ../dataName)}}
             <div id="{{dataName}}" class="attribute-category flexcol">

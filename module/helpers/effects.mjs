@@ -53,7 +53,7 @@ export function prepareActiveEffectCategories(effects) {
 * @returns {Item | ActiveEffect} The embedded Item or ActiveEffect
 */
 export function getEmbeddedDocument(target, sheet) {
-  const docRow = target.closest('li[data-document-class]');
+  const docRow = target.closest('[data-document-class]');
   if (docRow.dataset.documentClass === 'Item') {
     return sheet.document.items.get(docRow.dataset.itemId);
   } else if (docRow.dataset.documentClass === 'ActiveEffect') {
@@ -71,6 +71,14 @@ export async function viewDoc(event, target) {
 }
 
 export async function deleteDoc(event, target) {
+
+  const proceed = await foundry.applications.api.DialogV2.confirm({
+    content: "Are you sure you want to delete this?",
+    rejectClose: false,
+    modal: true
+  });
+  if (!proceed) return;
+
   const doc = getEmbeddedDocument(target, this);
   await doc.delete();
 }
@@ -116,7 +124,7 @@ export async function createDoc(event, target) {
 
 export async function toggleEffectByUUID(uuid) {
   const effect = await fromUuid(uuid);
-  _toggleInstantEffect(effect);
+  toggleInstantEffect(effect);
 }
 
 export async function toggleEffect(event, target) {
@@ -124,13 +132,13 @@ export async function toggleEffect(event, target) {
   await effect.update({ disabled: !effect.disabled });
 }
 
-export async function toggleInstantEffect(event, target) {
+export async function toggleInstantEffectEvent(event, target) {
   const effect = getEmbeddedDocument(target, this);
-  _toggleInstantEffect(effect);
+  toggleInstantEffect(effect);
   //CONFIG.ui.rollBuilder.updateRollData();
 }
 
-function _toggleInstantEffect(effect) {
+export function toggleInstantEffect(effect) {
   const isApplied = !effect.getFlag(CONFIG.SystemId, `isInstantApplied`);
   effect.setFlag(CONFIG.SystemId, `isInstantApplied`, isApplied);
   CONFIG.ui.rollBuilder.populateRollActor(effect.target);
@@ -139,22 +147,27 @@ function _toggleInstantEffect(effect) {
 //#region Edit Image
 
 export async function onEditImage(event, target) {
-  const attr = 'img';
-  const current = foundry.utils.getProperty(this.document, attr);
-  const { img } =
-    this.document.constructor.getDefaultArtwork?.(this.document.toObject()) ??
-    {};
-  const fp = new FilePicker({
-    current,
-    type: 'image',
-    redirectToRoot: img ? [img] : [],
-    callback: (path) => {
-      this.document.update({ [attr]: path });
-    },
-    top: this.position.top + 40,
-    left: this.position.left + 10,
-  });
-  return fp.browse();
+  if (!window.Tokenizer || event.shiftKey || this.document.constructor.name == "VrylItem") {
+    const attr = 'img';
+    const current = foundry.utils.getProperty(this.document, attr);
+    const { img } =
+      this.document.constructor.getDefaultArtwork?.(this.document.toObject()) ??
+      {};
+    const fp = new FilePicker({
+      current,
+      type: 'image',
+      redirectToRoot: img ? [img] : [],
+      callback: (path) => {
+        this.document.update({ [attr]: path });
+      },
+      top: this.position.top + 40,
+      left: this.position.left + 10,
+    });
+    return fp.browse();
+  }
+  else if(window.Tokenizer) {
+    window.Tokenizer.tokenizeActor(this.document);
+  }
 }
 
 Hooks.once("init", () => {

@@ -65,6 +65,9 @@ export class VrylActor extends Actor {
             let slotArray = new Array(slot.slots);
             let i = 0;
             for (const item of actorData.items.contents) {
+                if(item.type != "gear")
+                    continue;
+                
                 if (item.system.equipment.slotDataName == dataName && item.system.equipment.isEquipped) {
                     for (let j = 0; j < item.system.equipment.slotsFilled; j++) {
                         if (i >= slot.slots)
@@ -121,8 +124,9 @@ export class VrylActor extends Actor {
         // Initialize containers.
         // You can just use `this.document.itemTypes` instead
         // if you don't need to subdivide a given type like
-        // this sheet does with spells
+
         const gear = [];
+        const combatActions = [];
 
         // Iterate through items, allocating to containers
         for (let i of this.document.items) {
@@ -131,18 +135,14 @@ export class VrylActor extends Actor {
                 gear.push(i);
             }
             // Append to features.
-            else if (i.type === 'feature') {
-                features.push(i);
+            else if (i.type === 'combatAction') {
+                combatActions.push(i);
             }
-        }
-
-        for (const s of Object.values(spells)) {
-            s.sort((a, b) => (a.sort || 0) - (b.sort || 0));
         }
 
         // Sort then assign
         context.gear = gear.sort((a, b) => (a.sort || 0) - (b.sort || 0));
-        context.features = features.sort((a, b) => (a.sort || 0) - (b.sort || 0));
+        context.combatActions = combatActions.sort((a, b) => (a.sort || 0) - (b.sort || 0));
     }
 
     //#region Update
@@ -263,6 +263,7 @@ export class VrylItem extends Item {
     }
 
     _prepareInventoryItemData(itemData) {
+        if(itemData.type != "gear") return;
         //TODO: this is kinda messy, maybe change how slots are handled to be a little better
         const defaultSlotSettings = {};
 

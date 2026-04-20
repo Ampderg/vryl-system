@@ -86,9 +86,7 @@ export class VrylItemBase extends foundry.abstract
   static defineSchema() {
     const schema = {};
 
-    
-
-    //schema.description = new fields.HTMLField();
+    schema.description = new HTMLField();
 
     return schema;
   }
@@ -96,17 +94,24 @@ export class VrylItemBase extends foundry.abstract
 
 export class VrylItemCard extends VrylItemBase {
   static defineSchema() {
-    const schema = {};
+    const schema = super.defineSchema();
     
-    schema.summary = new HTMLField();
-    schema.description = new HTMLField();
+    // schema.containedItems = new ArrayField({
+    //   itemUuid: new StringField({ required: true }),
+    // });
 
     return schema;
   }
 }
 
-export class VrylUsableEffect extends VrylItemCard {
+export class VrylCombatAction extends VrylItemCard {
+  static defineSchema() {
+    const schema = super.defineSchema();
+    
+    
 
+    return schema;
+  }
 }
 
 export class VrylUsableItem extends VrylItemCard {
@@ -124,48 +129,11 @@ export class VrylInventoryItem extends VrylUsableItem {
       min: 0,
     });
 
-    schema.maxCount = new NumberField({
-      integer: true,
-      initial: null,
-      min: 0,
-    });
-
     schema.isBulky = new BooleanField({
       required: true,
       nullable: false,
       initial: false,
     });
-
-    // - weapon data
-    const weaponSchema = {};
-
-    weaponSchema.isWeapon = new BooleanField({
-      required: true,
-      nullable: false,
-      initial: false,
-    });
-
-    weaponSchema.isActiveWeapon = new BooleanField({
-      required: true,
-      nullable: false,
-      initial: false,
-    });
-
-    weaponSchema.diceNum = new NumberField({
-      ...requiredInteger,
-      initial: 1,
-      min: 1,
-    });
-
-    weaponSchema.diceSize = new StringField({ initial: 'd6' });
-
-    weaponSchema.frayDamage = new NumberField({
-      ...requiredInteger,
-      initial: 2,
-      min: 0,
-    });
-
-    schema.weapon = new SchemaField(weaponSchema);
 
     // Equipment slots
 
@@ -181,16 +149,16 @@ export class VrylInventoryItem extends VrylUsableItem {
   }
 
   prepareDerivedData() {
-    // Build the formula dynamically using string interpolation
-    if (this.weapon.isWeapon && this.weapon.isActiveWeapon) {
-      this.damageDice = `${this.weapon.diceNum}${this.weapon.diceSize}`;
-      this.frayDamage = this.weapon.frayDamage;
-    }
-    else
-    {
-      this.damageDice = ``;
-      this.frayDamage = 0;
-    }
+    // // Build the formula dynamically using string interpolation
+    // if (this.weapon.isWeapon && this.weapon.isActiveWeapon) {
+    //   this.damageDice = `${this.weapon.diceNum}${this.weapon.diceSize}`;
+    //   this.frayDamage = this.weapon.frayDamage;
+    // }
+    // else
+    // {
+    //   this.damageDice = ``;
+    //   this.frayDamage = 0;
+    // }
   }
+  
 }
-

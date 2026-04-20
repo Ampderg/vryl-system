@@ -1,4 +1,4 @@
-<section class='hide-overflow tab inventory {{tab.cssClass}}' data-group='primary' data-tab='inventory'>
+<section class='tab inventory {{#with (lookup tabs "inventory")}} {{cssClass}} {{/with}}' style="overflow-x: visible;" data-group='primary' data-tab='inventory'>
     <div class="flexrow">
         {{> equipmentSlots}}
         {{> equipmentLoadouts}}

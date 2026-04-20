@@ -77,6 +77,10 @@ export class VrylHandlebarsHelpers {
             });
         });
 
+        Handlebars.registerHelper('lookupId', function (collection, id) {
+            return collection.find(item => item.id === id);
+        });
+
         //#endregion
 
         //#region Comparison
@@ -136,6 +140,13 @@ export class VrylHandlebarsHelpers {
         Handlebars.registerHelper("add", function (a, b) {
             return a + b;
         });
+
+        Handlebars.registerHelper('or', function () {
+            // Convert arguments object to array and remove the last item (options)
+            var args = Array.prototype.slice.call(arguments, 0, -1);
+            // Return true if at least one argument is truthy
+            return args.some(Boolean);
+        });
         //#endregion
 
         //#region Partials
@@ -149,6 +160,8 @@ export class VrylHandlebarsHelpers {
             inventory: "systems/vryl/templates/parts/items/inventory.hbs",
 
             effectsList: "systems/vryl/templates/parts/effects-list.hbs",
+
+            combatCards: "systems/vryl/templates/parts/combat/cards.hbs"
         });
     }
 }

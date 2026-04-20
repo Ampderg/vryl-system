@@ -1,6 +1,8 @@
 @import url("https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap");
 
+
 :root {
+  interpolate-size: allow-keywords;
   --vryl-c-dark: #191813;
   --vryl-c-faint: #c9c7b8;
   --vryl-c-beige: #b5b3a4;
@@ -8,6 +10,7 @@
   --vryl-c-white: #ffffff;
   --vryl-c-black: #000000;
   --vryl-c-groove: #eeede0;
+
 }
 
 .message-content,
@@ -22,6 +25,8 @@
   --vryl-c-clickable: #8B0000;
   --vryl-c-clickable-hover: #dd0c0c;
   --vryl-c-background-highlight: #b3786d36;
+
+  --color-scrollbar: var(--vryl-c-clickable);
 }
 
 .theme-dark {
@@ -35,6 +40,8 @@
   --vryl-c-clickable: #bb86fc;
   --vryl-c-clickable-hover: #dec4ff;
   --vryl-c-background-highlight: #dec4ff24;
+
+  --color-scrollbar: var(--vryl-c-clickable);
 }
 
 /* Global styles */
@@ -345,7 +352,7 @@
   list-style: none;
   margin: 0;
   padding: 0;
-  overflow-y: auto;
+  overflow-x: visible;
   scrollbar-width: thin;
   color: var(--vryl-c-tan);
 }
@@ -359,7 +366,6 @@
 .vryl .items-list .item-name {
   flex: 2;
   margin: 0;
-  overflow: hidden;
   font-size: 13px;
   text-align: left;
   align-items: center;
@@ -370,20 +376,19 @@
 .vryl .items-list .item-name h4 {
   margin: 0;
   white-space: nowrap;
-  overflow-x: hidden;
 }
 
-.vryl .items-list .item-controls {
+/* .vryl .items-list .item-controls {
   display: flex;
   flex: 0 0 100px;
   justify-content: flex-end;
-}
+} */
 
-.vryl .items-list .item-controls a {
+/* .vryl .items-list .item-controls a {
   font-size: 12px;
   text-align: center;
   margin: 0 6px;
-}
+} */
 
 .vryl .items-list .item {
   align-items: center;
@@ -403,8 +408,7 @@
   flex: 0 0 30px;
   height: 30px;
   background-size: 30px;
-  border: none;
-  margin-right: 5px;
+  border: 1px groove var(--vryl-c-tan);
 }
 
 .vryl .items-list .item-prop {
@@ -740,13 +744,15 @@
 }
 
 .vryl.sheet {
-  overflow: visible;
+  overflow-x: visible !important;
+  overflow-y: clip;
   /* Needed to display tabs off the sheet box */
 
   min-height: fit-content;
 
   >.window-content {
-    overflow: visible;
+    overflow-x: visible !important;
+    overflow-y: clip;
   }
 }
 
@@ -857,7 +863,7 @@
 }
 
 .roll-action-flag {
-  > * {
+  >* {
     padding: 0 0.5em;
   }
 }
@@ -937,6 +943,7 @@ prose-mirror .editor-content {
 .prosemirror.active {
   min-height: 220px;
 }
+
 .prosemirror.inactive {
   min-height: fit-content;
   min-height: 50px;
@@ -956,4 +963,73 @@ prose-mirror .editor-content {
 
 .flexcol.flexmargin:not(:last-child) {
   margin-bottom: 0.5em;
+}
+
+.itemCard {
+  border: 2px groove var(--vryl-c-tan);
+  background-color: var(--vryl-c-faint);
+}
+
+.itemCardWrapper {
+  overflow: hidden;
+  min-width: calc(50% - 8px);
+  max-width: calc(50% - 8px);
+  align-self: flex-start;
+  flex: 0.5;
+}
+
+.itemCardWrapper.expandedItem {
+  overflow: visible;
+}
+
+.itemCardGrid {
+  margin-top: 1em;
+  flex-wrap: wrap;
+  gap: 1em;
+  max-height: 450px;
+  padding: 0.5em;
+  border: 2px groove var(--vryl-c-tan);
+}
+
+.item-controls {
+  margin-bottom: 0.25em;
+}
+
+.item-control {
+  font-size: 1.125em;
+}
+
+.item-details {
+  min-height: 0px;
+  max-height: 0px;
+  margin-top: -0.25em;
+  overflow: clip;
+  transition: max-height 0.25s ease-out;
+}
+
+.item-details.expandedItem {
+  max-height: fit-content;
+}
+
+.item-effects {
+  align-content: center;
+  align-self: center;
+  width: 90%;
+}
+
+.button-pressed {
+  border-color: var(--c-faint);
+  color: var(--vryl-c-faint);
+}
+
+.hidden-but-spaced {
+  visibility: hidden;    /* Hides visually but keeps space */
+  pointer-events: none;  /* Disables clicks, hovers, and other mouse events */
+}
+
+.notransition {
+  -webkit-transition: none !important;
+  -moz-transition: none !important;
+  -o-transition: none !important;
+  transition: none !important;
 }

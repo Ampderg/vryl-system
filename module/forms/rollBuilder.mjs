@@ -211,7 +211,7 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
     //         return;
 
     //     for (let term of roll.terms) {
-    //         if (!(term instanceof Die))
+    //         if (!(term instanceof foundry.dice.terms.Die))
     //             continue;
 
     //         for (let die of term.results) {
@@ -622,12 +622,12 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
                 let actorBonuses = { };
 
                 if(actorData.actor?.system?.bonusDice != undefined && actorData.actor?.system?.bonusDice != 0)
-                    actorBonuses.bonusDice = actorData.actor.system.bonusDice;
+                    actorBonuses.level = actorData.actor.system.bonusDice;
 
                 if(Object.keys(actorBonuses).length > 0)
                 {
                     actorBonuses.dataName = "actor_" + key;
-                    actorBonuses.name = "Bonuses";
+                    actorBonuses.name = "Character Bonuses";
 
                     actorContent += await renderAttribute(key, actorBonuses);
                 }

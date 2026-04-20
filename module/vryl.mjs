@@ -1,7 +1,7 @@
 import { VrylActor, VrylItem } from "./data/controllers.mjs";
 import { VrylActorSheet } from "./data/views.mjs";
 import { VrylItemSheet } from "./data/itemViews.mjs";
-import { CharacterActorDataModel, VrylInventoryItem, VrylUsableEffect } from "./data/models.mjs";
+import { CharacterActorDataModel, VrylInventoryItem, VrylCombatAction } from "./data/models.mjs";
 import "./data/active-effect.mjs";
 import { RollSidebar } from "./forms/rollBuilder.mjs";
 import { AttributeRoll } from "./helpers/vrylRoll.mjs";
@@ -12,6 +12,7 @@ import * as effectsFunctions from './helpers/effects.mjs';
 
 // Helpers
 import { VrylHandlebarsHelpers } from "./helpers/handlebarsHelpers.mjs";
+import { VrylLogsHelpers } from "./helpers/logs.mjs";
 
 // Menus
 import { SubmenuAttributes } from "./forms/submenuAttributes.mjs";
@@ -19,6 +20,8 @@ import { SubmenuEquipment } from "./forms/submenuEquipment.mjs";
 
 const collections = foundry.documents.collections;
 const sheets = foundry.appv1.sheets;
+
+VrylLogsHelpers.hookChatExport();
 
 Hooks.once("init", () => {
   game.vrylGlobalFunctions = {
@@ -47,10 +50,10 @@ Hooks.once("init", () => {
 
   CONFIG.Item.documentClass = VrylItem;
   CONFIG.Item.dataModels = {
-    usableEffect: VrylUsableEffect,
     gear: VrylInventoryItem,
     //aspect
-    //tactical ability
+    combatAction: VrylCombatAction,
+    //itemDeck: VrylItemDeck,
   };
 
   // Register sheet application classes
@@ -204,6 +207,16 @@ function _initSystemSettings() {
     restricted: true,
     restricted: true,
     type: SubmenuEquipment,   // String, Number, Boolean, Object, Array
+  });
+
+  //#region Logs
+  game.settings.register(CONFIG.SystemId, 'log-session', {
+    name: 'Current Session Number for Log Exports',
+    scope: 'world',     // "world" = sync to db, "client" = local storage
+    config: true,      // we will use the menu above to edit this setting
+    restricted: false,
+    type: Number,
+    default: 1,
   });
 
   VrylHandlebarsHelpers.registerHandlebarsHelpers();

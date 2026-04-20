@@ -6,6 +6,8 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
     constructor(options = {}) {
         super(options);
 
+        this.expandedIds = new Set();
+
         Hooks.on(`vryl-rollDataUpdated`, () => {
             console.log("Roll data updated for actor: " + this.document.id);
             VrylActorSheet.renderSelectedAttributes(this.element, this.document.id);
@@ -38,7 +40,7 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
             createDoc: effectsFunctions.createDoc,
             deleteDoc: effectsFunctions.deleteDoc,
             toggleEffect: effectsFunctions.toggleEffect,
-            toggleInstantEffect: effectsFunctions.toggleInstantEffect,
+            toggleInstantEffectEvent: effectsFunctions.toggleInstantEffectEvent,
 
             "attribute-roll": VrylActorSheet._attributeRoll,
             "edit-attribute-pips": VrylActorSheet._editAttributePips,
@@ -51,7 +53,8 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
             "edit-willpower-pips": this._editWillpowerPips,
 
             equipItem: this._equipItem,
-
+            expandItem: this._expandItem,
+            useItemEffect: this._useItemEffect,
         },
         // Custom property that's merged into `this.options`
         // dragDrop: [{ dragSelector: '.draggable', dropSelector: null }],
@@ -71,22 +74,20 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
                 },
                 {
                     id: "inventory",
-                    icon: "fa fa-suitcase",
+                    icon: "fa fa-sack",
                 },
                 {
                     id: "aspects",
                     icon: "fa fa-list",
                 },
                 {
-                    id: "tactical",
+                    id: "combat",
                     icon: "fa fa-swords",
-                }
-                ,
+                },
                 {
                     id: "notes",
                     icon: "fa fa-feather-pointed",
-                }
-                ,
+                },
                 {
                     id: "effects",
                     icon: "fa-solid fa-wand-magic-sparkles",
@@ -110,7 +111,11 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
             template: `systems/vryl/templates/actor/attributes.hbs`
         },
         inventory: {
-            template: `systems/vryl/templates/actor/inventory.hbs`
+            template: `systems/vryl/templates/actor/inventory.hbs`,
+            scrollable: ['.itemCardGrid'],
+        },
+        combat: {
+            template: `systems/vryl/templates/actor/combat.hbs`,
         },
         effects: {
             template: `systems/vryl/templates/actor/effects.hbs`
@@ -137,10 +142,24 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
     _onRender(context, options) {
         super._onRender(context, options);
 
-        let xpElement = this.element.querySelector("input#xp-input");
+        const xpElement = this.element.querySelector("input#xp-input");
         xpElement.addEventListener('change', (event) => { this.updateXP() });
 
         VrylActorSheet.renderSelectedAttributes(this.element, this.document.id);
+
+        const itemRows = this.element.querySelectorAll('.itemCard[data-document-class][data-item-id]');
+        for(const docRow of itemRows)
+        {
+            const id = docRow.dataset.itemId;
+            const detailsElement = docRow.querySelector('.item-details');
+            if(this.expandedIds.has(id))
+            {
+                detailsElement.classList.add('notransition');
+                detailsElement.classList.add('expandedItem');
+                detailsElement.offsetHeight;
+                detailsElement.classList.remove('notransition');
+            }
+        }
     }
 
     //#region Prepare Context
@@ -167,7 +186,7 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
 
         // Add the actor's data to context.data for easier access, as well as flags.
 
-
+        context.expandedItem = this.expandedItem ?? "";
 
         // Add roll data for TinyMCE editors.
         context.rollData = context.actor.getRollData();
@@ -225,18 +244,18 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
      */
     _prepareItems(context) {
         // Initialize containers.
-        const tacticalActions = [];
-        const statuses = [];
+        const combatActions = [];
+        const aspects = [];
         const gear = [];
 
         // Iterate through items, allocating to containers
         for (let i of context.document.items) {
             i.img = i.img || DEFAULT_TOKEN;
-            if (i.type === 'combatAbility') {
-                tacticalActions.push(i);
+            if (i.type === 'combatAction') {
+                combatActions.push(i);
             }
-            else if (i.type === 'status') {
-                statuses.push(i);
+            else if (i.type === 'aspect') {
+                aspects.push(i);
             }
             else if (i.type === 'gear') {
                 gear.push(i);
@@ -244,8 +263,8 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
         }
 
         // Assign and return
-        context.tacticalActions = tacticalActions;
-        context.statuses = statuses;
+        context.combatActions = combatActions;
+        context.aspects = aspects;
         context.gear = gear;
     }
 
@@ -707,6 +726,27 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
             }
         }
         item.update({ [`system.equipment.isEquipped`]: !item.system.equipment.isEquipped });
+    }
+
+    static async _expandItem(event, target) {
+        const rowDoc = target.closest('[data-document-class]');
+        const id = rowDoc.dataset.itemId;
+        const detailsElement = rowDoc.querySelector('.item-details');
+        if(this.expandedIds.has(id))
+        {
+            this.expandedIds.delete(id);
+            detailsElement.classList.remove('expandedItem');
+        }
+        else
+        {
+            this.expandedIds.add(id);
+            detailsElement.classList.add('expandedItem');
+        }
+    }
+
+    static async _useItemEffect(event, target) {
+        const effect = await fromUuid(target.dataset.effect);
+        effectsFunctions.toggleInstantEffect(effect);
     }
 
     //#endregion

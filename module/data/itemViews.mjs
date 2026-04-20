@@ -3,59 +3,90 @@ import * as effectsFunctions from '../helpers/effects.mjs';
 
 export class VrylItemSheet extends api.HandlebarsApplicationMixin(sheets.ItemSheetV2) {
 
-    constructor(options = {}) {
-        super(options);
+  constructor(options = {}) {
+    super(options);
+  }
+
+  /** @override */
+  static DEFAULT_OPTIONS = {
+    classes: ["vryl", "sheet", "item", "character-sheet"],
+    position: {
+      width: 450,
+      height: 500,
+    },
+    window: {
+      resizable: true,
+      title: 'Item Sheet' // Just the localization key
+    },
+    actions: {
+      onEditImage: effectsFunctions.onEditImage,
+      viewDoc: effectsFunctions.viewDoc,
+      createDoc: effectsFunctions.createDoc,
+      deleteDoc: effectsFunctions.deleteDoc,
+      toggleEffect: effectsFunctions.toggleEffect,
+      toggleInstantEffectEvent: effectsFunctions.toggleInstantEffectEvent,
+      equipSlotChanged: this._onEquipSlotChanged,
+    },
+    // Custom property that's merged into `this.options`
+    // dragDrop: [{ dragSelector: '.draggable', dropSelector: null }],
+    form: {
+      submitOnChange: true,
+    },
+
+    // Custom property that's merged into `this.options`
+    dragDrop: [{ dragSelector: '.draggable', dropSelector: null }],
+  }
+
+  static PARTS = {
+    header: {
+      template: `systems/vryl/templates/parts/header.hbs`
+    },
+    // summary: {
+    //     template: 'systems/boilerplate/templates/item/description.hbs',
+    // },
+    description: {
+      template: `systems/vryl/templates/items/description.hbs`
+    },
+    equipmentSettings: {
+      template: `systems/vryl/templates/items/equipmentSettings.hbs`
+    },
+    combatActionSettings: {
+      template: `systems/vryl/templates/items/equipmentSettings.hbs`
+    },
+    combatActionEffects: {
+      template: `systems/vryl/templates/items/equipmentSettings.hbs`
+    },
+    effects: {
+      template: `systems/vryl/templates/items/effects.hbs`
+    },
+  }
+
+  /** @override */
+  _configureRenderOptions(options) {
+    super._configureRenderOptions(options);
+    // Not all parts always render
+    options.parts = ['header', 'description'];
+    // Don't show the other tabs if only limited view
+    //if (this.document.limited) return;
+    // Control which parts show based on document subtype
+    switch (this.document.type) {
+      case 'combatAction':
+        options.parts.splice(1, 0, 'combatActionSettings');
+        options.parts.push('combatActionEffects');
+        break;
+      case 'gear':
+        options.parts.push('equipmentSettings');
+        options.parts.push('effects');
+        break;
+      case 'aspect':
+        //options.parts.push('attributesSpell');
+        options.parts.push('effects');
+        break;
     }
 
-    /** @override */
-    static DEFAULT_OPTIONS = {
-        classes: ["vryl", "sheet", "item", "character-sheet"],
-        position: {
-            width: 450,
-            height: 500,
-        },
-        window: {
-            resizable: true,
-            title: 'Item Sheet' // Just the localization key
-        },
-        actions: {
-            onEditImage: effectsFunctions.onEditImage,
-            viewDoc: effectsFunctions.viewDoc,
-            createDoc: effectsFunctions.createDoc,
-            deleteDoc: effectsFunctions.deleteDoc,
-            toggleEffect: effectsFunctions.toggleEffect,
-            toggleInstantEffect: effectsFunctions.toggleInstantEffect,
-            equipSlotChanged: this._onEquipSlotChanged,
-        },
-        // Custom property that's merged into `this.options`
-        // dragDrop: [{ dragSelector: '.draggable', dropSelector: null }],
-        form: {
-            submitOnChange: true,
-        },
+  }
 
-        // Custom property that's merged into `this.options`
-        dragDrop: [{ dragSelector: '.draggable', dropSelector: null }],
-    }
-
-    static PARTS = {
-        header: {
-            template: `systems/vryl/templates/parts/header.hbs`
-        },
-        // summary: {
-        //     template: 'systems/boilerplate/templates/item/description.hbs',
-        // },
-        description: {
-            template: `systems/vryl/templates/items/description.hbs`
-        },
-        equipmentSettings: {
-            template: `systems/vryl/templates/items/equipmentSettings.hbs`
-        },
-        effects: {
-            template: `systems/vryl/templates/items/effects.hbs`
-        },
-    }
-    
-    /** @override */
+  /** @override */
   async _prepareContext(options) {
     const context = await super._prepareContext(options);
     // const context = {
@@ -80,16 +111,16 @@ export class VrylItemSheet extends api.HandlebarsApplicationMixin(sheets.ItemShe
     context.flags = context.document.flags;
 
     context.enrichedDescription = await TextEditor.enrichHTML(
-          this.item.system.description,
-          {
-            // Whether to show secret blocks in the finished html
-            secrets: this.document.isOwner,
-            // Data to fill in for inline rolls
-            rollData: this.item.getRollData(),
-            // Relative UUID resolution
-            relativeTo: this.item,
-          }
-        );
+      this.item.system.description,
+      {
+        // Whether to show secret blocks in the finished html
+        secrets: this.document.isOwner,
+        // Data to fill in for inline rolls
+        rollData: this.item.getRollData(),
+        // Relative UUID resolution
+        relativeTo: this.item,
+      }
+    );
 
     context.effects = effectsFunctions.prepareActiveEffectCategories(this.document.effects);
     context.isItemSheet = true;
@@ -124,17 +155,17 @@ export class VrylItemSheet extends api.HandlebarsApplicationMixin(sheets.ItemShe
     // Foundry comes with a large number of utility classes, e.g. SearchFilter
     // That you may want to implement yourself.
     const selectEquipSlotElement = this.element.querySelector(`select#equipSlotSelector`);
-    selectEquipSlotElement.addEventListener("change", () => {
+    selectEquipSlotElement?.addEventListener("change", () => {
       this.document.update({ [`system.equipment.slotDataName`]: selectEquipSlotElement.value });
     });
 
     const selectEquipTimeElement = this.element.querySelector(`select#equipTimeSelector`);
-    selectEquipTimeElement.addEventListener("change", () => {
+    selectEquipTimeElement?.addEventListener("change", () => {
       this.document.update({ [`system.equipment.equipTime`]: selectEquipTimeElement.value });
     });
 
     const equipSlotSlotsElement = this.element.querySelector(`input#equipSlotSlots`);
-    equipSlotSlotsElement.addEventListener("change", () => {
+    equipSlotSlotsElement?.addEventListener("change", () => {
       this.document.update({ [`system.equipment.slotsFilled`]: equipSlotSlotsElement.value });
     });
   }
@@ -341,8 +372,7 @@ Hooks.once(`init`, () => {
 
 Hooks.on("updateItem", (item, changes, options, userId) => {
   if (changes.system?.equipment !== undefined) {
-    for(let effect of item.effects)
-    {
+    for (let effect of item.effects) {
       effect.update({ transfer: changes.system?.equipment.isEquipped });
     }
   }
