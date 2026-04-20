@@ -25,6 +25,9 @@
             {{/if}}
 
             <!-- Willpower -->
+            {{#if (eq action "is-rest")}}
+            This roll is a <b>Rest</b>
+            {{/if}}
             {{#if (eq action "no-willpower-spend")}}
             You cannot spend Willpower to gain Guaranteed Successes
             {{/if}}

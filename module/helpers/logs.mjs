@@ -1,10 +1,10 @@
 export class VrylLogsHelpers {
     static hookChatExport() {
 
+        this.backgroundColor = `color-mix(in srgb, currentColor 5%, transparent)`;
         this.styles = {
             alignCenter: "text-align: center; align-items: center; justify-content: center;",
-            borderBox: "margin: 10px; border: 1px solid currentColor; background-color: color-mix(in srgb, currentColor 5%, transparent);",
-            logWidth: "75%",
+            borderBox: `margin: 10px; border: 1px solid currentColor; background-color: ${this.backgroundColor};`,
         };
 
         Hooks.on("renderChatInput", (app, elements, context) => {
@@ -79,8 +79,47 @@ export class VrylLogsHelpers {
         let log = "";
         let dateString = ""
         for (let i = 0; i < messagesToSave.length; i++) {
-            let header = "";
             let message = messagesToSave[i];
+
+            if (message.flags.vryl.isAudioPlayEvent) {
+                const sound = await fromUuid(message.flags.vryl.audioSrcUuid);
+                if(!sound)
+                    continue;
+
+                log += "<b>Now Playing...</b><br>";
+                let foundLink = false;
+                const descTokens = sound.description.replaceAll("<br>", "\n").replaceAll("<br />", "\n").split('\n');
+                for (let token of descTokens) {
+                    if (token.includes("bandcamp.com")) {
+                        token = token.replaceAll(/<[^>]*>/g, "");
+                        token = token.replace(/https?:\/\/([^]+)/g, "https://proxy.corsfix.com/?https://$1");
+                        try {
+                            const response = await fetch(token, {
+                                method: 'GET', // or 'POST'
+                                mode: 'cors',  // default
+                            });
+                            const data = await response.text();
+                            const trackId = data.replace(/.*\/track=(.\d+).*/s, "$1");
+                            console.log(trackId);
+
+                            const embed = `<iframe style="border: 0; width: 100%; height: 42px;" src="https://bandcamp.com/EmbeddedPlayer/size=small/bgcol=000000/linkcol=0687f5/track=${trackId}/transparent=true/" seamless></iframe>`;
+                            log += embed;
+
+                            foundLink = true;
+                        } catch (error) {
+                            console.error('Request failed', error);
+                        }
+                    }
+                }
+                if (!foundLink) {
+                    log += sound.name;
+                }
+
+                continue;
+            }
+
+            let header = "";
+
             header += "-- ";
             if (message.speaker && message.speaker.alias) {
                 header += `<b>${message.speaker.alias}</b> (${message.author.name})`;
@@ -128,7 +167,7 @@ export class VrylLogsHelpers {
             }
 
             if (message.flavor != "")
-                log += message.flavor + "\n";
+                log += this.styleCenter(message.flavor) + "\n";
 
             let content = message.content;
             content = content.replaceAll(`<em>`, "<i>").replaceAll(`</em>`, "</i>").replaceAll(`<hr>`, "<br>").replaceAll(`<hr />`, "<br>");
@@ -141,32 +180,44 @@ export class VrylLogsHelpers {
             content = content.replaceAll(`<i class="fa-solid fa-diamond-turn-right"></i>`, "(Reaction)");
             content = content.replaceAll(`<i class="fa-regular fa-diamond"></i>`, "(Free Action)");
 
+
             if (message.flags.vryl?.isAttributeRoll) {
-                for (const roll of message.rolls) {
-                    let newLine = roll.options.flavor;
+                function processFlavor(flavor) {
+                    flavor = flavor.replaceAll("<h5", `<b style="${VrylLogsHelpers.styles.alignCenter}"`).replaceAll("</h5", "</b");
+                    flavor = flavor.replaceAll("<h6", `<b style="${VrylLogsHelpers.styles.alignCenter}"`).replaceAll("</h6", "</b");
+                    flavor = flavor.replaceAll("<i></i>", "");
+                    flavor = flavor.replaceAll("<b></b>", "");
+                    flavor = flavor.replaceAll(/^[ \t]+|[ \t]+$/gm, ""); // Trim whitespace from start and end of each line
 
-                    newLine = newLine.replaceAll("<h5", `<b style="${this.styles.alignCenter}"`).replaceAll("</h5", "</b");
-                    newLine = newLine.replaceAll("<h6", `<b style="${this.styles.alignCenter}"`).replaceAll("</h6", "</b");
-                    newLine = newLine.replaceAll("<i></i>", "");
-                    newLine = newLine.replaceAll("<b></b>", "");
-                    newLine = newLine.replaceAll(/^[ \t]+|[ \t]+$/gm, ""); // Trim whitespace from start and end of each line
+                    flavor = flavor.replaceAll(/(\r<br>|\r|<br>){3,}/g, '<br><br>');
+                    flavor = flavor.replaceAll(/<!--[\s\S]*?-->/g, ""); //Remove HTML comments
+                    flavor = flavor.replaceAll(/^\s*[\r\n]/gm, ""); //Remove empty lines
 
-                    newLine = newLine.replaceAll(/(\r<br>|\r|<br>){3,}/g, '<br><br>');
-                    newLine = newLine.replaceAll(/<!--[\s\S]*?-->/g, ""); //Remove HTML comments
-                    newLine = newLine.replaceAll(/^\s*[\r\n]/gm, ""); //Remove empty lines
+                    flavor = VrylLogsHelpers.boxCenter(flavor);
 
-                    newLine = this.boxCenter(newLine);
-
-                    log += newLine + '<br>';
+                    return flavor;
                 }
-                log += this.renderRollTerms(message) + "<br>" + "Successes: ";
+
+                if (message.flags.vryl.isPrintedRoll) {
+                    log += processFlavor(message.content);
+                }
+                else {
+                    for (const roll of message.rolls) {
+
+                        log += processFlavor(roll.options.flavor) + '<br>';
+                    }
+                    log += this.renderRollTerms(message) + "<br>" + this.styleCenter("Successes: " + content);
+                }
             }
             else {
                 //default roll rendering, if there are any rolls at all
-                if (message.rolls.length > 0)
-                    log += this.renderRollTerms(message) + "<br>" + "Total: ";
+                if (message.rolls.length > 0) {
+                    log += this.renderRollTerms(message) + "<br>" + this.styleCenter("Total: " + content);
+                }
+                else {
+                    log += content;
+                }
             }
-            log += content;
 
             if (message.whisper.length > 0) {
                 log += "</div></details>";
@@ -200,7 +251,12 @@ export class VrylLogsHelpers {
 
         log = log.replaceAll(/(<details[\s\S]*?<\/details>)/g, this.boxCenter(`$1`));
 
-        log = this.boxCenter(log, this.styles.logWidth, false);
+        log = log.replaceAll(`<div class="copy-roll flexcol" style="display: flex; flex-direction: column;">
+<button class="copy-roll-replace">Copy Roll <i class="fa-solid fa-copy"></i></button>
+<div style="min-width:100%"><div style="margin: auto; max-width: 50%;"><details class="full-width" style="margin: 10px; border: 1px solid currentColor; background-color: color-mix(in srgb, currentColor 5%, transparent);">
+<summary class="align-center" style="list-style-position: outside;">Expand</summary>
+<button class="copy-roll-append full-width">Append Actors to Roll <i class="fa-regular fa-plus-square"></i></button>
+</details></div></div></div>`, "");
 
         //trim html
         //log = log.replace("<b>", "**").replace("</b>", "**").replace("<i>", "*").replace("</i>", "*");
@@ -229,7 +285,7 @@ export class VrylLogsHelpers {
             for (const term of roll.terms) {
                 if (term instanceof foundry.dice.terms.Die) {
                     let dieString = `${term._number}`;
-                    if(term._faces == 20)
+                    if (term._faces == 20)
                         dieString += ` <i class="fa-solid fa-dice-d20"></i>`;
                     else
                         dieString += `d${term._faces}`;
@@ -244,7 +300,7 @@ export class VrylLogsHelpers {
                     rollFormula += term.operator;
                 }
                 else if (term instanceof foundry.dice.terms.NumericTerm) {
-                    if(term.number == 0) continue;
+                    if (term.number == 0) continue;
                     rollFormula += term.number + ` <i class="fa-solid fa-plus-square"></i>`;
                 }
                 else if (term instanceof foundry.dice.terms.Coin) {
@@ -281,7 +337,7 @@ export class VrylLogsHelpers {
         );
     }
 
-    static boxCenter(html, width = "66%", relativeToLogWidth = true) {
+    static boxCenter(html, width = "50%", relativeToLogWidth = true) {
         return `<div style="min-width:100%"><div style="margin: auto; max-width: ${width};">${html}</div></div>`;
     }
 }

@@ -255,6 +255,7 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
             flags: {
                 vryl: {
                     narrativeResult: CONFIG.ui.rollBuilder.hasRollFlag(`narrative-result`, 'global', 'preRoll'),
+                    isAttributeRoll: true,
                 }
             },
         });
@@ -312,6 +313,8 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
             vryl: {
                 rollData: structuredClone(rollData),
                 rollActors: structuredClone(rollActors),
+                isAttributeRoll: true,
+                isPrintedRoll: true,
             }
         }
 
@@ -526,6 +529,8 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
     //#region Attribute Rendering
 
     static async renderRoll(rollData, inSidebar = false) {
+        if(rollData == undefined)
+            rollData = CONFIG.ROLL_DATA;
         return (await this.renderRollAttributes(rollData, inSidebar)) + (await this.renderRollOptions(rollData, inSidebar));
     }
 

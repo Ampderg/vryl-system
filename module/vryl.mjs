@@ -25,14 +25,14 @@ VrylLogsHelpers.hookChatExport();
 
 Hooks.once("init", () => {
   game.vrylGlobalFunctions = {
-      adjustNumberStepValue: function(element, amount, childrenDeep = 1) {
-        let parent = element;
-        for(let i = 0; i < childrenDeep; i++)
-          parent = parent.parentElement;
+    adjustNumberStepValue: function (element, amount, childrenDeep = 1) {
+      let parent = element;
+      for (let i = 0; i < childrenDeep; i++)
+        parent = parent.parentElement;
 
-        const input = parent.querySelector(':scope > input');
-        input.value = parseInt(input.value) + parseInt(amount);
-        input.dispatchEvent(new Event('change'));
+      const input = parent.querySelector(':scope > input');
+      input.value = parseInt(input.value) + parseInt(amount);
+      input.dispatchEvent(new Event('change'));
     }
   }
 
@@ -233,9 +233,8 @@ Hooks.once("ready", function () {
 
 Hooks.on("createMacro", async (macro, options, userId) => {
   console.log(`Macro ${macro.name} was created by user ${userId}`);
-  
-  if(macro.command.startsWith(`await foundry.applications.ui.Hotbar.toggleDocumentSheet("`))
-  {
+
+  if (macro.command.startsWith(`await foundry.applications.ui.Hotbar.toggleDocumentSheet("`)) {
     let actorId = macro.command.replace(`await foundry.applications.ui.Hotbar.toggleDocumentSheet("`, '').slice(0, -3);
     let actor = await fromUuid(actorId);
     macro.update({ [`img`]: actor.img })
@@ -247,28 +246,56 @@ Hooks.on("createMacro", async (macro, options, userId) => {
 
 
 function exposureDice(modifier) {
-    const term = 'exposure';
-    const match = modifier.split('|');
-    const max = this.faces;
+  const term = 'exposure';
+  const match = modifier.split('|');
+  const max = this.faces;
 
-    let stacks = match[1];
-    const dc = match[2];
-    const critThreshold = match[3] ?? max;
+  let stacks = match[1];
+  const dc = match[2];
+  const critThreshold = match[3] ?? max;
 
-    const currentResults = [...this.results].toSorted((a, b) => a.result - b.result);
-    for(let r of currentResults) {
-        if(stacks > 0 && r.result >= dc && r.result < critThreshold) {
-            r.rerolled = true;
-            r.active = false;
-            r.hidden = true;
-            stacks--;
+  const currentResults = [...this.results].toSorted((a, b) => a.result - b.result);
+  for (let r of currentResults) {
+    if (stacks > 0 && r.result >= dc && r.result < critThreshold) {
+      r.rerolled = true;
+      r.active = false;
+      r.hidden = true;
+      stacks--;
 
-            this.results.push({
-                result: max,
-                active: true
-            })
-        }
+      this.results.push({
+        result: max,
+        active: true
+      })
+    }
+  }
+
+  return this.results;
+}
+
+//#region Music & Sound
+Hooks.on('updatePlaylist', (playlist, changes, options, userId) => {
+  if (!changes.sounds)
+    return;
+
+  for (const soundChanges of changes.sounds) {
+    if (!soundChanges.playing)
+      continue;
+
+    const sound = playlist.sounds.get(soundChanges._id);
+
+    console.log(`Playing sound: ${sound.name}`);
+
+    const flags = {
+      vryl: {
+        isAudioPlayEvent: true,
+        audioSrcUuid: sound.uuid,
+      }
     }
 
-    return this.results;
-}
+    const msg = ChatMessage.create({
+      content: `<b>Now Playing...</b><br>${sound.name}`,
+      flags: flags,
+    });
+  }
+
+});

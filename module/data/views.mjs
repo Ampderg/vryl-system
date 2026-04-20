@@ -545,6 +545,7 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
             CONFIG.ROLL_DATA.bonusDice = missingWillpower - 1;
         }
 
+        CONFIG.ui.rollBuilder.addAction(`is-rest`, "global", false);
         CONFIG.ui.rollBuilder.addAction(`no-willpower-spend`, this.document, false);
         CONFIG.ui.rollBuilder.addAction(`successes-regenerate-willpower`, this.document, false);
 
