@@ -147,6 +147,13 @@ export class VrylHandlebarsHelpers {
             // Return true if at least one argument is truthy
             return args.some(Boolean);
         });
+
+        Handlebars.registerHelper('and', function () {
+            // Convert arguments object to array and remove the last item (options)
+            var args = Array.prototype.slice.call(arguments, 0, -1);
+            // Return true if at least one argument is truthy
+            return args.every(Boolean);
+        });
         //#endregion
 
         //#region Partials

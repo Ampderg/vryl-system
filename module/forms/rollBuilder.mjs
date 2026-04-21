@@ -1275,14 +1275,14 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
 
                     if (!isApplied && !isPrompted)
                         continue;
-
+                    
                     const effectData = {
                         name: effect.name,
                         isApplied: isApplied,
                         uuid: effect.uuid,
                         effect: effect,
                         actor: effect.target,
-                        effectDescription: effect.description.replaceAll(/<\/?p>/g, ``),
+                        effectDescription: effect.description.replaceAll(/<p>/g, ``).replaceAll(/<\/p>/g, `<br>`),
                     }
                     CONFIG.ROLL_DATA.rollItemEffects.push(effectData);
                 }

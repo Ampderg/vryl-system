@@ -60,6 +60,29 @@
                                     {{/if}}</span>
                             </div>
                         </button>
+                        {{else}}
+                        <button data-tooltip='(Passive) {{effect.description}}'
+                            data-effect="{{effect.uuid}}" class="{{#if (or (eq
+                            item.system.equipment.slotDataName "" )
+                            item.system.equipment.isEquipped)}}clickable{{/if}} selected" disabled>
+                            <div class='item-name'>
+                                {{#unless (eq effect.img "icons/svg/aura.svg")}}
+                                <div class='item-image fitwidth'
+                                    style="border: 1px groove var(--vryl-c-tan); margin-right: 0.5em;">
+                                    <a>
+                                        <img src='{{effect.img}}' data-tooltip='{{effect.name}}' width='20'
+                                            height='20' />
+                                    </a>
+                                </div>
+                                {{/unless}}
+                                <span class="align-center" style="margin:auto;">
+                                    {{#if (startsWith effect.name "Active Effect")}}
+                                    Use
+                                    {{else}}
+                                    {{effect.name}}
+                                    {{/if}}</span>
+                            </div>
+                        </button>
                         {{/if}}
                         {{/each}}
                     </div>
@@ -67,7 +90,12 @@
                     <div class='item-controls flexrow' style="margin: 0.5em; gap: 0.5em;">
                         {{#if (ne item.system.equipment.slotDataName "")}}
                         <div class="flex-group-left" style="justify-content: flex-start; margin-left: 0.5em;">
-                            <a class='item-control item-equip' data-tooltip='Equip Gear' data-action='equipItem'>
+                            
+                            <a class='item-control item-equip'
+                            {{#with (lookup ../system.equipment.slots item.system.equipment.slotDataName) as |slot|}}
+                            data-tooltip='Equip to {{slot.name}}'
+                            {{/with}}
+                            data-action='equipItem'>
                                 {{#if item.system.equipment.isEquipped}}
                                 <i class='fa-solid fa-shield'></i>
                                 {{else}}
