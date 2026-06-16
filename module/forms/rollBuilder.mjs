@@ -984,26 +984,26 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
             this.updateRollData();
     }
 
-    static hasRollFlag(flag, actor = 'global', actionType = 'preRoll') {
+    static hasRollFlag(flag, actor = 'global', actionType = 'both') {
         const flags = this.getRollActionFlags(actor, actionType);
         return flags.filter((a) => a.action == flag).length > 0;
     }
 
-    static getRollActionData(flag, actor = 'global', actionType = 'preRoll') {
+    static getRollActionData(flag, actor = 'global', actionType = 'both') {
         const flags = this.getRollActionFlags(actor, actionType);
         const flagData = flags.filter((a) => a.action == flag)[0];
         if (flagData)
             return flagData.data;
     }
 
-    static getRollActionFlags(actor = 'global', actionType = 'preRoll') {
+    static getRollActionFlags(actor = 'global', actionType = 'both') {
         let flags = [];
 
         const rollData = CONFIG.ROLL_DATA;
 
         if (actor == 'global' && rollData.globalActions && rollData.globalActions.length > 0) {
             for (const action of rollData.globalActions) {
-                if (ROLL_ACTIONS.filter((a) => a.action == action.action && a.actionType == actionType).length > 0)
+                if (ROLL_ACTIONS.filter((a) => a.action == action.action && (actionType == "both" || a.actionType == actionType)).length > 0)
                     flags.push(action);
             }
         }
@@ -1304,8 +1304,8 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
                             case "always":
                                 isPrompted = true;
                                 break;
-                            case "attacking":
-                                isPrompted = CONFIG.ui.rollBuilder.hasRollFlag('is-attack', 'global');
+                            case "flagPresent":
+                                isPrompted = CONFIG.ui.rollBuilder.hasRollFlag(effect.getFlag(CONFIG.SystemId, `promptSettingFlag`), 'global');
                                 break;
                             case "attributesAffected":
                                 for (const change of effect.changes) {

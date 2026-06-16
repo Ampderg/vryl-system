@@ -215,10 +215,21 @@ function renderDuration(activeEffectConfig, html, data) {
         <select onchange="CONFIG.ui.vrylSetEffectFlag('promptSetting', this.value, '${data.document.uuid}')">
             <option value="never" ${(!promptSetting || promptSetting == "never") ? "selected" : ""} >Never</option>
             <option value="attributesAffected" ${promptSetting == "attributesAffected" ? "selected" : ""}>When Attributes are Affected</option>
-            <option value="attacking" ${promptSetting == "attacking" ? "selected" : ""}>When Attacking</option>
+            <option value="flagPresent" ${promptSetting == "flagPresent" ? "selected" : ""}>When Roll Flag is Present</option>
             <option value="always" ${promptSetting == "always" ? "selected" : ""}>Always</option>
-        </select>
-        </div>`;
+        </select>`;
+        if(promptSetting == "flagPresent")
+        {
+            const promptFlagSetting = data.document.getFlag(CONFIG.SystemId, 'promptSettingFlag');
+            instantContent += `<select onchange="CONFIG.ui.vrylSetEffectFlag('promptSettingFlag', this.value, '${data.document.uuid}')">`;
+            const globalActions = ROLL_ACTIONS.filter((a) => a.actionOwner == 'global');
+            for(const rollAction of globalActions)
+            {
+                instantContent += `<option value="${rollAction.action}" ${promptFlagSetting == rollAction.action ? "selected" : ""} >${rollAction.action}</option>`;
+            }
+            instantContent += "</select>";
+        }
+        instantContent += '</div>';
     }
     else if (data.document.isTemporary)
         currentType = "temporary";
