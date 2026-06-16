@@ -1059,9 +1059,7 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
 
         //Process charge automation
         if(item.system.chargeAutomation == "instantEffectUse")
-        {
-            item.update({ [`system.charges`]: item.system.charges - 1 });
-        }
+            this.decrementItemCharges(item);
     }
 
     static async processOnRestEffects(actor, msg) {
@@ -1070,10 +1068,23 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
         for(const item of actor.items)
         {
             if(item.system.chargeAutomation == "rest")
-            {
-                item.update({ [`system.charges`]: item.system.charges - 1 });
-            }
+                this.decrementItemCharges(item);
         }
+    }
+
+    static async decrementItemCharges(item) {
+        await item.update({ [`system.charges`]: Math.max(0, item.system.charges - 1) });
+        if(item.system.charges <= 0)
+            this.chargesSpentMessage(item);
+    }
+
+    static async chargesSpentMessage(item) {
+        const speaker = ChatMessage.getSpeaker({ actor: item.parent });
+        const content = `<b>${item.name}</b> has run out of charges!`;
+        if(speaker)
+            await ChatMessage.create({ speaker: speaker, content: content });
+        else
+            await ChatMessage.create({ content: content });
     }
 
     //#region Template Actor

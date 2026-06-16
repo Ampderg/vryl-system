@@ -2,7 +2,7 @@
 <section style="max-height:fit-content;" class="flexcol">
   {{#if editable}}
   {{#unless (eq system.equipment.slotDataName "")}}
-  <div class="flexrow" style="gap: 1em;">
+  <div class="flexcol" style="gap: 1em;">
     <div class="flexrow">
       <b>Charges</b>
       <input id="charges" type="number" value="{{system.charges}}">
