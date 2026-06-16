@@ -114,8 +114,13 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
             template: `systems/vryl/templates/actor/inventory.hbs`,
             scrollable: ['.itemCardGrid'],
         },
+        aspects: {
+            template: `systems/vryl/templates/actor/aspects.hbs`,
+            scrollable: ['.itemCardGrid'],
+        },
         combat: {
             template: `systems/vryl/templates/actor/combat.hbs`,
+            scrollable: ['.itemCardGrid'],
         },
         effects: {
             template: `systems/vryl/templates/actor/effects.hbs`

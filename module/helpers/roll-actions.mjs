@@ -33,7 +33,8 @@ export const ROLL_ACTIONS = [
         //#region Willpower
         {
             action: `is-rest`,
-            actionType: `preRoll`,
+            actionType: `postRoll`,
+            functionName: `processOnRestEffects`,
             actionOwner: `global`,
         },
         {

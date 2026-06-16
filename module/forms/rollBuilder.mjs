@@ -157,7 +157,7 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
         }
 
         for (const actor of rollActorsValues) {
-            if(actor.actor?.system?.bonusDice)
+            if (actor.actor?.system?.bonusDice)
                 totalLevels += actor.actor.system.bonusDice;
             if (actor.attributes) {
                 for (const attribute of actor.attributes) {
@@ -529,7 +529,7 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
     //#region Attribute Rendering
 
     static async renderRoll(rollData, inSidebar = false) {
-        if(rollData == undefined)
+        if (rollData == undefined)
             rollData = CONFIG.ROLL_DATA;
         return (await this.renderRollAttributes(rollData, inSidebar)) + (await this.renderRollOptions(rollData, inSidebar));
     }
@@ -624,13 +624,12 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
 
             //Add actor bonuses if present
             {
-                let actorBonuses = { };
+                let actorBonuses = {};
 
-                if(actorData.actor?.system?.bonusDice != undefined && actorData.actor?.system?.bonusDice != 0)
+                if (actorData.actor?.system?.bonusDice != undefined && actorData.actor?.system?.bonusDice != 0)
                     actorBonuses.level = actorData.actor.system.bonusDice;
 
-                if(Object.keys(actorBonuses).length > 0)
-                {
+                if (Object.keys(actorBonuses).length > 0) {
                     actorBonuses.dataName = "actor_" + key;
                     actorBonuses.name = "Character Bonuses";
 
@@ -1018,12 +1017,25 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
         for (const [key, actorData] of rollData.rollActors) {
             if (actorData.actions && actorData.actions.length > 0) {
                 const actor = game.actors.get(key);
-                for (const action of actorData.actions) {
-                    const actionData = ROLL_ACTIONS.filter((a) => a.action == action.action && a.actionType == 'postRoll')[0];
-                    if (actionData && actionData.functionName)
-                        this[actionData.functionName](actor, msg);
+
+                function processAction(collection) {
+                    for (const action of collection) {
+                        const actionData = ROLL_ACTIONS.filter((a) => a.action == action.action && a.actionType == 'postRoll')[0];
+                        if (actionData && actionData.functionName)
+                            CONFIG.ui.rollBuilder[actionData.functionName](actor, msg);
+                    }
                 }
+
+                processAction(actorData.actions);
+                processAction(rollData.globalActions);
+
+                this.processOnRollEffects(actor, msg);
             }
+        }
+
+        for(const itemEffect of rollData.rollItemEffects)
+        {
+            this.processOnRollItemEffects(itemEffect);
         }
     }
 
@@ -1036,6 +1048,32 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
         if (newWillpower > actor._source.system.willpower.level)
             return;
         actor.update({ [`system.willpower.level`]: newWillpower });
+    }
+
+    static async processOnRollEffects(actor, msg) {
+        console.log(actor);
+    }
+
+    static async processOnRollItemEffects(itemEffect) {
+        const item = itemEffect.effect.parent;
+
+        //Process charge automation
+        if(item.system.chargeAutomation == "instantEffectUse")
+        {
+            item.update({ [`system.charges`]: item.system.charges - 1 });
+        }
+    }
+
+    static async processOnRestEffects(actor, msg) {
+        
+        //Process rest charge automation
+        for(const item of actor.items)
+        {
+            if(item.system.chargeAutomation == "rest")
+            {
+                item.update({ [`system.charges`]: item.system.charges - 1 });
+            }
+        }
     }
 
     //#region Template Actor
@@ -1275,7 +1313,7 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
 
                     if (!isApplied && !isPrompted)
                         continue;
-                    
+
                     const effectData = {
                         name: effect.name,
                         isApplied: isApplied,
@@ -1292,9 +1330,9 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
 
     static _clearInstantEffects() {
         for (const [key, value] of CONFIG.ROLL_DATA.rollActors) {
-            if(key == 'VRYL-TEMPLATE-ACTOR')
+            if (key == 'VRYL-TEMPLATE-ACTOR')
                 continue;
-            
+
             for (const effect of value.actor.appliedEffects) {
                 if (effect.getFlag(CONFIG.SystemId, `isInstant`))
                     effect.setFlag(CONFIG.SystemId, `isInstantApplied`, false);

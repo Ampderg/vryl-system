@@ -168,7 +168,8 @@ export class VrylHandlebarsHelpers {
 
             effectsList: "systems/vryl/templates/parts/effects-list.hbs",
 
-            combatCards: "systems/vryl/templates/parts/combat/cards.hbs"
+            combatCards: "systems/vryl/templates/parts/combat/cards.hbs",
+            aspectCards: "systems/vryl/templates/parts/items/aspects.hbs",
         });
     }
 }

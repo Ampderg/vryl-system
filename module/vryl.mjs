@@ -274,7 +274,7 @@ function exposureDice(modifier) {
 
 //#region Music & Sound
 Hooks.on('updatePlaylist', (playlist, changes, options, userId) => {
-  if (!changes.sounds || userId != game.userId)
+  if (!changes.sounds || userId != game.userId || playlist.description.toLowerCase().includes("disable now playing"))
     return;
 
   for (const soundChanges of changes.sounds) {
@@ -291,7 +291,7 @@ Hooks.on('updatePlaylist', (playlist, changes, options, userId) => {
         audioSrcUuid: sound.uuid,
       }
     }
-    
+
     const msg = ChatMessage.create({
       content: `<b>Now Playing...</b><br>${sound.name}`,
       flags: flags,

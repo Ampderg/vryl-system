@@ -13,8 +13,7 @@ class ActorDataModel extends foundry.abstract.TypeDataModel {
 
     const sortedSlotSettings = game.settings.get(CONFIG.SystemId, 'equipment-slots').toSorted((a, b) => a.id - b.id);
 
-    for(const slot of sortedSlotSettings)
-    {
+    for (const slot of sortedSlotSettings) {
       let dataName = slot.slotName;
       dataName = dataName.replaceAll(' ', '');
       dataName = dataName.substring(0, 1).toLowerCase() + dataName.substring(1);
@@ -25,7 +24,7 @@ class ActorDataModel extends foundry.abstract.TypeDataModel {
         id: new NumberField({ required: true, initial: slot.id, min: 0 }),
       });
     }
-    
+
     schema.equipment = new SchemaField({
       slots: new SchemaField(equipmentSlots),
       loadouts: new SchemaField({}),
@@ -95,7 +94,7 @@ export class VrylItemBase extends foundry.abstract
 export class VrylItemCard extends VrylItemBase {
   static defineSchema() {
     const schema = super.defineSchema();
-    
+
     // schema.containedItems = new ArrayField({
     //   itemUuid: new StringField({ required: true }),
     // });
@@ -107,14 +106,31 @@ export class VrylItemCard extends VrylItemBase {
 export class VrylCombatAction extends VrylItemCard {
   static defineSchema() {
     const schema = super.defineSchema();
-    
-    
+
+
 
     return schema;
   }
 }
 
 export class VrylUsableItem extends VrylItemCard {
+  static defineSchema() {
+    const requiredInteger = { required: true, nullable: false, integer: true };
+    const schema = super.defineSchema();
+
+    schema.charges = new NumberField({
+      ...requiredInteger,
+      initial: 0,
+      min: 0,
+    });
+
+    schema.chargeAutomation = new StringField({
+      required: true,
+      initial: "manual",
+    });
+
+    return schema;
+  }
 }
 
 export class VrylInventoryItem extends VrylUsableItem {
@@ -122,12 +138,6 @@ export class VrylInventoryItem extends VrylUsableItem {
   static defineSchema() {
     const requiredInteger = { required: true, nullable: false, integer: true };
     const schema = super.defineSchema();
-
-    schema.count = new NumberField({
-      ...requiredInteger,
-      initial: 1,
-      min: 0,
-    });
 
     schema.isBulky = new BooleanField({
       required: true,
@@ -137,12 +147,12 @@ export class VrylInventoryItem extends VrylUsableItem {
 
     // Equipment slots
 
-    
+
     schema.equipment = new SchemaField({
-        slotDataName: new StringField({ required: true }),
-        equipTime: new StringField({ initial: "instant", required: true }),
-        slotsFilled: new NumberField({ initial: 1, required: true }),
-        isEquipped: new BooleanField({ initial: false, required: true }),
+      slotDataName: new StringField({ required: true }),
+      equipTime: new StringField({ initial: "instant", required: true }),
+      slotsFilled: new NumberField({ initial: 1, required: true }),
+      isEquipped: new BooleanField({ initial: false, required: true }),
     });
 
     return schema;
@@ -160,5 +170,5 @@ export class VrylInventoryItem extends VrylUsableItem {
     //   this.frayDamage = 0;
     // }
   }
-  
+
 }

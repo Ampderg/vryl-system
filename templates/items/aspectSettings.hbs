@@ -1,0 +1,23 @@
+{{! Description Tab }}
+<section style="max-height:fit-content;" class="flexcol">
+  {{#if editable}}
+  {{#unless (eq system.equipment.slotDataName "")}}
+  <div class="flexrow" style="gap: 1em;">
+    <div class="flexrow">
+      <b>Charges</b>
+      <input id="charges" type="number" value="{{system.charges}}">
+    </div>
+
+    <div class="flexrow" style="min-width:min-content">
+      <b>Charge Automation</b>
+      <select id="chargeAutomationSelector">
+        <option value="manual" {{#if (eq system.chargeAutomation "manual" )}}selected{{/if}}>Manual</option>
+        <option value="instantEffectUse" {{#if (eq system.chargeAutomation "instantEffectUse" )}}selected{{/if}}>Decrement on use of an Instant Effect</option>
+        <option value="scene" {{#if (eq system.chargeAutomation "scene" )}}selected{{/if}}>Decrement at the end of a Scene (NOT AUTOMATED)</option>
+        <option value="rest" {{#if (eq system.chargeAutomation "rest" )}}selected{{/if}}>Decrement on Rest</option>
+      </select>
+    </div>
+  </div>
+  {{/unless}}
+  {{/if}}
+</section>

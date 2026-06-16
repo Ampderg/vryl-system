@@ -50,8 +50,8 @@ export class VrylLogsHelpers {
                     });
                     if (!data) return;
 
-                    let startTimestamp = new Date(new Date(data.startDate) + offset).getTime();
-                    let endTimestamp = new Date(new Date(data.endDate) + offset).getTime();
+                    let startTimestamp = new Date(new Date(data.startDate).getTime()).getTime();
+                    let endTimestamp = new Date(new Date(data.endDate).getTime()).getTime();
 
                     let log = "";
                     let worldDateString = "";
@@ -77,11 +77,12 @@ export class VrylLogsHelpers {
 
     static async saveMessagesToFile(messagesToSave, startDate = "") {
         let log = "";
-        let dateString = ""
+        let worldDateString = ""
+        let worldTimeString = ""
         for (let i = 0; i < messagesToSave.length; i++) {
             let message = messagesToSave[i];
 
-            if (message.flags.vryl.isAudioPlayEvent) {
+            if (message.flags.vryl?.isAudioPlayEvent) {
                 const sound = await fromUuid(message.flags.vryl.audioSrcUuid);
                 if(!sound)
                     continue;
@@ -90,19 +91,13 @@ export class VrylLogsHelpers {
                 let foundLink = false;
                 const descTokens = sound.description.replaceAll("<br>", "\n").replaceAll("<br />", "\n").split('\n');
                 for (let token of descTokens) {
-                    if (token.includes("bandcamp.com")) {
-                        token = token.replaceAll(/<[^>]*>/g, "");
-                        token = token.replace(/https?:\/\/([^]+)/g, "https://proxy.corsfix.com/?https://$1");
+                    if (token.toLowerCase().includes("bandcamp track id: ")) {
+                        token = token.replace(/bandcamp track id: /i, "");
                         try {
-                            const response = await fetch(token, {
-                                method: 'GET', // or 'POST'
-                                mode: 'cors',  // default
-                            });
-                            const data = await response.text();
-                            const trackId = data.replace(/.*\/track=(.\d+).*/s, "$1");
+                            const trackId = token.replace(/<[^>]*>/g, "");
                             console.log(trackId);
 
-                            const embed = `<iframe style="border: 0; width: 100%; height: 42px;" src="https://bandcamp.com/EmbeddedPlayer/size=small/bgcol=000000/linkcol=0687f5/track=${trackId}/transparent=true/" seamless></iframe>`;
+                            const embed = `<iframe style="border: 0; width: 100%; height: 42px;" src="https://bandcamp.com/EmbeddedPlayer/size=small/bgcol=000000/linkcol=0687f5/track=${trackId}/transparent=true/" seamless></iframe><br>`;
                             log += embed;
 
                             foundLink = true;
@@ -129,26 +124,38 @@ export class VrylLogsHelpers {
             header += " --";
             log += this.styleCenter(header);
 
-            if (message.flags["foundryvtt-simple-calendar"] != undefined) {
+            let calendarProvider = undefined;
+            if(message.flags["foundryvtt-simple-calendar"] != undefined)
+                calendarProvider = "foundryvtt-simple-calendar";
+            else if (message.flags["foundryvtt-simple-calendar-reborn"] != undefined)
+                calendarProvider = "foundryvtt-simple-calendar-reborn";
+            
+            if (message.flags[calendarProvider] != undefined) {
                 log += "<br>";
-                let timestamp = message.flags["foundryvtt-simple-calendar"]["sc-timestamps"].timestamp;
+                let timestamp = message.flags[calendarProvider]["sc-timestamps"].timestamp;
                 let date = SimpleCalendar.api.timestampToDate(timestamp).display;
                 let newDateString = `<i>In-World Date: ${date.day}${date.daySuffix} of the ${date.monthName}, Year ${date.year}</i>`;
 
                 let time = date.time;
                 if (time.includes(".")) time = time.substring(0, date.time.indexOf("."));
-                let newTimeString = `<i>In-World Time</i>: ${time}*`;
+                let newTimeString = `<i>In-World Time: ${time}</i>`;
 
                 if (newDateString != worldDateString) {
                     worldDateString = newDateString;
                     log += this.styleCenter(newDateString);
 
                     if (newTimeString != worldTimeString)
+                    {
                         log += "<br>";
+                        worldTimeString = newTimeString;
+                        log += this.styleCenter(newTimeString);
+                    }
+                    log += "<br>";
                 }
-                if (newTimeString != worldTimeString) {
-                    worldTimeString = newDateString;
-                    log += this.styleCenter(newDateString);
+                else if (newTimeString != worldTimeString) {
+                    worldTimeString = newTimeString;
+                    log += this.styleCenter(newTimeString);
+                    log += "<br>";
                 }
             }
 
@@ -198,7 +205,7 @@ export class VrylLogsHelpers {
                     return flavor;
                 }
 
-                if (message.flags.vryl.isPrintedRoll) {
+                if (message.flags.vryl?.isPrintedRoll) {
                     log += processFlavor(message.content);
                 }
                 else {
@@ -207,6 +214,23 @@ export class VrylLogsHelpers {
                         log += processFlavor(roll.options.flavor) + '<br>';
                     }
                     log += this.renderRollTerms(message) + "<br>" + this.styleCenter("Successes: " + content);
+                    if(message.flags.vryl?.narrativeResult)
+                    {
+                        const successes = parseInt(content);
+                        let narrativeResult = "";
+                        if(successes <= 0)
+                            narrativeResult = `<b>Failure</b>, with a <b>Twist</b> to be the worst possible result.`;
+                        else if(successes <= 1)
+                            narrativeResult = `<b>Failure</b>, but your efforts result in something else happening.`;
+                        else if(successes <= 2)
+                            narrativeResult = `<b>Success</b>, with a <b>Twist</b>. You achieve your goal, but in an unexpected way.`;
+                        else if(successes <= 3)
+                            narrativeResult = `<b>Success</b>. You achieve your goal without complication.`;
+                        else 
+                            narrativeResult = `<b>Success</b>, with a <b>Boon</b> to be the best possible result.`;
+                        log += "\n" + narrativeResult + "<br//>";
+                    }
+                    log += "<br//>";
                 }
             }
             else {
@@ -247,9 +271,9 @@ export class VrylLogsHelpers {
         log = this.addStyleIfClass(log, "flexcol", "display: flex; flex-direction: column;");
         log = this.addStyleIfClass(log, "flexrow", "display: flex; flex-direction: row;");
         log = this.addStyleIfType(log, "summary", `list-style-position: outside;`);
-        log = this.addStyleIfType(log, "details", this.styles.borderBox);
+        log = this.addStyleIfType(log, "details", this.styles.borderBox, `(?:(?!Whisper to:).)*?</details>`);
 
-        log = log.replaceAll(/(<details[\s\S]*?<\/details>)/g, this.boxCenter(`$1`));
+        log = log.replaceAll(/(<details(?:(?!Whisper to:).)*?<\/details>)/g, this.boxCenter(`$1`));
 
         log = log.replaceAll(`<div class="copy-roll flexcol" style="display: flex; flex-direction: column;">
 <button class="copy-roll-replace">Copy Roll <i class="fa-solid fa-copy"></i></button>
@@ -326,9 +350,9 @@ export class VrylLogsHelpers {
         return this.mergeStyles(html.replaceAll(styleRegex, `<$1$2 style="${htmlStyle}">`));
     }
 
-    static addStyleIfType(html, htmlType, htmlStyle) {
-        let styleRegex = new RegExp(`<(${htmlType})([^>]*)>`, "g");
-        return this.mergeStyles(html.replaceAll(styleRegex, `<$1$2 style="${htmlStyle}">`));
+    static addStyleIfType(html, htmlType, htmlStyle, suffix = "") {
+        let styleRegex = new RegExp(`<(${htmlType})([^>]*)>(${suffix})`, "g");
+        return this.mergeStyles(html.replaceAll(styleRegex, `<$1$2 style="${htmlStyle}">$3`));
     }
 
     static mergeStyles(html) {

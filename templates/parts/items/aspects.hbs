@@ -1,0 +1,105 @@
+<div class="flex-group-center">
+    {{! Gear Tab }}
+    <ol class='items-list'>
+        <li class='item flexrow items-header'>
+            <div class='item-name'>Actions</div>
+            <div>
+                {{#if @root.editable}}
+                <a class='item-create' data-tooltip='{{localize "DOCUMENT.Create" type='Item'}}'
+                    data-action='createDoc' data-document-class='Item' data-type='aspect'>
+                    <i class='fas fa-plus'></i>
+                    {{localize 'DOCUMENT.New' type='item'}}
+                </a>
+                {{/if}}
+            </div>
+        </li>
+        <div class="itemCardGrid scrollable flexrow">
+            {{#each aspects as |item id|}}
+            <div class="itemCardWrapper">
+                <div class="itemCard flexcol draggable" style="align-self:flex-start;" data-item-id='{{item._id}}'
+                    data-document-class='Item'>
+                    <div class='item-name flexrow' style="margin: 0.5em; gap: 0.5em;" data-action="expandItem">
+                        {{#unless (eq item.img "icons/svg/item-bag.svg")}}
+                        <div class='item-image fitwidth' style="border: 1px groove var(--vryl-c-tan);">
+                            <a>
+                                <img src='{{item.img}}' data-tooltip='{{item.name}}' width='36' height='36' />
+                            </a>
+                        </div>
+                        {{/unless}}
+                        <b class="flex-group-left">{{item.name}}</b>
+                    </div>
+                    <div class="item-effects flexcol" style="gap: 0.5em;">
+                        <div data-action="expandItem" class="item-details">
+                            {{{item.system.description}}}
+                        </div>
+                        {{#each item.effects as |effect effectId|}}
+                        {{#if effect.flags.vryl.isInstant}}
+
+                        <button data-tooltip='{{effect.description}}' data-action='useItemEffect'
+                            data-effect="{{effect.uuid}}" class="
+                            clickable
+                        {{#if effect.flags.vryl.isInstantApplied}}selected{{/if}}">
+                            <div class='item-name'>
+                                {{#unless (eq effect.img "icons/svg/aura.svg")}}
+                                <div class='item-image fitwidth'
+                                    style="border: 1px groove var(--vryl-c-tan); margin-right: 0.5em;">
+                                    <a>
+                                        <img src='{{effect.img}}' data-tooltip='{{effect.name}}' width='20'
+                                            height='20' />
+                                    </a>
+                                </div>
+                                {{/unless}}
+                                <span class="align-center" style="margin:auto;">
+                                    {{#if (startsWith effect.name "Active Effect")}}
+                                    {{item.name}}
+                                    {{else}}
+                                    {{effect.name}}
+                                    {{/if}}</span>
+                            </div>
+                        </button>
+                        {{else}}
+                        <button data-tooltip='(Passive) {{effect.description}}'
+                            data-effect="{{effect.uuid}}" class="{{#if (or (eq
+                            item.system.equipment.slotDataName "" )
+                            item.system.equipment.isEquipped)}}clickable{{/if}} selected" disabled>
+                            <div class='item-name'>
+                                {{#unless (eq effect.img "icons/svg/aura.svg")}}
+                                <div class='item-image fitwidth'
+                                    style="border: 1px groove var(--vryl-c-tan); margin-right: 0.5em;">
+                                    <a>
+                                        <img src='{{effect.img}}' data-tooltip='{{effect.name}}' width='20'
+                                            height='20' />
+                                    </a>
+                                </div>
+                                {{/unless}}
+                                <span class="align-center" style="margin:auto;">
+                                    {{#if (startsWith effect.name "Active Effect")}}
+                                    {{item.name}}
+                                    {{else}}
+                                    {{effect.name}}
+                                    {{/if}}</span>
+                            </div>
+                        </button>
+                        {{/if}}
+                        {{/each}}
+                    </div>
+                    {{#if @root.editable}}
+                    <div class='item-controls flexrow' style="margin: 0.5em; gap: 0.5em;">
+                        <div class="flex-group-right" style="justify-content: flex-end; margin-right: 0.5em;">
+                            <a class='item-control item-edit' style="margin-right: 0.5em;"
+                                data-tooltip='{{localize "DOCUMENT.Update" type=' Gear'}}' data-action='viewDoc'>
+                                <i class='fas fa-edit'></i>
+                            </a>
+                            <a class='item-control item-delete' data-tooltip='{{localize "DOCUMENT.Delete" type='
+                                Gear'}}' data-action='deleteDoc'>
+                                <i class='fas fa-trash'></i>
+                            </a>
+                        </div>
+                    </div>
+                    {{/if}}
+                </div>
+            </div>
+            {{/each}}
+        </div>
+    </ol>
+</div>

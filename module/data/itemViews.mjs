@@ -56,6 +56,9 @@ export class VrylItemSheet extends api.HandlebarsApplicationMixin(sheets.ItemShe
     combatActionEffects: {
       template: `systems/vryl/templates/items/equipmentSettings.hbs`
     },
+    aspectSettings: {
+      template: `systems/vryl/templates/items/aspectSettings.hbs`
+    },
     effects: {
       template: `systems/vryl/templates/items/effects.hbs`
     },
@@ -79,7 +82,7 @@ export class VrylItemSheet extends api.HandlebarsApplicationMixin(sheets.ItemShe
         options.parts.push('effects');
         break;
       case 'aspect':
-        //options.parts.push('attributesSpell');
+        options.parts.push('aspectSettings');
         options.parts.push('effects');
         break;
     }
@@ -167,6 +170,16 @@ export class VrylItemSheet extends api.HandlebarsApplicationMixin(sheets.ItemShe
     const equipSlotSlotsElement = this.element.querySelector(`input#equipSlotSlots`);
     equipSlotSlotsElement?.addEventListener("change", () => {
       this.document.update({ [`system.equipment.slotsFilled`]: equipSlotSlotsElement.value });
+    });
+
+    const chargesElement = this.element.querySelector(`input#charges`);
+    chargesElement?.addEventListener("change", () => {
+      this.document.update({ [`system.charges`]: chargesElement.value });
+    });
+
+    const chargeAutomationElement = this.element.querySelector(`select#chargeAutomationSelector`);
+    chargeAutomationElement?.addEventListener("change", () => {
+      this.document.update({ [`system.chargeAutomation`]: chargeAutomationElement.value });
     });
   }
 
