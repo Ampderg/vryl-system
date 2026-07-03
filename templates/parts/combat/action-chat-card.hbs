@@ -1,0 +1,13 @@
+<div class="roll-builder-actor global">
+    <div class="roll-builder-actor-inner flexcol flex-group-center">
+        <h6 class="flex-group-center">{{name}}</h6>
+
+        <span>{{{system.combatAction.actionPointString}}}</span>
+        <div>
+            {{{system.description}}}
+        </div>
+        {{#unless inSidebar}}
+        <button class="clickable" id="combatEffectsButton">Open Effects</button>
+        {{/unless}}
+    </div>
+</div>

@@ -51,13 +51,13 @@ export class VrylItemSheet extends api.HandlebarsApplicationMixin(sheets.ItemShe
       template: `systems/vryl/templates/items/equipmentSettings.hbs`
     },
     combatActionSettings: {
-      template: `systems/vryl/templates/items/equipmentSettings.hbs`
+      template: `systems/vryl/templates/items/combatActionSettings.hbs`
     },
     combatActionEffects: {
-      template: `systems/vryl/templates/items/equipmentSettings.hbs`
+      template: `systems/vryl/templates/items/combatActionEffects.hbs`
     },
-    aspectSettings: {
-      template: `systems/vryl/templates/items/aspectSettings.hbs`
+    itemCharges: {
+      template: `systems/vryl/templates/items/itemCharges.hbs`
     },
     effects: {
       template: `systems/vryl/templates/items/effects.hbs`
@@ -75,6 +75,7 @@ export class VrylItemSheet extends api.HandlebarsApplicationMixin(sheets.ItemShe
     switch (this.document.type) {
       case 'combatAction':
         options.parts.splice(1, 0, 'combatActionSettings');
+        //options.parts.push('itemCharges');
         options.parts.push('combatActionEffects');
         break;
       case 'gear':
@@ -82,7 +83,7 @@ export class VrylItemSheet extends api.HandlebarsApplicationMixin(sheets.ItemShe
         options.parts.push('effects');
         break;
       case 'aspect':
-        options.parts.push('aspectSettings');
+        options.parts.push('itemCharges');
         options.parts.push('effects');
         break;
     }
@@ -181,6 +182,193 @@ export class VrylItemSheet extends api.HandlebarsApplicationMixin(sheets.ItemShe
     chargeAutomationElement?.addEventListener("change", () => {
       this.document.update({ [`system.chargeAutomation`]: chargeAutomationElement.value });
     });
+
+
+    //Combat action
+    this.element.querySelector(`[data-action='addActionEffect']`)?.addEventListener("click", () => {
+      this._addActionEffect();
+    });
+
+    const successCostElements = this.element.querySelectorAll(`[data-action='updateSuccessCost']`);
+    for (const e of successCostElements) {
+      e.addEventListener("change", () => {
+        const effects = this.document.system.combatAction.effects;
+        const effect = effects.find(f => f.id == e.id);
+        effect.successCost = e.value;
+        this.document.update({ [`system.combatAction.effects`]: effects });
+      });
+    }
+
+    const effectDescriptionElements = this.element.querySelectorAll(`[data-action='updateEffectDescription']`);
+    for (const e of effectDescriptionElements) {
+      e.addEventListener("click", async () => {
+        const effects = this.document.system.combatAction.effects;
+        const effect = effects.find(f => f.id == e.id);
+
+        new Dialog({
+          title: "Edit Action Effect",
+          content: `
+<form>
+  <div class="flexcol">
+    <label>Card Summary</label>
+    <input type="text" id='summary' value='${effect.summary ? effect.summary : ""}'>
+
+    <label>Description</label>
+    <!-- This div acts as the target for the editor -->
+    <div class="editor-content">
+    <prose-mirror id="description" value="${effect.description.replaceAll('"', '\"')}">
+      ${effect.description}
+    </prose-mirror>
+    </div>
+    <div class="flexrow">
+      <label>Is this effect built-in to the action? (Mandatory)</label>
+      <input type="checkbox" id="mandatory" name="mandatory" ${effect.mandatory ? "checked" : ""}>
+    </div>
+    <div class="flexrow">
+      <label>Can this effect repeat?</label>
+      <input type="checkbox" id="repeatable" name="repeatable" ${effect.repeatable ? "checked" : ""}}>
+    </div>
+  </div>
+</form>
+`,
+          buttons: {
+            save: {
+              label: "Save",
+              callback: (html) => {
+                // Retrieve the updated HTML content
+                effect.description = html.find('#description').val();
+                effect.summary = html.find('#summary').val();
+                effect.repeatable = html.find('#repeatable')[0].checked;
+                effect.mandatory = html.find('#mandatory')[0].checked;
+
+                this.document.update({ [`system.combatAction.effects`]: effects });
+              }
+            }
+          },
+        }, {
+          width: 550,
+          height: 400
+        }).render(true);
+
+      });
+    }
+
+    const effectDeleteElements = this.element.querySelectorAll(`[data-action='deleteEffect']`);
+    for (const e of effectDeleteElements) {
+      e.addEventListener("click", () => {
+        const effects = this.document.system.combatAction.effects.filter(f => f.id != e.id);
+        this.document.update({ [`system.combatAction.effects`]: effects });
+      });
+    }
+
+    this.element.querySelectorAll(`[data-action='shiftEffectOrderUp']`).forEach((element, index, array) => {
+      element.addEventListener("click", (event) => {
+        const effects = this.document.system.combatAction.effects;
+        const effect = effects.find(f => f.id == event.target.parentElement.id);
+
+        let order = null;
+        for (const e of effects) {
+          if (e.order < effect.order && (order == null || e.order > order))
+            order = e.order;
+        }
+
+        if (order == null)
+          order = effect.order;
+
+        if (order == effect.order) {
+          let shared = 0;
+
+          for (const e of effects) {
+            if (e.order == order)
+              shared++;
+          }
+
+          if (shared > 1)
+            order--;
+        }
+
+        if(order < 0)
+        {
+          for (const e of effects) {
+            e.order -= order;
+          }
+          order -= order;
+        }
+
+        effect.order = order;
+        this.document.update({ [`system.combatAction.effects`]: effects });
+      });
+    });
+
+    this.element.querySelectorAll(`[data-action='shiftEffectOrderDown']`).forEach((element, index, array) => {
+      element.addEventListener("click", (event) => {
+        const effects = this.document.system.combatAction.effects;
+        const effect = effects.find(f => f.id == event.target.parentElement.id);
+
+        let order = null;
+        for (const e of effects) {
+          if (e.order > effect.order && (order == null || e.order < order))
+            order = e.order;
+        }
+
+        if (order == null)
+          order = effect.order;
+
+        if (order == effect.order) {
+          let shared = 0;
+
+          for (const e of effects) {
+            if (e.order == order)
+              shared++;
+          }
+
+          if (shared > 1)
+            order++;
+        }
+
+        effect.order = order;
+        this.document.update({ [`system.combatAction.effects`]: effects });
+      });
+    });
+
+    const actionCostSelector = this.element.querySelector(`select#costSelector`);
+    actionCostSelector?.addEventListener("change", () => {
+      this.document.update({ [`system.combatAction.cost`]: actionCostSelector.value });
+    });
+
+    this.element.querySelector(`#increaseActionCost`)?.addEventListener("click", () => {
+      this.document.update({ [`system.combatAction.actionPointCost`]: this.document.system.combatAction.actionPointCost + 1 });
+    });
+    this.element.querySelector(`#decreaseActionCost`)?.addEventListener("click", () => {
+      this.document.update({ [`system.combatAction.actionPointCost`]: Math.max(1, this.document.system.combatAction.actionPointCost - 1) });
+    });
+
+    const actionFrequencySelector = this.element.querySelector(`select#frequencySelector`);
+    actionFrequencySelector?.addEventListener("change", () => {
+      this.document.update({ [`system.combatAction.frequency`]: actionFrequencySelector.value });
+    });
+
+    this.element.querySelector(`#increaseActionCharges`)?.addEventListener("click", () => {
+      this.document.update({ [`system.combatAction.maxCharges`]: this.document.system.combatAction.maxCharges + 1 });
+    });
+    this.element.querySelector(`#decreaseActionCharges`)?.addEventListener("click", () => {
+      this.document.update({ [`system.combatAction.maxCharges`]: Math.max(1, this.document.system.combatAction.maxCharges - 1) });
+    });
+
+    const actionIsRollCheckbox = this.element.querySelector(`#actionIsRollCheckbox`);
+    actionIsRollCheckbox?.addEventListener("change", () => {
+      this.document.update({ [`system.combatAction.isRoll`]: actionIsRollCheckbox.checked });
+    });
+
+    this.element.querySelector(`button#saveRoll`)?.addEventListener("click", () => {
+      let json = CONFIG.ui.rollBuilder.serializeToJson();
+      this.document.update({ [`system.combatAction.rollBuilderJson`]: json });
+    });
+
+    this.element.querySelector(`button#copySavedRoll`)?.addEventListener("click", () => {
+      CONFIG.ui.rollBuilder.deserializeFromJson(this.document.system.combatAction.rollBuilderJson, false);
+    });
+
   }
 
 
@@ -375,6 +563,36 @@ export class VrylItemSheet extends api.HandlebarsApplicationMixin(sheets.ItemShe
   }
 
   //#endregion
+
+  //#region Combat
+
+  async _addActionEffect() {
+    if (this.document.type != "combatAction")
+      return;
+
+    const effects = this.document.system.combatAction.effects;
+
+    let maxOrder = 0;
+    let maxId = 0;
+    for (const e of effects) {
+      if (e.order > maxOrder)
+        maxOrder = e.order;
+      if (e.id > maxId)
+        maxId = e.id;
+    }
+
+    const newEffect = {
+      successCost: 0,
+      order: maxOrder + 1,
+      id: maxId + 1,
+      description: "New Effect",
+    };
+
+    await this.document.update({
+      "system.combatAction.effects": [...effects, newEffect]
+    });
+  }
+
 }
 
 //#region Init

@@ -12,14 +12,14 @@ export class VrylActor extends Actor {
      * available both inside and outside of character sheets (such as if an actor
      * is queried and has a roll executed directly from it).
      */
-    prepareDerivedData() {
+    async prepareDerivedData() {
         const actorData = this;
         const systemData = actorData.system;
         const flags = actorData.flags.vryl || {};
 
         console.log("Preparing derived data for " + actorData.name);
-        this._prepareCharacterData(actorData);
-        this._prepareInventoryData(actorData);
+        await this._prepareCharacterData(actorData);
+        await this._prepareInventoryData(actorData);
 
         this.system = systemData;
         this.flags.vryl = flags;
@@ -28,7 +28,7 @@ export class VrylActor extends Actor {
     /**
      * Prepare Character type specific data
      */
-    _prepareCharacterData(actorData) {
+    async _prepareCharacterData(actorData) {
         console.log("Preparing character data for " + actorData.name);
 
         if (actorData.type === 'character') {
@@ -51,10 +51,13 @@ export class VrylActor extends Actor {
                 }
             }
             systemData.xpSpent = xpSpent;
+
+            systemData.combat.damage = systemData.combat.baseDamage;
+            systemData.combat.fray = systemData.combat.baseFray;
         }
     }
 
-    _prepareInventoryData(actorData) {
+    async _prepareInventoryData(actorData) {
         const systemData = actorData.system;
         const equipData = systemData.equipment;
 
@@ -65,9 +68,9 @@ export class VrylActor extends Actor {
             let slotArray = new Array(slot.slots);
             let i = 0;
             for (const item of actorData.items.contents) {
-                if(item.type != "gear")
+                if (item.type != "gear")
                     continue;
-                
+
                 if (item.system.equipment.slotDataName == dataName && item.system.equipment.isEquipped) {
                     for (let j = 0; j < item.system.equipment.slotsFilled; j++) {
                         if (i >= slot.slots)
@@ -249,21 +252,21 @@ export class VrylItem extends Item {
         return rollData;
     }
 
-    prepareDerivedData() {
+    async prepareDerivedData() {
         const itemData = this;
         const systemData = itemData.system;
         const flags = itemData.flags.vryl || {};
+        this.system = systemData;
+        this.flags.vryl = flags;
 
         console.log("Preparing derived data for " + itemData.name);
 
-        this._prepareInventoryItemData(itemData);
-
-        this.system = systemData;
-        this.flags.vryl = flags;
+        await this._prepareInventoryItemData(itemData);
+        await this._prepareCombatActionData(itemData);
     }
 
-    _prepareInventoryItemData(itemData) {
-        if(itemData.type != "gear") return;
+    async _prepareInventoryItemData(itemData) {
+        if (itemData.type != "gear") return;
         //TODO: this is kinda messy, maybe change how slots are handled to be a little better
         const defaultSlotSettings = {};
 
@@ -282,6 +285,90 @@ export class VrylItem extends Item {
         }
 
         itemData.system.equipment.defaultSlotSettings = defaultSlotSettings;
+    }
+
+    async _prepareCombatActionData(itemData) {
+        if (itemData.type != "combatAction") return;
+
+        const effects = itemData.system.combatAction.effects;
+
+        const orderedEffects = {}
+
+        for (const effect of effects) {
+            if (!orderedEffects[effect.order])
+                orderedEffects[effect.order] = [];
+
+            orderedEffects[effect.order].push(effect);
+
+            effect.enrichedDescription = CONFIG.ui.vrylEnrichText(effect.description, itemData.actor.system);
+            effect.enrichedSummary = CONFIG.ui.vrylEnrichText(effect.summary, itemData.actor.system);
+        }
+
+        itemData.system.combatAction.orderedEffects = orderedEffects;
+
+        let apString = "";
+
+        switch (itemData.system.combatAction.frequency) {
+            case "at-will":
+                apString += "<i class='fas fa-arrow-right'></i>&nbsp;";
+                break;
+            case "encounter":
+                apString += "<i class='fas fa-arrows-rotate'></i>";
+                if(itemData.system.combatAction.charges == 0)
+                {
+                    apString += `<i class='fa-standard fa-square-xmark'></i>`;
+                }
+                else if(itemData.system.combatAction.charges <= 6)
+                {
+                    const numWords = ["", "one", "two", "three", "four", "five", "six"];
+                    apString += `<i class='fa-standard fa-dice-${numWords[itemData.system.combatAction.charges]}'></i>`;
+                }
+                else
+                {
+                    apString += `<i class='fa-standard fa-square fa-stack-2x"></i><span class="fa-stack-1x number-overlay">${itemData.system.combatAction.charges}</span>`;
+                }
+
+                apString += "&nbsp;";
+                break;
+        }
+
+        if (itemData.system.combatAction.cost == "actions") {
+            const ap = itemData.system.combatAction.actionPointCost;
+            for (let i = 0; i < ap; i++) {
+                apString += "<i class='fas fa-diamond'></i>";
+            }
+        }
+        else {
+            switch (itemData.system.combatAction.cost) {
+                case "free":
+                    apString += "<i class='fal fa-diamond'></i>";
+                    break;
+                case "reaction":
+                case "reaction_limited":
+                    apString += "<i class='fas fa-diamond-turn-right'></i>";
+                    break;
+            }
+        }
+
+        itemData.system.combatAction.usesCharges = !(itemData.system.combatAction.frequency == "at-will" || itemData.system.combatAction.frequency == "passive");
+
+
+        if(itemData.system.combatAction.usesCharges)
+        {
+            if(apString != "")
+                apString += "<br>";
+            apString += "<div id='actionCharges'>";
+            for(let i = 0; i < itemData.system.combatAction.maxCharges; i++)
+            {
+                if(i < itemData.system.combatAction.charges)
+                    apString += `<i class='fas fa-circle' data-action='setCombatActionCharges' data-item='${itemData.uuid}' id='${i}'></i>`;
+                else
+                    apString += `<i class='fal fa-circle' data-action='setCombatActionCharges' data-item='${itemData.uuid}' id='${i}'></i>`;
+            }
+            apString += "</div>";
+        }
+
+        itemData.system.combatAction.actionPointString = apString;
     }
 
 }

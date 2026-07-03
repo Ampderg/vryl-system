@@ -6,7 +6,7 @@ const { BooleanField, HTMLField, NumberField, SchemaField, StringField, ArrayFie
 
 class ActorDataModel extends foundry.abstract.TypeDataModel {
   static defineSchema() {
-
+    const requiredInteger = { required: true, nullable: false, integer: true };
     const schema = {};
 
     const equipmentSlots = {};
@@ -38,7 +38,7 @@ class ActorDataModel extends foundry.abstract.TypeDataModel {
 class AttributeActorDataModel extends ActorDataModel {
   static defineSchema() {
     // Define attributes
-
+    const requiredInteger = { required: true, nullable: false, integer: true };
     console.log("Defining attribute schema...");
 
     let attributes = {};
@@ -72,9 +72,45 @@ class AttributeActorDataModel extends ActorDataModel {
 export class CharacterActorDataModel extends AttributeActorDataModel {
   static defineSchema() {
 
-    return {
-      ...super.defineSchema()
-    };
+    const schema = super.defineSchema();
+    const requiredInteger = { required: true, nullable: false, integer: true };
+
+    let ac = new ArrayField(new SchemaField({
+      keyword: new StringField({
+        required: true,
+        initial: "global",
+      }),
+      dcMod: new NumberField({
+        ...requiredInteger,
+        initial: 0,
+      }),
+      stacking: new BooleanField({
+        initial: false,
+        required: true,
+      })
+    }));
+
+    schema.combat = new SchemaField({
+      hp: new SchemaField({
+        value: new NumberField({initial: 0}),
+        min: new NumberField({initial: 0}),
+        max: new NumberField({initial: 30}),
+      }),
+      guard: new SchemaField({
+        value: new NumberField({initial: 0}),
+        min: new NumberField({initial: 0}),
+        max: new NumberField({initial: 30}),
+      }),
+      speed: new NumberField({ required: true, initial: 4 }),
+      actionsPerTurn: new NumberField({ required: true, initial: game.settings.get(CONFIG.SystemId, 'default-actions-per-turn'), min: 0 }),
+      actionPoints: new NumberField({ required: true, initial: game.settings.get(CONFIG.SystemId, 'default-actions-per-turn'), min: 0 }),
+      armorMods: ac,
+
+      baseDamage: new NumberField({ required: true, initial: 4 }),
+      baseFray: new NumberField({ required: true, initial: 2 }),
+    });
+
+    return schema;
   }
 }
 
@@ -107,7 +143,86 @@ export class VrylCombatAction extends VrylItemCard {
   static defineSchema() {
     const schema = super.defineSchema();
 
+    const requiredInteger = { required: true, nullable: false, integer: true };
 
+    let combatAction = {};
+    
+    combatAction.cost = new StringField({
+      initial: "actions",
+    });
+
+    combatAction.actionPointCost = new NumberField({
+      initial: 1,
+      min: 0,
+    });
+
+    combatAction.reactionCharges = new NumberField({
+      initial: 1,
+      min: 0,
+    });
+
+    combatAction.maxReactionCharges = new NumberField({
+      initial: 1,
+      min: 0,
+    });
+
+    combatAction.frequency = new StringField({
+      initial: "at-will",
+    });
+
+    combatAction.charges = new NumberField({
+      initial: 1,
+      min: 0,
+    });
+
+    combatAction.maxCharges = new NumberField({
+      initial: 1,
+      min: 0,
+    });
+
+    combatAction.isRoll = new BooleanField({
+      initial: true,
+    });
+
+    combatAction.rollBuilderJson = new StringField({
+      initial: "",
+    });
+
+    let targetAutomation = new SchemaField({
+      doesTarget: new BooleanField({initial: false}),
+      targetCount: new NumberField({initial: 0, min: 0, ...requiredInteger}),
+      targetRange: new NumberField({initial: 1, min: 0, ...requiredInteger}),
+    });
+
+    let effectAutomation = new ArrayField(new SchemaField({
+      flag: new StringField({}),
+      // targetting: structuredClone(targetAutomation),
+    }));
+
+    combatAction.effects = new ArrayField(new SchemaField({
+      id: new NumberField({
+        ...requiredInteger,
+        initial: 0,
+        min: 0,
+      }),
+      successCost: new NumberField({
+        ...requiredInteger,
+        initial: 0,
+        min: 0,
+      }),
+      order: new NumberField({
+        ...requiredInteger,
+        initial: 0,
+      }),
+      targetting: targetAutomation,
+      description: new StringField({}),
+      summary: new StringField({}),
+      automation: effectAutomation,
+      repeatable: new BooleanField({ required: true, initial: false }),
+      mandatory: new BooleanField({ required: true, initial: false }),
+    }));
+
+    schema.combatAction = new SchemaField(combatAction);
 
     return schema;
   }

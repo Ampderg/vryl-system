@@ -55,6 +55,7 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
             equipItem: this._equipItem,
             expandItem: this._expandItem,
             useItemEffect: this._useItemEffect,
+            useCombatAction: this._useCombatAction,
         },
         // Custom property that's merged into `this.options`
         // dragDrop: [{ dragSelector: '.draggable', dropSelector: null }],
@@ -150,15 +151,68 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
         const xpElement = this.element.querySelector("input#xp-input");
         xpElement.addEventListener('change', (event) => { this.updateXP() });
 
+        //combat settings
+        //if(context.tabs.combat.active)
+        {
+            this.element.querySelector("input#combat-input-hp")?.addEventListener('change', (event) => {
+                let newVal = Math.clamp(event.target.value, 0, this.document.system.combat.hp.max);
+                this.document.update({ [`system.combat.hp.value`]: newVal });
+                event.target.value = newVal;
+            });
+            this.element.querySelector("input#combat-input-maxHp")?.addEventListener('change', (event) => {
+                let newVal = Math.max(event.target.value, 0);
+                this.document.update({ [`system.combat.hp.max`]: newVal });
+                this.document.update({ [`system.combat.guard.max`]: newVal });
+                event.target.value = newVal;
+            });
+            this.element.querySelector("input#combat-input-guard")?.addEventListener('change', (event) => {
+                let newVal = Math.max(event.target.value, 0);
+                this.document.update({ [`system.combat.guard.value`]: newVal });
+                event.target.value = newVal;
+            });
+            this.element.querySelector("input#combat-input-speed")?.addEventListener('change', (event) => {
+                let newVal = Math.max(event.target.value, 0);
+                this.document.update({ [`system.combat.speed`]: newVal });
+                event.target.value = newVal;
+            });
+            this.element.querySelector("input#combat-input-damage")?.addEventListener('change', (event) => {
+                let newVal = Math.max(event.target.value, 0);
+                this.document.update({ [`system.combat.baseDamage`]: newVal });
+                event.target.value = newVal;
+            });
+            this.element.querySelector("input#combat-input-fray")?.addEventListener('change', (event) => {
+                let newVal = Math.max(event.target.value, 0);
+                this.document.update({ [`system.combat.baseFray`]: newVal });
+                event.target.value = newVal;
+            });
+            this.element.querySelector("button#combat-input-ac")?.addEventListener('click', (event) => {
+
+            });
+
+            const combatActionCharges = this.element.querySelectorAll("[data-action='setCombatActionCharges']");
+            for (let c of combatActionCharges) {
+                c.classList.add("clickable");
+                c.addEventListener('click', async (event) => {
+                    event.stopPropagation();
+                    event.preventDefault();
+                    const item = await fromUuid(c.dataset.item);
+                    let clickedId = parseInt(c.id) + 1;
+                    let charges = item.system.combatAction.charges;
+                    if (charges == clickedId)
+                        clickedId--;
+                    item.update({ [`system.combatAction.charges`]: clickedId });
+                });
+            }
+
+        }
+
         VrylActorSheet.renderSelectedAttributes(this.element, this.document.id);
 
         const itemRows = this.element.querySelectorAll('.itemCard[data-document-class][data-item-id]');
-        for(const docRow of itemRows)
-        {
+        for (const docRow of itemRows) {
             const id = docRow.dataset.itemId;
             const detailsElement = docRow.querySelector('.item-details');
-            if(this.expandedIds.has(id))
-            {
+            if (this.expandedIds.has(id)) {
                 detailsElement.classList.add('notransition');
                 detailsElement.classList.add('expandedItem');
                 detailsElement.offsetHeight;
@@ -268,9 +322,9 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
         }
 
         // Assign and return
-        context.combatActions = combatActions;
-        context.aspects = aspects;
-        context.gear = gear;
+        context.gear = gear.sort((a, b) => (a.sort || 0) - (b.sort || 0));
+        context.aspects = aspects.sort((a, b) => (a.sort || 0) - (b.sort || 0));
+        context.combatActions = combatActions.sort((a, b) => (a.sort || 0) - (b.sort || 0));
     }
 
     /**
@@ -738,13 +792,11 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
         const rowDoc = target.closest('[data-document-class]');
         const id = rowDoc.dataset.itemId;
         const detailsElement = rowDoc.querySelector('.item-details');
-        if(this.expandedIds.has(id))
-        {
+        if (this.expandedIds.has(id)) {
             this.expandedIds.delete(id);
             detailsElement.classList.remove('expandedItem');
         }
-        else
-        {
+        else {
             this.expandedIds.add(id);
             detailsElement.classList.add('expandedItem');
         }
@@ -755,8 +807,101 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
         effectsFunctions.toggleInstantEffect(effect);
     }
 
+    static async _useCombatAction(event, target) {
+        const action = await fromUuid(target.dataset.id);
+        CONFIG.ui.rollBuilder.deserializeFromJson(action.system.combatAction.rollBuilderJson, true);
+        CONFIG.ui.rollBuilder.setActionSource(action);
+    }
+
     //#endregion
 
+    //#region DragDrop
+   
+
+    /**
+     * Define whether a user is able to begin a dragstart workflow for a given drag selector
+     * @param {string} selector       The candidate HTML selector for dragging
+     * @returns {boolean}             Can the current user drag this selector?
+     * @protected
+     */
+    _canDragStart(selector) {
+        // game.user fetches the current user
+        return this.isEditable;
+    }
+
+    /**
+     * Define whether a user is able to conclude a drag-and-drop workflow for a given drop selector
+     * @param {string} selector       The candidate HTML selector for the drop target
+     * @returns {boolean}             Can the current user drop on this selector?
+     * @protected
+     */
+    _canDragDrop(selector) {
+        // game.user fetches the current user
+        return this.isEditable;
+    }
+
+    /**
+     * Callback actions which occur at the beginning of a drag start workflow.
+     * @param {DragEvent} event       The originating DragEvent
+     * @protected
+     */
+    _onDragStart(event) {
+        super._onDragStart(event);
+    }
+
+    /**
+     * Callback actions which occur when a dragged element is over a drop target.
+     * @param {DragEvent} event       The originating DragEvent
+     * @protected
+     */
+    _onDragOver(event) {
+        super._onDragOver(event);
+    }
+
+    /**
+     * Callback actions which occur when a dragged element is dropped on a target.
+     * @param {DragEvent} event       The originating DragEvent
+     * @protected
+     */
+    async _onDrop(event) {
+        const data = TextEditor.getDragEventData(event);
+        const actor = this.actor;
+        const allowed = Hooks.call("dropActorSheetData", actor, this, data);
+        if (allowed === false) return;
+
+        // Dropped Documents
+        const documentClass = foundry.utils.getDocumentClass(data.type);
+        if (documentClass) {
+            let item = await fromUuid(data.uuid);
+            let targetDrag = $(event.target).closest('.order-drag');
+            if (targetDrag && targetDrag.length > 0) {
+                const itemToMove = item;
+                const targetItem = actor.items.get(targetDrag[0].dataset.itemId);
+
+                // 3. Prepare the update data using Foundry's SortingHelpers
+                let sortData = foundry.utils.performIntegerSort(itemToMove, {
+                    target: targetItem,
+                    siblings: actor.items,
+                    sortBefore: targetItem.sort < itemToMove.sort,
+                });
+
+
+                // Map to the required update payload
+                const updates = sortData.map((item) => ({
+                    _id: item.target.id,
+                    sort: item.update.sort,
+                }));
+
+                // 4. Update the item in the Actor's embedded collection
+                await actor.updateEmbeddedDocuments("Item", updates);
+                return;
+            }
+        }
+
+        super._onDrop(event);
+    }
+
+    //#endregion
 }
 
 //#region Init

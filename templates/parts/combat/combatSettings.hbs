@@ -1,0 +1,73 @@
+<div class="flexrow">
+    <div class="flexcol flex-group-center" style="gap:2em;">
+        <div class="flexrow flex-group-center" style="flex-wrap: nowrap; gap:2em;">
+            {{!-- HP --}}
+            <div class="flexcol" style="flex-wrap: nowrap;">
+                <div class="flexrow flex-group-center" style="gap:0.3em;flex-wrap: nowrap;">
+                    <b>HP</b>
+                    <input class="flex-group-center" style="width: 4em; height: 2em;" id='combat-input-hp' type='number'
+                        value='{{system.combat.hp.value}}'>
+                        <b>/</b>
+                    <input class="flex-group-center" style="width: 4em; height: 2em;" id='combat-input-maxHp' type='number'
+                        value='{{system.combat.hp.max}}'>
+                </div>
+                <div class="flexrow flex-group-center" style="flex-wrap: nowrap;">
+                    <button type="button" style="font-size: 90%;"
+                        onclick="game.vrylGlobalFunctions.adjustNumberStepValue(this, -5, 2)">-5</button>
+                    <button type="button" style="font-size: 90%;"
+                        onclick="game.vrylGlobalFunctions.adjustNumberStepValue(this, -1, 2)">-1</button>
+                    <button type="button" style="font-size: 90%;"
+                        onclick="game.vrylGlobalFunctions.adjustNumberStepValue(this, 1, 2)">+1</button>
+                    <button type="button" style="font-size: 90%;"
+                        onclick="game.vrylGlobalFunctions.adjustNumberStepValue(this, 5, 2)">+5</button>
+                </div>
+            </div>
+
+            {{!-- Guard --}}
+            <div class="flexcol" style="flex-wrap: nowrap;">
+                <div class="flexrow flex-group-center" style="gap:0.3em;flex-wrap: nowrap;">
+                    <b>Guard</b>
+                    <input class="flex-group-center" style="width: 4em; height: 2em;" id='combat-input-guard' type='number'
+                        value='{{system.combat.guard.value}}'>
+                </div>
+                <div class="flexrow flex-group-center" style="flex-wrap: nowrap;">
+                    <button type="button" style="font-size: 90%;"
+                        onclick="game.vrylGlobalFunctions.adjustNumberStepValue(this, -5, 2)">-5</button>
+                    <button type="button" style="font-size: 90%;"
+                        onclick="game.vrylGlobalFunctions.adjustNumberStepValue(this, -1, 2)">-1</button>
+                    <button type="button" style="font-size: 90%;"
+                        onclick="game.vrylGlobalFunctions.adjustNumberStepValue(this, 1, 2)">+1</button>
+                    <button type="button" style="font-size: 90%;"
+                        onclick="game.vrylGlobalFunctions.adjustNumberStepValue(this, 5, 2)">+5</button>
+                </div>
+            </div>
+            {{> willpower}}
+            
+        </div>
+        <div class="flexrow flex-group-center" style="flex-wrap: nowrap; gap:2em;">
+            <div class="flexcol" style="flex-wrap: nowrap;">
+                <div class="flexrow flex-group-center" style="gap:0.3em;flex-wrap: nowrap;">
+                    {{!-- TODO: replace with dropdown --}}
+                    <b>Base Damage</b>
+                    <span class="flexrow" style="flex-wrap:nowrap;"><b>d</b><input class="flex-group-center" style="width: 2em; height: 2em;" id='combat-input-damage' type='number'
+                        value='{{system.combat.baseDamage}}'></span>
+                </div>
+            </div>
+            <div class="flexcol" style="flex-wrap: nowrap;">
+                <div class="flexrow flex-group-center" style="gap:0.3em;flex-wrap: nowrap;">
+                    <b>Base Fray</b>
+                    <input class="flex-group-center" style="width: 4em; height: 2em;" id='combat-input-fray' type='number'
+                        value='{{system.combat.baseFray}}'>
+                </div>
+            </div>
+            {{!-- Speed --}}
+            <div class="flexcol" style="flex-wrap: nowrap;">
+                <div class="flexrow flex-group-center" style="gap:0.3em;flex-wrap: nowrap;">
+                    <b>Speed</b>
+                    <input class="flex-group-center" style="width: 4em; height: 2em;" id='combat-input-speed' type='number'
+                        value='{{system.combat.speed}}'>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

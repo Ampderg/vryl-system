@@ -1,7 +1,21 @@
 export class VrylHandlebarsHelpers {
     static registerHandlebarsHelpers() {
 
+        Handlebars.registerHelper("withIfExists", function (context, options) {
+            // options.fn executes the code block inside {{#with}}...{{/with}}
+            // Passing 'context' sets it as the 'this' value inside that block
+            if (context !== undefined && context !== null)
+                return options.fn(context);
+            else
+                return options.fn(this);
+        });
+
         //#region Loops
+
+        Handlebars.registerHelper('includes', function(array, value, options) {
+        // Ensure the array exists and is valid
+            return array.includes(value);
+        });
 
         Handlebars.registerHelper('for', function (from, to, incr, block) {
             var accum = '';
@@ -154,6 +168,13 @@ export class VrylHandlebarsHelpers {
             // Return true if at least one argument is truthy
             return args.every(Boolean);
         });
+
+        Handlebars.registerHelper('not', function () {
+            // Convert arguments object to array and remove the last item (options)
+            var args = Array.prototype.slice.call(arguments, 0, -1);
+            // Return true if at least one argument is truthy
+            return !args.some(Boolean);
+        });
         //#endregion
 
         //#region Partials
@@ -168,6 +189,10 @@ export class VrylHandlebarsHelpers {
 
             effectsList: "systems/vryl/templates/parts/effects-list.hbs",
 
+
+            combatSettings: "systems/vryl/templates/parts/combat/combatSettings.hbs",
+            combatResources: "systems/vryl/templates/parts/combat/combatResources.hbs",
+            combatActionEffects: "systems/vryl/templates/items/combatActionEffects.hbs",
             combatCards: "systems/vryl/templates/parts/combat/cards.hbs",
             aspectCards: "systems/vryl/templates/parts/items/aspects.hbs",
         });

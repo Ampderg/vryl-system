@@ -207,10 +207,13 @@
 .flex-group-center,
 .flex-group-left,
 .flex-group-right {
-  justify-content: center;
   align-items: center;
+  align-self: center;
+}
+
+.flex-group-center {
+  justify-content: center;
   text-align: center;
-  align-self: center
 }
 
 .flex-group-left {
@@ -363,6 +366,15 @@
   padding: 0;
 }
 
+.centervert {
+  margin-top: auto;
+  margin-bottom: auto;
+}
+.centerhor {
+  margin-left: auto;
+  margin-right: auto;
+}
+
 .vryl .items-list .item-name {
   flex: 2;
   margin: 0;
@@ -478,6 +490,22 @@
   list-style: none;
   margin: 0;
   padding: 0;
+}
+
+.scrollable {
+  overflow-y: scroll;
+  max-height: 250px;
+  border: 2px groove var(--vryl-c-groove);
+  margin: 0.5em;
+}
+
+.vryl-list .list-element {
+  border-bottom: 1px solid transparent;
+  border-image: linear-gradient(to right, #00000000, var(--vryl-c-tan), var(--vryl-c-black), var(--vryl-c-tan), #00000000) 1;
+}
+
+.vryl-list .list-element:last-child {
+  border-bottom: none;
 }
 
 .vryl .effects-list .effect-name {

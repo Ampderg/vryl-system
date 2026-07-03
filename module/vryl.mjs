@@ -3,12 +3,14 @@ import { VrylActorSheet } from "./data/views.mjs";
 import { VrylItemSheet } from "./data/itemViews.mjs";
 import { CharacterActorDataModel, VrylInventoryItem, VrylCombatAction } from "./data/models.mjs";
 import "./data/active-effect.mjs";
+import * as conditionsFunctions from "./data/conditions.mjs";
 import { RollSidebar } from "./forms/rollBuilder.mjs";
 import { AttributeRoll } from "./helpers/vrylRoll.mjs";
 
 // Import helper/utility classes and constants.
 import { DEFAULTS } from './helpers/systemDefaults.mjs';
 import * as effectsFunctions from './helpers/effects.mjs';
+import * as combatManager from './helpers/combatManager.mjs';
 
 // Helpers
 import { VrylHandlebarsHelpers } from "./helpers/handlebarsHelpers.mjs";
@@ -24,16 +26,51 @@ const sheets = foundry.appv1.sheets;
 VrylLogsHelpers.hookChatExport();
 
 Hooks.once("init", () => {
+
+  conditionsFunctions.prepareStatusEffects();
+
   game.vrylGlobalFunctions = {
     adjustNumberStepValue: function (element, amount, childrenDeep = 1) {
       let parent = element;
       for (let i = 0; i < childrenDeep; i++)
         parent = parent.parentElement;
 
-      const input = parent.querySelector(':scope > input');
+      const input = parent.querySelector('input');
       input.value = parseInt(input.value) + parseInt(amount);
       input.dispatchEvent(new Event('change'));
     }
+  }
+
+  CONFIG.ui.vrylEnrichText = function (text, system = undefined, isChat = false) {
+    if (!text)
+      return text;
+
+    //Enrich status effects
+    for (const condition of CONFIG.statusEffects) {
+      //TODO: make this replace cleaner, make sure that the text isnt within html tags
+      text = text.replaceAll(`[${condition.name}]`, `<span class="clickable" title="${condition.description}">${condition.name}</span>`);
+    }
+
+    if (system?.combat?.damage)
+      text = text.replaceAll(/\[(\d+)?D\]/g, function (match, p1) {
+        if(!p1 || p1 == "")
+          p1 = "1";
+        return `${p1}d${system.combat.damage}`;
+      });
+
+    if (system?.combat?.fray)
+      text = text.replaceAll(/\[(\d+)?fray\]/g, function (match, p1) {
+        if(!p1 || p1 == "")
+          p1 = "1";
+        return `${system.combat.fray * parseInt(p1)}`;
+      });
+
+    if(isChat)
+    {
+      text = text.replaceAll(/\[(.*?.*\d+) (.*?damage)\]/g, `[[/r $1]]{$1 $2}`)
+    }
+
+    return text;
   }
 
   // Configure custom Document implementations.
@@ -219,7 +256,19 @@ function _initSystemSettings() {
     default: 1,
   });
 
+  game.settings.register(CONFIG.SystemId, 'default-actions-per-turn', {
+    name: 'Actions Points per Turn',
+    scope: 'world',     // "world" = sync to db, "client" = local storage
+    config: true,      // we will use the menu above to edit this setting
+    restricted: true,
+    type: Number,
+    default: 3,
+  });
+
   VrylHandlebarsHelpers.registerHandlebarsHelpers();
+
+  //#region System Defaults & Modules
+
 }
 
 /* -------------------------------------------- */

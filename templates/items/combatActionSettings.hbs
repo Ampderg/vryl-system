@@ -1,0 +1,77 @@
+{{! Description Tab }}
+<section style="max-height:fit-content;" class="flexcol">
+  {{#if editable}}
+    <div class="flexrow" style="min-width:min-content">
+      <b>Frequency</b>
+      <div class="flexrow" style="flex:3;">
+      <select id="frequencySelector">
+        <option value="at-will" {{#if (eq system.combatAction.frequency "at-will" )}}selected{{/if}}>At-Will</option>
+        <option value="encounter" {{#if (eq system.combatAction.frequency "encounter" )}}selected{{/if}}>Encounter</option>
+        <option value="limited" {{#if (eq system.combatAction.frequency "limited" )}}selected{{/if}}>Limited</option>
+        <option value="passive" {{#if (eq system.combatAction.frequency "passive" )}}selected{{/if}}>Passive</option>
+        <option value="passive-limited" {{#if (eq system.combatAction.frequency "passive-limited" )}}selected{{/if}}>Passive (Limited)</option>
+      </select>
+      {{#if system.combatAction.usesCharges}}
+      <div class="flexrow flex-group-center" style="gap:0.3em; flex-wrap: nowrap; padding-left:1em;">
+          <i class="fa-solid fa-minus clickable fitwidth" id="decreaseActionCharges"></i>
+          <div style="gap:0em; flex-wrap: nowrap;">
+            {{#if (gt system.combatAction.maxCharges 5)}}
+            <b>{{system.combatAction.maxCharges}}x <i class="fa-solid fa-circle"></i></b>
+            {{else}}
+            {{#for 0 system.combatAction.maxCharges 1}}
+            <i class="fa-solid fa-circle"></i>
+            {{/for}}
+            {{/if}}
+          </div>
+          <i class="fa-solid fa-plus clickable fitwidth" id="increaseActionCharges"></i>
+      </div>
+      {{/if}}
+      </div>
+    </div>
+    <div class="flexrow" style="min-width:min-content">
+      <b>Cost</b>
+      <div class="flexrow" style="flex:3;">
+      <select id="costSelector">
+        <option value="free" {{#if (eq system.combatAction.cost "free" )}}selected{{/if}}>Free Action</option>
+        <option value="actions" {{#if (eq system.combatAction.cost "actions" )}}selected{{/if}}>Action Points</option>
+        <option value="reaction" {{#if (eq system.combatAction.cost "reaction" )}}selected{{/if}}>Reaction</option>
+        <option value="none" {{#if (eq system.combatAction.cost "none" )}}selected{{/if}}>None</option>
+        {{!-- <option value="reaction_limted" {{#if (eq system.combatAction.cost "reaction_limited" )}}selected{{/if}}>Reaction (Per-Round)</option> --}}
+      </select>
+      {{#if (eq system.combatAction.cost "actions" )}}
+      <div class="flexrow flex-group-center" style="gap:0.3em; flex-wrap: nowrap; padding-left:1em;">
+          <i class="fa-solid fa-minus clickable fitwidth" id="decreaseActionCost"></i>
+          <div style="gap:0em; flex-wrap: nowrap;">
+            {{#if (gt system.combatAction.actionPointCost 5)}}
+            <b>{{system.combatAction.actionPointCost}}x <i class="fa-solid fa-diamond"></i></b>
+            {{else}}
+            {{#for 0 system.combatAction.actionPointCost 1}}
+            <i class="fa-solid fa-diamond"></i>
+            {{/for}}
+            {{/if}}
+            
+          </div>
+          <i class="fa-solid fa-plus clickable fitwidth" id="increaseActionCost"></i>
+      </div>
+      {{/if}}
+      {{#if (eq system.combatAction.cost "reaction_limited" )}}
+      <div class="flexrow flex-group-center" style="gap:0.3em;flex-wrap: nowrap;">
+          <b>AP</b>
+          <input class="flex-group-center" style="width: 4em; height: 2em;" id='combatAction-maxReactionCharges' type='number'
+              value='{{system.combatAction.maxReactionCharges}}'>
+      </div>
+      {{/if}}
+      </div>
+    </div>
+    <div class="flexrow" style="min-width:min-content">
+      <div>
+        <b>Roll? <input type="checkbox" id="actionIsRollCheckbox" {{#if system.combatAction.isRoll}}checked{{/if}}></b>
+      </div>
+      {{#if system.combatAction.isRoll}}
+      <button class="clickable" id="saveRoll">Save Template Roll</button>
+      <button class="clickable" id="copySavedRoll">Copy Saved Roll</button>
+      {{/if}}
+    </div>
+  </div>
+  {{/if}}
+</section>

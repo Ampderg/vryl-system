@@ -5,7 +5,7 @@
             <div class='item-name'>Actions</div>
             <div>
                 {{#if @root.editable}}
-                <a class='item-create' data-tooltip='{{localize "DOCUMENT.Create" type='Item'}}'
+                <a class='item-create' data-tooltip='{{localize "DOCUMENT.Create" type=' Item'}}'
                     data-action='createDoc' data-document-class='Item' data-type='combatAction'>
                     <i class='fas fa-plus'></i>
                     {{localize 'DOCUMENT.New' type='item'}}
@@ -16,32 +16,66 @@
         <div class="itemCardGrid scrollable flexrow">
             {{#each combatActions as |item id|}}
             <div class="itemCardWrapper">
-                <div class="itemCard flexcol draggable" style="align-self:flex-start;" data-item-id='{{item._id}}'
-                    data-document-class='Item'>
-                    <div class='item-name flexrow' style="margin: 0.5em; gap: 0.5em;" data-action="expandItem">
-                        {{#unless (eq item.img "icons/svg/item-bag.svg")}}
-                        <div class='item-image fitwidth' style="border: 1px groove var(--vryl-c-tan);">
-                            <a>
-                                <img src='{{item.img}}' data-tooltip='{{item.name}}' width='36' height='36' />
-                            </a>
+                <div class="itemCard flexcol draggable order-drag" style="align-self:flex-start;"
+                    data-item-id='{{item._id}}' data-uuid="{{item.uuid}}" data-document-class='Item'>
+                    <div class="flexrow">
+                        <div class='item-name flexrow ' style="margin: 0.5em; gap: 0.5em;" data-action="expandItem">
+                            {{#unless (eq item.img "icons/svg/item-bag.svg")}}
+                            <div class='item-image fitwidth' style="border: 1px groove var(--vryl-c-tan);">
+                                <a>
+                                    <img src='{{item.img}}' data-tooltip='{{item.name}}' width='36' height='36' />
+                                </a>
+                            </div>
+                            {{/unless}}
+                            <div class="flex-group-left flexcol">
+                                <b class="flex-group-left" style="width:100%;">{{item.name}}</b>
+                                <div class="flex-group-left" style="width:100%;">
+                                    {{{item.system.combatAction.actionPointString}}}</div>
+                            </div>
                         </div>
-                        {{/unless}}
-                        <b class="flex-group-left">{{item.name}}</b>
+                        <div class="fitwidth flex-group-right">
+                            <button style="width:40px; height:40px; margin: 0.5em;" data-action="useCombatAction"
+                                data-id="{{item.uuid}}"><i class="fas fa-dice-d20"
+                                    style="font-size:larger;"></i></button>
+                        </div>
                     </div>
                     <div class="item-effects flexcol" style="gap: 0.5em;">
                         <div data-action="expandItem" class="item-details">
                             {{{item.system.description}}}
+                            {{#if item.system.combatAction.effects}}
+                            <hr>
+                            {{#each system.combatAction.orderedEffects as |order id|}}
+                            <div class="flexcol list-element">
+                                {{#each order as |effect|}}
+                                <div class="flexrow">
+                                    {{#if effect.mandatory}}
+                                    <i class='fal fa-exclamation-circle fitwidth' style="padding-right: 0.5em;"
+                                        title="This effect must be performed."></i>
+                                    {{else}}
+                                    {{#if item.system.combatAction.isRoll}}
+                                    <span class="fitwidth" style="padding-right: 0.5em;"><b>{{effect.successCost}}</b>
+                                        <i class='fal fa-check-circle'></i></span>
+                                    {{/if}}
+                                    {{/if}}
+                                    <span class="flex-group-left">{{#if (and
+                                        effect.enrichedSummary (ne effect.enrichedSummary
+                                        ""))}}{{{effect.enrichedSummary}}}{{else}}{{{effect.enrichedDescription}}}{{/if}}</span>
+                                </div>
+                                {{/each}}
+                            </div>
+                            {{/each}}
+                            {{/if}}
                         </div>
                     </div>
                     {{#if @root.editable}}
                     <div class='item-controls flexrow' style="margin: 0.5em; gap: 0.5em;">
                         <div class="flex-group-right" style="justify-content: flex-end; margin-right: 0.5em;">
                             <a class='item-control item-edit' style="margin-right: 0.5em;"
-                                data-tooltip='{{localize "DOCUMENT.Update" type=' Gear'}}' data-action='viewDoc'>
+                                data-tooltip='{{localize "DOCUMENT.Update" type=' Action'}}' data-action='viewDoc'>
                                 <i class='fas fa-edit'></i>
                             </a>
                             <a class='item-control item-delete' data-tooltip='{{localize "DOCUMENT.Delete" type='
-                                Gear'}}' data-action='deleteDoc'>
+                                Action'}}' data-action='deleteDoc'>
                                 <i class='fas fa-trash'></i>
                             </a>
                         </div>

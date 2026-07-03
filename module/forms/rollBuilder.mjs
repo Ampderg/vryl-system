@@ -229,6 +229,15 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
 
 
     static async #roll(event, target) {
+        const flags = {
+            vryl: {
+                narrativeResult: CONFIG.ui.rollBuilder.hasRollFlag(`narrative-result`, 'global', 'preRoll'),
+                isAttributeRoll: true,
+            }
+        }
+
+
+
         console.log("Rolling with data: ", CONFIG.ROLL_DATA);
 
         const rollData = CONFIG.ui.rollBuilder._getRollData();
@@ -251,14 +260,34 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
 
         await roll.roll();
 
-        let msg = await roll.toMessage({
-            flags: {
-                vryl: {
-                    narrativeResult: CONFIG.ui.rollBuilder.hasRollFlag(`narrative-result`, 'global', 'preRoll'),
-                    isAttributeRoll: true,
+        if (CONFIG.ROLL_DATA.rollCombatActionSource) {
+            const action = CONFIG.ROLL_DATA.rollCombatActionSource;
+            if (action.system.combatAction.usesCharges) {
+                if (action.system.combatAction.charges <= 0) {
+                    ui.notifications.warn(`${action.name} has no charges remaining!`);
+                    return;
                 }
-            },
+                action.update({ [`system.combatAction.charges`]: Math.max(0, action.system.combatAction.charges - 1) });
+            }
+            flags.vryl.combatAction = {
+                uuid: action.uuid,
+                spentSuccesses: 0,
+                totalSuccesses: roll._total,
+                usedEffects: [],
+                targets: [],
+            }
+        }
+
+        let msg = await roll.toMessage({
+            flags: flags,
         });
+
+        let rolls = msg.rolls;
+
+        let flavor = rolls[0].options.flavor;
+        rolls[0].options.flavor = flavor.replaceAll(`id="combatEffectsButton"`, `id="combatEffectsButton" onclick="event.stopPropagation(); event.preventDefault(); CONFIG.ui.rollBuilder.openCombatActionEffectsMenu('${msg.uuid}')"`);
+
+        await msg.update({ rolls: rolls });
 
         await CONFIG.ui.rollBuilder.processPostRollActions(msg);
 
@@ -327,35 +356,38 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
         RollSidebar.goToChat(target);
     }
 
-    async bindChatListeners(message, html, context) {
+    static getActor(actorData, fillTemplate = true) {
+        if (actorData.id != 'VRYL-TEMPLATE-ACTOR')
+            return game.actors.get(actorData.id);
 
-        function getActor(actorData) {
-            if (actorData.id != 'VRYL-TEMPLATE-ACTOR')
-                return game.actors.get(actorData.id);
+        if (!fillTemplate)
+            return actorData.id;
 
-            const controlledActor = game.user.character ?? canvas.tokens.controlled[0]?.actor;
+        const controlledActor = game.user.character ?? canvas.tokens.controlled[0]?.actor;
 
-            if (controlledActor) {
-                return controlledActor;
-            }
-
-            return actorData.actor;
+        if (controlledActor) {
+            return controlledActor;
         }
 
-        function updateActorSelection(actor) {
-            const rollActor = CONFIG.ROLL_DATA.rollActors.get(actor._id);
-            const attributesArray = Object.entries(actor.system.attributes);
-            for (const a of rollActor.attributes) {
-                const filtered = attributesArray.filter((b) => b[0] == a.dataName);
-                if (filtered && filtered.length > 0) {
-                    const attributeData = Object.entries(filtered[0][1]);
-                    for (const d of attributeData) {
-                        a[d[0]] = d[1];
-                    }
-                    CONFIG.ui.rollBuilder.selectAttribute(actor, a);
+        return actorData.actor;
+    }
+
+    static updateActorSelection(actor) {
+        const rollActor = CONFIG.ROLL_DATA.rollActors.get(actor._id);
+        const attributesArray = Object.entries(actor.system.attributes);
+        for (const a of rollActor.attributes) {
+            const filtered = attributesArray.filter((b) => b[0] == a.dataName);
+            if (filtered && filtered.length > 0) {
+                const attributeData = Object.entries(filtered[0][1]);
+                for (const d of attributeData) {
+                    a[d[0]] = d[1];
                 }
+                CONFIG.ui.rollBuilder.selectAttribute(actor, a);
             }
         }
+    }
+
+    async bindChatListeners(message, html, context) {
 
         let copyButton = html.querySelector(`.copy-roll-replace`);
         if (copyButton) {
@@ -397,15 +429,19 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
 
                     currentData.willpower = actorData.willpower ?? oldData.willpower;
 
-                    currentData.actor = getActor(actorData);
+                    currentData.actor = RollSidebar.getActor(actorData);
 
                     CONFIG.ROLL_DATA.rollActors.set(actorData.actor.id, currentData);
-                    if (actorData.actor.id != key) updateActorSelection(actorData.actor);
+                    if (actorData.actor.id != key) RollSidebar.updateActorSelection(actorData.actor);
                 }
 
                 RollSidebar.updateRollData();
                 CONFIG.ui.rollBuilder.goToRollBuilder();
             });
+        }
+        let combatEffectsButton = html.querySelector(`#combatEffectsButton`);
+        if (combatEffectsButton) {
+
         }
     }
 
@@ -681,6 +717,13 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
             }
         }
 
+        if (CONFIG.ROLL_DATA.rollCombatActionSource) {
+            CONFIG.ROLL_DATA.rollCombatActionSource.inSidebar = inSidebar;
+            let actionContent = await renderTemplate(`systems/vryl/templates/parts/combat/action-chat-card.hbs`, CONFIG.ROLL_DATA.rollCombatActionSource);
+
+            content += actionContent;
+        }
+
         if (globalContent != "") {
             content += `
             <div class="roll-builder-actor global"><div class="roll-builder-actor-inner">
@@ -753,6 +796,74 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
         if (options.render)
             this.updateRollData();
     }
+
+    //#region Combat
+
+    static async openCombatActionEffectsMenu(messageUuid) {
+        const msg = await fromUuid(messageUuid);
+        console.log(msg);
+        const action = await fromUuid(msg.flags.vryl.combatAction.uuid);
+
+        action.inSidebar = true;
+        action.executionMode = true;
+        const actionContent = await renderTemplate(`systems/vryl/templates/parts/combat/action-chat-card.hbs`, action);
+
+        const context = {
+            flags: msg.flags.vryl,
+            action: action,
+            actionContent: actionContent,
+        }
+
+        const combatActionFlags = msg.flags.vryl.combatAction;
+
+        const template = await foundry.applications.handlebars.renderTemplate(`systems/vryl/templates/parts/roll/combat-action-effect-execution.hbs`, context);
+
+        let d = new Dialog({
+            title: action.name,
+            content: template,
+            buttons: {
+                one: {
+                    label: "Close",
+                    callback: () => console.log("Closed")
+                }
+            },
+            render: async (html) => {
+                const useButtons = html.find(`[data-action='useCombatActionEffect']`);
+                for (let i = 0; i < useButtons.length; i++) {
+                    const button = useButtons[i];
+                    button.addEventListener('click', async () => {
+                        const effect = action.system.combatAction.effects.find(item => item.id == button.id);
+
+                        ChatMessage.create({
+                            content: `
+                        <div class="flexcol flex-group-center">
+                        <h6>${action.name}</h6>
+                        <div>
+                        <span class="centerhor"><b style="min-width:1em;text-align:right; margin-right:0.2em;">${effect.successCost}</b><i class='fal fa-check-circle'></i></span>
+                        </div>
+                        ${CONFIG.ui.vrylEnrichText(effect.description, action.actor.system, true)}
+                        </div>`
+                        });
+
+                        combatActionFlags.spentSuccesses += effect.successCost;
+                        combatActionFlags.usedEffects.push(effect.id);
+
+                        msg.setFlag("vryl", "combatAction", combatActionFlags);
+                        d.data.content = (await foundry.applications.handlebars.renderTemplate(`systems/vryl/templates/parts/roll/combat-action-effect-execution.hbs`, context));
+                        d.render(false);
+                    });
+                }
+            },
+            close: (html) => {
+                
+            }
+        }, {
+            left: window.innerWidth - 300 - 450,
+            });
+        d.render(true);
+    }
+
+    //#endregion
 
     //#region Group Roll
 
@@ -1033,8 +1144,7 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
             }
         }
 
-        for(const itemEffect of rollData.rollItemEffects)
-        {
+        for (const itemEffect of rollData.rollItemEffects) {
             this.processOnRollItemEffects(itemEffect);
         }
     }
@@ -1058,30 +1168,29 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
         const item = itemEffect.effect.parent;
 
         //Process charge automation
-        if(item.system.chargeAutomation == "instantEffectUse")
+        if (item.system.chargeAutomation == "instantEffectUse")
             this.decrementItemCharges(item);
     }
 
     static async processOnRestEffects(actor, msg) {
-        
+
         //Process rest charge automation
-        for(const item of actor.items)
-        {
-            if(item.system.chargeAutomation == "rest")
+        for (const item of actor.items) {
+            if (item.system.chargeAutomation == "rest")
                 this.decrementItemCharges(item);
         }
     }
 
     static async decrementItemCharges(item) {
         await item.update({ [`system.charges`]: Math.max(0, item.system.charges - 1) });
-        if(item.system.charges <= 0)
+        if (item.system.charges <= 0)
             this.chargesSpentMessage(item);
     }
 
     static async chargesSpentMessage(item) {
         const speaker = ChatMessage.getSpeaker({ actor: item.parent });
         const content = `<b>${item.name}</b> has run out of charges!`;
-        if(speaker)
+        if (speaker)
             await ChatMessage.create({ speaker: speaker, content: content });
         else
             await ChatMessage.create({ content: content });
@@ -1349,6 +1458,53 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
                     effect.setFlag(CONFIG.SystemId, `isInstantApplied`, false);
             }
         }
+    }
+
+    static serializeToJson() {
+        const rollData = CONFIG.ROLL_DATA;
+        let rollActors = {};
+
+        for (const [key, value] of rollData.rollActors) {
+            rollActors[key] = value;
+            rollActors[key].id = key;
+        }
+
+        const flags = {
+            vryl: {
+                rollData: structuredClone(rollData),
+                rollActors: structuredClone(rollActors),
+            }
+        }
+
+        const json = JSON.stringify(flags);
+
+        return json;
+    }
+
+    static deserializeFromJson(json, fillTemplate = true) {
+        const flags = JSON.parse(json).vryl;
+        CONFIG.ROLL_DATA = structuredClone(flags.rollData);
+        const rollActors = Object.entries(flags.rollActors);
+        CONFIG.ROLL_DATA.rollActors = new Map();
+        for (const [key, value] of rollActors) {
+            let actorData = structuredClone(value);
+            if (!fillTemplate && key == "VRYL-TEMPLATE-ACTOR") {
+                CONFIG.ROLL_DATA.rollActors.set(actorData.actor.id, actorData);
+                continue;
+            }
+
+            actorData.actor = RollSidebar.getActor(actorData);
+
+            CONFIG.ROLL_DATA.rollActors.set(actorData.actor.id, actorData);
+            if (actorData.actor.id != key) RollSidebar.updateActorSelection(actorData.actor);
+        }
+
+        RollSidebar.updateRollData();
+        CONFIG.ui.rollBuilder.goToRollBuilder();
+    }
+
+    static setActionSource(action) {
+        CONFIG.ROLL_DATA.rollCombatActionSource = action;
     }
 
 }

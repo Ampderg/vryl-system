@@ -68,6 +68,9 @@
   "socket": false,
   "background": "systems/vryl/assets/anvil-impact.png",
   
+  "primaryTokenAttribute": "combat.hp",
+  "secondaryTokenAttribute": "combat.guard",
+
   "grid": {
     "type": 1,
     "distance": 1,

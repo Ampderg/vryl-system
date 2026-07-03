@@ -1,0 +1,78 @@
+{{! Description Tab }}
+{{#withIfExists action}}
+<section style="max-height:fit-content;" class="flexcol">
+  {{#if executionMode}}
+  <span><b>Spent Successes: </b>[ {{../flags.combatAction.spentSuccesses}} / {{../flags.combatAction.totalSuccesses}} ]</span>
+  {{else}}
+  <li class='effects-header flexrow draggable' data-effect-type='{{section.type}}'>
+    {{!-- <div class='effect-source'>
+      Source
+    </div> --}}
+    <div class='effect-name flexrow'>
+      Action Effects
+    </div>
+    <div class='effect-controls flexrow'>
+      <a class='effect-control' data-action='addActionEffect' data-tooltip='{{localize "DOCUMENT.Create" type='
+        Effect'}}'>
+        <i class='fas fa-plus'></i>
+        {{localize 'DOCUMENT.New' type='Effect'}}
+      </a>
+    </div>
+  </li>
+  {{/if}}
+
+  {{#if system.combatAction.orderedEffects}}
+  <div class="scrollable vryl-list">
+    {{#each system.combatAction.orderedEffects as |order id|}}
+    <div class="flexcol list-element">
+    {{#each order as |effect|}}
+    <div class="flexrow centervert">
+      {{#if effect.mandatory}}
+      <i class='fal fa-exclamation-circle centervert fitwidth' style="padding-left:1em;" title="This effect must be performed."></i>
+      {{else}}
+      {{#if ../../system.combatAction.isRoll}}
+      <div class="number-step flexrow fitwidth centervert">
+        {{!-- <button type="button" onclick="game.vrylGlobalFunctions.adjustNumberStepValue(this, -1)">-</button> --}}
+        {{#if ../../executionMode}}
+        <b style="min-width:1em;text-align:right; margin-right:0.2em;">{{effect.successCost}}</b>
+        {{else}}
+        <input type="number" class="" style="max-width: 3em; min-width: 3em;" id="{{effect.id}}" value='{{effect.successCost}}'
+          data-action="updateSuccessCost">
+        {{/if}}
+        {{!-- <button type="button" onclick="game.vrylGlobalFunctions.adjustNumberStepValue(this, 1)">+</button> --}}
+        <i class='fal fa-check-circle'></i>
+      </div>
+      {{/if}}
+      {{/if}}
+      <span class="flex-group-left centervert"
+        style="flex: 2; padding-left: 1em; padding-right: 1em;">{{{effect.enrichedDescription}}}</span>
+
+      {{#if ../../executionMode}}
+      {{#if (or effect.repeatable (not (includes ../../../flags.combatAction.usedEffects effect.id)))}}
+      <i class='clickable centervert fitwidth fas fa-dice-d20' style="font-size:larger;" data-action='useCombatActionEffect' id="{{effect.id}}"></i>
+      {{/if}}
+      {{else}}
+      <div class="fitwidth" style="gap: 0.3em">
+        <a class='clickable' id="{{effect.id}}" data-action='updateEffectDescription'>
+          <i class='fas fa-edit'></i>
+        </a>
+        <a class='clickable' id="{{effect.id}}" data-action='shiftEffectOrderUp'>
+          <i class='fas fa-angle-up'></i>
+        </a>
+        <a class='clickable' id="{{effect.id}}" data-action='shiftEffectOrderDown'>
+          <i class='fas fa-angle-down'></i>
+        </a>
+        <a class='clickable' id="{{effect.id}}" data-action='deleteEffect'>
+          <i class='fas fa-trash'></i>
+        </a>
+      </div>
+      {{/if}}
+    </div>
+
+    {{/each}}
+    </div>
+  {{/each}}
+  </div>
+  {{/if}}
+</section>
+{{/withIfExists}}

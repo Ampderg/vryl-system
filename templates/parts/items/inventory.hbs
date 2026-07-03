@@ -34,6 +34,7 @@
                             {{{item.system.description}}}
                         </div>
                         {{#each item.effects as |effect effectId|}}
+                        {{#unless effect.disabled}}
                         {{#if effect.flags.vryl.isInstant}}
 
                         <button data-tooltip='{{effect.description}}' data-action='useItemEffect'
@@ -84,6 +85,7 @@
                             </div>
                         </button>
                         {{/if}}
+                        {{/unless}}
                         {{/each}}
                     </div>
                     {{#if @root.editable}}

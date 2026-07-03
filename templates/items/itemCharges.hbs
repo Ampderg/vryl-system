@@ -1,7 +1,6 @@
 {{! Description Tab }}
 <section style="max-height:fit-content;" class="flexcol">
   {{#if editable}}
-  {{#unless (eq system.equipment.slotDataName "")}}
   <div class="flexcol" style="gap: 1em;">
     <div class="flexrow">
       <b>Charges</b>
@@ -18,6 +17,5 @@
       </select>
     </div>
   </div>
-  {{/unless}}
   {{/if}}
 </section>
