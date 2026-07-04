@@ -2,7 +2,9 @@
 {{#withIfExists action}}
 <section style="max-height:fit-content;" class="flexcol">
   {{#if executionMode}}
+  {{#if system.combatAction.isRoll}}
   <span><b>Spent Successes: </b>[ {{../flags.combatAction.spentSuccesses}} / {{../flags.combatAction.totalSuccesses}} ]</span>
+  {{/if}}
   {{else}}
   <li class='effects-header flexrow draggable' data-effect-type='{{section.type}}'>
     {{!-- <div class='effect-source'>

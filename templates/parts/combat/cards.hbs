@@ -34,8 +34,8 @@
                             </div>
                         </div>
                         <div class="fitwidth flex-group-right">
-                            <button style="width:40px; height:40px; margin: 0.5em;" data-action="useCombatAction"
-                                data-id="{{item.uuid}}"><i class="fas fa-dice-d20"
+                            <button title="Use Action" style="width:40px; height:40px; margin: 0.5em;" data-action="useCombatAction"
+                                data-id="{{item.uuid}}"><i class="fas {{#if item.system.combatAction.isRoll}}fa-dice-d20{{else}}fa-check-circle{{/if}}"
                                     style="font-size:larger;"></i></button>
                         </div>
                     </div>

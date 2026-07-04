@@ -65,10 +65,9 @@ Hooks.once("init", () => {
         return `${system.combat.fray * parseInt(p1)}`;
       });
 
-    if(isChat)
-    {
-      text = text.replaceAll(/\[(.*?.*\d+) (.*?damage)\]/g, `[[/r $1]]{$1 $2}`)
-    }
+    // Inline rolls
+    text = text.replaceAll(/\[(.*?.*\d+) (.*?damage)\]/g, isChat ? `[[/r $1]]{$1 $2}` : `$1 $2`)
+    
 
     return text;
   }

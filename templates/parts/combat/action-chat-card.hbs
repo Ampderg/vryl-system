@@ -7,7 +7,9 @@
             {{{system.description}}}
         </div>
         {{#unless inSidebar}}
+        {{#if system.combatAction.effects.length}}
         <button class="clickable" id="combatEffectsButton">Open Effects</button>
+        {{/if}}
         {{/unless}}
     </div>
 </div>

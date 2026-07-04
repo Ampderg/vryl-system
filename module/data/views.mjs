@@ -809,8 +809,29 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
 
     static async _useCombatAction(event, target) {
         const action = await fromUuid(target.dataset.id);
-        CONFIG.ui.rollBuilder.deserializeFromJson(action.system.combatAction.rollBuilderJson, true);
-        CONFIG.ui.rollBuilder.setActionSource(action);
+        if(action.system.combatAction.isRoll)
+        {
+            if(!action.system.combatAction.rollBuilderJson)
+            {
+                ui.notifications.warn(action.name + " has no stored roll!");
+                return;
+            }
+            CONFIG.ui.rollBuilder.deserializeFromJson(action.system.combatAction.rollBuilderJson, true, action.actor);
+            CONFIG.ui.rollBuilder.setActionSource(action);
+        }
+        else
+        {
+            let actionContent = await renderTemplate(`systems/vryl/templates/parts/combat/action-chat-card.hbs`, action);
+            let flags = {};
+
+            CONFIG.ui.rollBuilder.setupMessageCombatAction(flags, action);
+
+            let msg = await ChatMessage.create({
+                content: actionContent,
+                flags: flags
+            });
+            console.log(msg);
+        }
     }
 
     //#endregion

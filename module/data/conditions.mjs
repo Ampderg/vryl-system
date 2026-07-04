@@ -93,7 +93,7 @@ If you would remove or transfer a stack of a Condition other than Hex, instead r
 
             sortingCategory: "Denial",
             description:
-`You cannot target creatures outside of Range 2.
+`You cannot target creatures outside of Range 2. If you become Blinded while targeting a creature outside of Range 2, you immediately un-target them.
 `,
         },
         {
@@ -119,7 +119,7 @@ If you would remove or transfer a stack of a Condition other than Hex, instead r
 
             sortingCategory: "Damage Manipulation",
             description:
-`Whenever a creature with Vulnerable takes damage, they take one additional damage for each stack of Vulnerable they have.
+`Whenever a creature with Vulnerable is dealt damage by an action, they take one additional damage for each stack of Vulnerable they have.
 `,
         },
         {
@@ -145,7 +145,7 @@ If you would remove or transfer a stack of a Condition other than Hex, instead r
 
             sortingCategory: "Damage",
             description:
-`At the end of your turn, roll 1d10. If the result is less than or equal to your number of Bleeding stacks, take 2d6+4 damage and lose all stacks of Bleeding.
+`At the end of your turn, roll 1d10. If the result is less than or equal to your number of Bleeding stacks, take 2d6+4 blood damage and lose all stacks of Bleeding.
 `,
         },
         {
@@ -158,12 +158,12 @@ If you would remove or transfer a stack of a Condition other than Hex, instead r
 
             sortingCategory: "Damage",
             description:
-`At the start of your turn, take 1 damage for every stack of Burning you have.
+`At the start of your turn, take 1 fire damage for every stack of Burning you have.
 `,
             extraRules: [
 `Entering Water: The first time a Burning creature is in water on their turn, they decrease their Burning stacks by half (rounded up).
 `,
-`Stop, Drop, and Roll: Once per turn, a Prone creature may spend one Action Point to decrease their Burning stacks by half (rounded up), or 2.
+`Stop, Drop, and Roll: Once per turn, a Prone creature may spend one Action Point to decrease their Burning stacks by half (rounded up), or a minimum decrease of 2 stacks.
 `,
 ]
         },
@@ -177,7 +177,7 @@ If you would remove or transfer a stack of a Condition other than Hex, instead r
 
             sortingCategory: "Damage",
             description:
-`When any creature starts its turn, Shocked creatures deal 1 damage to all creatures within Range 2 other than themself, and then lose one stack of Shocked.
+`When any creature starts its turn, Shocked creatures deal 1 lightning damage to all creatures within Range 2 other than themself, and then lose one stack of Shocked.
 `,
             extraRules: [
 `Entering Water: The first time a Shocked creature is in water on their turn, they decrease their Shocked stacks by half (rounded up), taking 1d4 damage for every stack removed.
