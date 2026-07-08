@@ -145,7 +145,7 @@ If you would remove or transfer a stack of a Condition other than Hex, instead r
 
             sortingCategory: "Damage",
             description:
-`At the end of your turn, roll 1d10. If the result is less than or equal to your number of Bleeding stacks, take 2d6+4 blood damage and lose all stacks of Bleeding.
+`At the start of your turn, roll 1d10. If the result is less than or equal to your number of Bleeding stacks, take 2d6+4 blood damage and lose 10 stacks of Bleeding.
 `,
         },
         {

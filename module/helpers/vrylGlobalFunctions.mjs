@@ -9,14 +9,32 @@ export function initializeGlobals() {
             input.value = parseInt(input.value) + parseInt(amount);
             input.dispatchEvent(new Event('change'));
         },
-        runTokenSelector: async function ({dialogButtonText = "Target", defaultSelectedActors = [], callback}) {
-            let visibleTokens = canvas.tokens.placeables.filter(token => token.visible);
+        runTokenSelector: async function ({ dialogButtonText = "Target", defaultSelectedActors = [], callback, userToken = null, range = null }) {
+            let allTokens = canvas.tokens.placeables.filter(token => token.visible);
+            let availableTokens = allTokens;
+            if (!userToken)
+                userToken = canvas.tokens.controlled[0];
+
+            if (userToken) {
+                if (userToken.actor.statuses.has('blinded'))
+                    range = Math.min(range ?? 2, 2);
+
+                if (range != null) {
+                    availableTokens = availableTokens.filter(token => {
+                        const ray = new Ray(userToken.getCenterPoint(), token.getCenterPoint());
+                        // 2. Measure the distance using the scene's grid rules
+                        const distance = canvas.grid.measurePath([ray.A, ray.B]);
+                        return distance.distance <= range;
+                    });
+                }
+            }
+
             let context = {
                 visibleTokens: {
-                    allies: [...visibleTokens.filter(token => token.document.disposition == 1)],
+                    allies: [...availableTokens.filter(token => token.document.disposition == 1)],
                     //neutral: [...visibleTokens.filter(token => token.document.disposition == 0 || token.document.disposition == -2)],
                     //enemies: [...visibleTokens.filter(token => token.document.disposition == -1)],
-                    nonallies: [...visibleTokens.filter(token => token.document.disposition != 1)],
+                    nonallies: [...availableTokens.filter(token => token.document.disposition != 1)],
                 },
                 selectedActors: [...defaultSelectedActors],
             }
@@ -36,6 +54,8 @@ export function initializeGlobals() {
                     }
                 },
                 render: async (html) => {
+                    //AUTOMATION Vulnerability opt-out
+                    //AUTOMATION Blinded opt-out
                     const useButtons = html.find(`[data-action='selectToken']`);
                     for (let i = 0; i < useButtons.length; i++) {
                         const button = useButtons[i];
