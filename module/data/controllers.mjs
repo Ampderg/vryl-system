@@ -371,5 +371,4 @@ export class VrylItem extends Item {
 
         itemData.system.combatAction.actionPointString = apString;
     }
-
 }

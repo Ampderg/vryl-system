@@ -1,0 +1,14 @@
+<div class="flexcol flex-group-center">
+{{#each visibleTokens as |group|}}
+<div class="flexcol flex-group-center">
+{{!-- <b>{{@key}}</b> --}}
+{{#each group as |token|}}
+<div class="flexrow flex-group-center centervert clickable {{#if (includes ../../selectedActors token.id)}}selected{{/if}}" data-action="selectToken" id="{{token.id}}">
+<img src="{{actor.img}}" width="40px" style="margin-right:1em">
+<b>{{token.name}}</b>
+</div>
+{{/each}}
+</div>
+<hr>
+{{/each}}
+</div>
