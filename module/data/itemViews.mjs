@@ -207,30 +207,7 @@ export class VrylItemSheet extends api.HandlebarsApplicationMixin(sheets.ItemShe
 
         new Dialog({
           title: "Edit Action Effect",
-          content: `
-<form>
-  <div class="flexcol">
-    <label>Card Summary</label>
-    <input type="text" id='summary' value='${effect.summary ? effect.summary : ""}'>
-
-    <label>Description</label>
-    <!-- This div acts as the target for the editor -->
-    <div class="editor-content">
-    <prose-mirror id="description" value="${effect.description.replaceAll('"', '\"')}">
-      ${effect.description}
-    </prose-mirror>
-    </div>
-    <div class="flexrow">
-      <label>Is this effect built-in to the action? (Mandatory)</label>
-      <input type="checkbox" id="mandatory" name="mandatory" ${effect.mandatory ? "checked" : ""}>
-    </div>
-    <div class="flexrow">
-      <label>Can this effect repeat?</label>
-      <input type="checkbox" id="repeatable" name="repeatable" ${effect.repeatable ? "checked" : ""}}>
-    </div>
-  </div>
-</form>
-`,
+          content: await foundry.applications.handlebars.renderTemplate(`systems/vryl/templates/items/combatActionEffectSettings.hbs`, effect),
           buttons: {
             save: {
               label: "Save",
@@ -240,6 +217,7 @@ export class VrylItemSheet extends api.HandlebarsApplicationMixin(sheets.ItemShe
                 effect.summary = html.find('#summary').val();
                 effect.repeatable = html.find('#repeatable')[0].checked;
                 effect.mandatory = html.find('#mandatory')[0].checked;
+                effect.targeting.doesTarget = html.find('#doesTarget')[0].checked;
 
                 this.document.update({ [`system.combatAction.effects`]: effects });
               }
@@ -369,6 +347,10 @@ export class VrylItemSheet extends api.HandlebarsApplicationMixin(sheets.ItemShe
       CONFIG.ui.rollBuilder.deserializeFromJson(this.document.system.combatAction.rollBuilderJson, false);
     });
 
+    const actionDoesTargetCheckbox = this.element.querySelector(`#actionDoesTargetCheckbox`);
+    actionDoesTargetCheckbox?.addEventListener("change", () => {
+      this.document.update({ [`system.combatAction.targeting.doesTarget`]: actionDoesTargetCheckbox.checked });
+    });
   }
 
 

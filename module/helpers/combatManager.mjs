@@ -17,10 +17,11 @@ Hooks.on("deleteCombat", (combat, options, userId) => {
 });
 
 function dealDamage(actor, damage) {
-    let remainingDamage = damage;
-    remainingDamage = Math.max(remainingDamage, 0);
-    if (remainingDamage <= 0)
+    damage = Math.max(damage, 0);
+    if (damage <= 0)
         return;
+
+    let remainingDamage = damage;
 
     //AUTOMATION Vulnerable
 
@@ -95,7 +96,7 @@ Hooks.on('renderChatMessageHTML', async (message, html, context) => {
                     callback: (tokens) => {
                         applyCallbackToActors(tokens.map(e => e.actor));
                     },
-                    userToken: message.speakerActor.getActiveTokens().filter(e => e.id == message.speaker.token)[0],
+                    userToken: message.speakerActor?.getActiveTokens()?.filter(e => e.id == message.speaker.token)[0] ?? null,
                 });
             }
             else {
@@ -125,7 +126,7 @@ Hooks.on('renderChatMessageHTML', async (message, html, context) => {
             }
         }
     }
-    
+
     buttons.forEach(b => {
         const elements = b.split("|");
         const tokens = elements[0].split(" ");
@@ -145,8 +146,18 @@ Hooks.on('renderChatMessageHTML', async (message, html, context) => {
             createTargetedButton(buttonAlias, (actors) => {
                 let content = "";
                 actors.forEach(actor => {
-                    content += (content != "" ? "<br>" : "") + `${actor.name} took <b>${damage} damage</b>!`;
-                    dealDamage(actor, damage, target ?? message.flags.vryl.selectedActorUuids);
+                    let actorDamage = damage;
+                    //AUTOMATION Vulnerable
+                    {
+                        let effect = actor.effects.find(e => e.statuses.has('vulnerable'));
+                        if (effect) {
+                            let stacks = effect.flags.statuscounter.value ?? 1;
+                            actorDamage += stacks;
+                        }
+                    }
+
+                    content += (content != "" ? "<br>" : "") + `${actor.name} took <b>${actorDamage} damage</b>!`;
+                    dealDamage(actor, actorDamage, target ?? message.flags.vryl.selectedActorUuids);
                 });
                 ChatMessage.create({
                     content: content,
@@ -239,7 +250,7 @@ Hooks.on('renderChatMessageHTML', async (message, html, context) => {
                             actorEffect.delete();
                         else
                             actorEffect.statusCounter.setValue(stacks);
-                        content += (content != "" ? "<br>" : "") + `${actor.name}'s has lost <b>${stacksLost}</b> stacks of <b>${effectData.name}</b>. <i>(${stacks})</i>`;
+                        content += (content != "" ? "<br>" : "") + `${actor.name}'s has lost <b>${stacksLost}</b> stack${stacksLost != 1 ? "s" : ""} of <b>${effectData.name}</b>. <i>(${stacks})</i>`;
                     }
                 });
                 ChatMessage.create({

@@ -188,15 +188,18 @@ export class VrylCombatAction extends VrylItemCard {
       initial: "",
     });
 
-    let targetAutomation = new SchemaField({
-      doesTarget: new BooleanField({initial: false}),
-      targetCount: new NumberField({initial: 0, min: 0, ...requiredInteger}),
-      targetRange: new NumberField({initial: 1, min: 0, ...requiredInteger}),
-    });
+    function createTargetAutomation() {
+      return new SchemaField({
+        doesTarget: new BooleanField({initial: false}),
+        targetCount: new NumberField({initial: null, min: 0}),
+        targetRange: new NumberField({initial: null, min: 0}),
+      });
+    }
+
+    combatAction.targeting = createTargetAutomation();
 
     let effectAutomation = new ArrayField(new SchemaField({
       flag: new StringField({}),
-      // targetting: structuredClone(targetAutomation),
     }));
 
     combatAction.effects = new ArrayField(new SchemaField({
@@ -214,7 +217,7 @@ export class VrylCombatAction extends VrylItemCard {
         ...requiredInteger,
         initial: 0,
       }),
-      targetting: targetAutomation,
+      targeting: createTargetAutomation(),
       description: new StringField({}),
       summary: new StringField({}),
       automation: effectAutomation,

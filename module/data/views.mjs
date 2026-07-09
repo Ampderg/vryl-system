@@ -809,35 +809,57 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
 
     static async _useCombatAction(event, target) {
         const action = await fromUuid(target.dataset.id);
-        if(action.system.combatAction.isRoll)
-        {
-            if(!action.system.combatAction.rollBuilderJson)
-            {
-                ui.notifications.warn(action.name + " has no stored roll!");
-                return;
+
+        async function continueAction(selectedTokens) {
+            if (action.system.combatAction.isRoll) {
+                if (!action.system.combatAction.rollBuilderJson) {
+                    ui.notifications.warn(action.name + " has no stored roll!");
+                    return;
+                }
+                CONFIG.ui.rollBuilder.deserializeFromJson(action.system.combatAction.rollBuilderJson, true, action.actor);
+                CONFIG.ui.rollBuilder.setActionSource(action, {targets: selectedTokens.map(e => e.uuid) ?? null});
             }
-            CONFIG.ui.rollBuilder.deserializeFromJson(action.system.combatAction.rollBuilderJson, true, action.actor);
-            CONFIG.ui.rollBuilder.setActionSource(action);
+            else {
+                let flags = {
+                    vryl: {
+                        selectedActorUuids: selectedTokens ? [...selectedTokens.map(e => e.uuid)] : null,
+                    }
+                };
+                action.flags = flags;
+
+                await CONFIG.ui.rollBuilder.setupMessageCombatAction(flags, action, {targetUuids: flags.vryl.selectedActorUuids, spendCharge: false});
+
+                let actionContent = await renderTemplate(`systems/vryl/templates/parts/combat/action-chat-card.hbs`, action);
+
+                let msg = await ChatMessage.create({
+                    content: actionContent,
+                    flags: flags
+                });
+                console.log(msg);
+            }
         }
-        else
-        {
-            let actionContent = await renderTemplate(`systems/vryl/templates/parts/combat/action-chat-card.hbs`, action);
-            let flags = {};
 
-            CONFIG.ui.rollBuilder.setupMessageCombatAction(flags, action);
-
-            let msg = await ChatMessage.create({
-                content: actionContent,
-                flags: flags
+        //AUTOMATION Targeting
+        let targets = null;
+        if (action.system.combatAction.targeting.doesTarget) {
+            game.vrylGlobalFunctions.runTokenSelector({
+                callback: (tokens) => {
+                    continueAction(tokens.map(e => e.actor));
+                },
+                userToken: this.document.getActiveTokens()[0] ?? null,
             });
-            console.log(msg);
         }
+        else {
+            continueAction(null);
+        }
+
+
     }
 
     //#endregion
 
     //#region DragDrop
-   
+
 
     /**
      * Define whether a user is able to begin a dragstart workflow for a given drag selector

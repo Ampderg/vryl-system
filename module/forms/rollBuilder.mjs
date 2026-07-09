@@ -138,6 +138,35 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
 
     //#region Roll
 
+    //AUTOMATION Doom
+    static applyDoom(willpowerAttribute, actorData) {
+        let effect = actorData.actor.effects.find(e => e.statuses.has('doom'));
+        if (effect) {
+            let stacks = effect.flags.statuscounter.value ?? 1;
+            willpowerAttribute.bonusDice -= stacks;
+        }
+    }
+
+    //AUTOMATION Disoriented
+    static applyDisoriented(bonusDice, actorData) {
+        let effect = actorData.actor.effects.find(e => e.statuses.has('disoriented'));
+        if (effect) {
+            let stacks = effect.flags.statuscounter.value ?? 1;
+            bonusDice -= stacks;
+        }
+        return bonusDice;
+    }
+
+    //AUTOMATION Frightened
+    static applyFrightened(guaranteedSuccesses, actorData) {
+        let effect = actorData.actor.effects.find(e => e.statuses.has('frightened'));
+        if (effect) {
+            let stacks = effect.flags.statuscounter.value ?? 1;
+            guaranteedSuccesses -= 1;
+        }
+        return guaranteedSuccesses;
+    }
+
     static _getRollLevel() {
         let totalLevels = CONFIG.ROLL_DATA.bonusDice ?? 0;
         let guaranteedSuccesses = CONFIG.ROLL_DATA.guaranteedSuccesses ?? 0;
@@ -158,15 +187,21 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
 
         for (const actor of rollActorsValues) {
             if (actor.actor?.system?.bonusDice)
-                totalLevels += actor.actor.system.bonusDice;
+                totalLevels += RollSidebar.applyDisoriented(actor.actor.system.bonusDice, actor);
+
+            guaranteedSuccesses = RollSidebar.applyFrightened(guaranteedSuccesses, actor);
+
             if (actor.attributes) {
                 for (const attribute of actor.attributes) {
                     addAttribute(attribute);
                 }
             }
 
-            if (actor.willpower)
-                addAttribute(actor.willpower);
+            if (actor.willpower) {
+                let willpower = structuredClone(actor.willpower);
+                RollSidebar.applyDoom(willpower, actor);
+                addAttribute(willpower);
+            }
         }
 
         const groupChallenge = CONFIG.ui.rollBuilder.getRollFlagValue(`group-roll`, `global`, `targetGroupSize`);
@@ -227,10 +262,13 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
     //     }
     // }
 
-    static setupMessageCombatAction(flags, action) {
+    static async setupMessageCombatAction(flags, action, options = { targetUuids: null, spendCharge: false }) {
         if (!flags.vryl) flags.vryl = {};
 
-        if (action.system.combatAction.usesCharges) {
+        if (!options.targetUuids)
+            options.targetUuids = CONFIG.ROLL_DATA.rollCombatActionTargetUuids;
+
+        if (action.system.combatAction.usesCharges && options.spendCharge) {
             if (action.system.combatAction.charges <= 0) {
                 ui.notifications.warn(`${action.name} has no charges remaining!`);
                 return;
@@ -240,7 +278,14 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
         flags.vryl.combatAction = {
             uuid: action.uuid,
             usedEffects: [],
-            targets: [],
+            targetUuids: [...options.targetUuids],
+            targetNames: new Array(options.targetUuids.length),
+        }
+
+        flags.vryl.combatAction.currentTargetUuids = flags.vryl.combatAction.targetUuids;
+
+        for (let i = 0; i < options.targetUuids.length; i++) {
+            flags.vryl.combatAction.targetNames[i] = (await fromUuid(options.targetUuids[i])).name;
         }
     }
 
@@ -249,10 +294,9 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
             vryl: {
                 narrativeResult: CONFIG.ui.rollBuilder.hasRollFlag(`narrative-result`, 'global', 'preRoll'),
                 isAttributeRoll: true,
+                buttons: [],
             }
         }
-
-
 
         console.log("Rolling with data: ", CONFIG.ROLL_DATA);
 
@@ -277,9 +321,20 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
         await roll.roll();
 
         if (CONFIG.ROLL_DATA.rollCombatActionSource) {
-            RollSidebar.setupMessageCombatAction(flags, CONFIG.ROLL_DATA.rollCombatActionSource);
+            await RollSidebar.setupMessageCombatAction(flags, CONFIG.ROLL_DATA.rollCombatActionSource, { targetUuids: CONFIG.ROLL_DATA.rollCombatActionTargetUuids, spendCharge: true });
             flags.vryl.combatAction.spentSuccesses = 0;
             flags.vryl.combatAction.totalSuccesses = roll._total;
+        }
+
+        //AUTOMATION Disoriented
+        for (const [key, actorData] of CONFIG.ROLL_DATA.rollActors) {
+            const actor = game.actors.get(key);
+            let disorientedEffect = actor.effects.find(e => e.statuses.has('disoriented'));
+            if (disorientedEffect) {
+                let stacks = disorientedEffect.flags.statuscounter.value ?? 1;
+                stacks = Math.ceil(stacks / 2);
+                flags.vryl.buttons.push(`loseCondition disoriented ${stacks} ${actor.uuid}|<b>${actor.name}</b>: Lose Disoriented x${stacks}`);
+            }
         }
 
         let msg = await roll.toMessage({
@@ -658,18 +713,28 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
 
             //Add willpower if it is present
             if (actorData.willpower) {
-                actorData.willpower.dataName = "willpower";
-                actorData.willpower.name = "Willpower";
+                let willpower = structuredClone(actorData.willpower);
+                willpower.dataName = "willpower";
+                willpower.name = "Willpower";
 
-                actorContent += await renderAttribute(key, actorData.willpower);
+                RollSidebar.applyDoom(willpower, actorData);
+
+                actorContent += await renderAttribute(key, willpower);
             }
 
             //Add actor bonuses if present
             {
                 let actorBonuses = {};
 
-                if (actorData.actor?.system?.bonusDice != undefined && actorData.actor?.system?.bonusDice != 0)
-                    actorBonuses.level = actorData.actor.system.bonusDice;
+                let actorLevels = 0;
+                actorLevels += RollSidebar.applyDisoriented(actorData.actor.system.bonusDice ?? 0, actorData);
+                if (actorLevels != 0)
+                    actorBonuses.level = actorLevels
+
+                let actorGuaranteedSuccesses = 0;
+                actorGuaranteedSuccesses += RollSidebar.applyFrightened(actorGuaranteedSuccesses, actorData);
+                if (actorGuaranteedSuccesses != 0)
+                    actorBonuses.guaranteedSuccesses = actorGuaranteedSuccesses;
 
                 if (Object.keys(actorBonuses).length > 0) {
                     actorBonuses.dataName = "actor_" + key;
@@ -725,6 +790,9 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
 
         if (CONFIG.ROLL_DATA.rollCombatActionSource) {
             CONFIG.ROLL_DATA.rollCombatActionSource.inSidebar = inSidebar;
+            let flags = {};
+            await this.setupMessageCombatAction(flags, CONFIG.ROLL_DATA.rollCombatActionSource, { targetUuids: CONFIG.ROLL_DATA.rollCombatActionTargetUuids, spendCharge: false });
+            CONFIG.ROLL_DATA.rollCombatActionSource.flags = flags;
             let actionContent = await renderTemplate(`systems/vryl/templates/parts/combat/action-chat-card.hbs`, CONFIG.ROLL_DATA.rollCombatActionSource);
 
             content += actionContent;
@@ -837,28 +905,59 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
                 const useButtons = html.find(`[data-action='useCombatActionEffect']`);
                 for (let i = 0; i < useButtons.length; i++) {
                     const button = useButtons[i];
-                    button.addEventListener('click', async () => {
+                    button.addEventListener('click', async (event) => {
+
+                        event.stopPropagation();
+                        event.preventDefault();
                         const effect = action.system.combatAction.effects.find(item => item.id == button.id);
+                        let newTargetContent = "";
 
-                        ChatMessage.create({
-                            content: `
-                        <div class="flexcol flex-group-center">
-                        <h6>${action.name}</h6>
-                        <div>
-                        <span class="centerhor"><b style="min-width:1em;text-align:right; margin-right:0.2em;">${effect.successCost}</b><i class='fal fa-check-circle'></i></span>
-                        </div>
-                        <div>
-                        ${CONFIG.ui.vrylEnrichText(effect.description, action.actor.system, true)}
-                        </div>
-                        </div>`
-                        });
+                        async function continueActionEffect() {
+                            ChatMessage.create({
+                                content: `
+<div class="flexcol flex-group-center">
+    <h6>${action.name}</h6>
+    <div>
+        <span class="centerhor"><b style="min-width:1em;text-align:right; margin-right:0.2em;">${effect.successCost}</b><i class='fal fa-check-circle'></i></span>
+    </div>
+    <div>
+        ${CONFIG.ui.vrylEnrichText(effect.description, action.actor.system, true)}
+    </div>
+    ${newTargetContent}
+</div>`
+                            });
 
-                        combatActionFlags.spentSuccesses += effect.successCost;
-                        combatActionFlags.usedEffects.push(effect.id);
+                            combatActionFlags.spentSuccesses += effect.successCost;
+                            combatActionFlags.usedEffects.push(effect.id);
 
-                        msg.setFlag("vryl", "combatAction", combatActionFlags);
-                        d.data.content = (await foundry.applications.handlebars.renderTemplate(`systems/vryl/templates/parts/roll/combat-action-effect-execution.hbs`, context));
-                        d.render(false);
+                            await msg.setFlag("vryl", "combatAction", combatActionFlags);
+                            d.data.content = (await foundry.applications.handlebars.renderTemplate(`systems/vryl/templates/parts/roll/combat-action-effect-execution.hbs`, context));
+                            d.render(true);
+                        }
+
+                        if(effect.targeting.doesTarget)
+                        {
+                            game.vrylGlobalFunctions.runTokenSelector({
+                                callback: (tokens) => {
+                                    combatActionFlags.currentTargetUuids = [...tokens.map(e => e.uuid)];
+                                    newTargetContent = `
+<div class="flexcol flex-group-center">
+    <b>Targets</b>
+        `;
+                                    for(let token of tokens)
+                                    {
+                                        newTargetContent += `<span>${token.name}</span>`;
+                                    }
+                                    newTargetContent += "</div>";
+                                    continueActionEffect();
+                                },
+                                userToken: msg.speakerActor?.getActiveTokens()?.filter(e => e.id == msg.speaker.token)[0] ?? null,
+                            });
+                        }
+                        else
+                        {
+                            continueActionEffect();
+                        }
                     });
                 }
             },
@@ -1131,11 +1230,15 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
     }
 
     static async processPostRollActions(msg) {
+
+
         const rollData = CONFIG.ROLL_DATA;
 
         for (const [key, actorData] of rollData.rollActors) {
+            const actor = game.actors.get(key);
+
             if (actorData.actions && actorData.actions.length > 0) {
-                const actor = game.actors.get(key);
+
 
                 function processAction(collection) {
                     for (const action of collection) {
@@ -1162,7 +1265,15 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
     }
 
     static async failuresLoseWillpower(actor, msg) {
-        let newWillpower = Math.max(actor._source.system.willpower.level - (msg.rolls[0].terms[0]._number - msg.rolls[0]._total), 0);
+        let failures = (msg.rolls[0].terms[0]._number - msg.rolls[0]._total);
+
+        let effect = actor.effects.find(e => e.statuses.has('doom'));
+        if (effect) {
+            let stacks = effect.flags.statuscounter.value ?? 1;
+            failures += stacks;
+        }
+
+        let newWillpower = Math.max(actor._source.system.willpower.level - failures, 0);
         if (newWillpower > actor._source.system.willpower.level)
             return;
         actor.update({ [`system.willpower.level`]: newWillpower });
@@ -1511,8 +1622,9 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
         CONFIG.ui.rollBuilder.goToRollBuilder();
     }
 
-    static setActionSource(action) {
+    static setActionSource(action, options = { targets: null }) {
         CONFIG.ROLL_DATA.rollCombatActionSource = action;
+        CONFIG.ROLL_DATA.rollCombatActionTargetUuids = options?.targets ?? null;
     }
 
 }
@@ -1523,8 +1635,8 @@ Hooks.on("renderChatMessage", (message, html, data) => {
 
     for (const b of effectsButtons) {
         b.addEventListener("click", (event) => {
-            event.stopPropagation(); 
-            event.preventDefault(); 
+            event.stopPropagation();
+            event.preventDefault();
             CONFIG.ui.rollBuilder.openCombatActionEffectsMenu(message.uuid);
         });
     }

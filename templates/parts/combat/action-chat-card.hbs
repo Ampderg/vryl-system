@@ -6,6 +6,15 @@
         <div>
             {{{system.description}}}
         </div>
+        {{#if flags.vryl.combatAction.targetNames}}
+        <div class="flexcol flex-group-center">
+            <b>Targets</b>
+            {{#each flags.vryl.combatAction.targetNames}}
+            <span>{{this}}</span>
+            {{/each}}
+        </div>
+        {{/if}}
+
         {{#unless inSidebar}}
         {{#if system.combatAction.effects.length}}
         <button class="clickable" id="combatEffectsButton">Open Effects</button>

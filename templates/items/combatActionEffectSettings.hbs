@@ -1,0 +1,26 @@
+<form>
+  <div class="flexcol">
+    <label>Card Summary</label>
+    <input type="text" id='summary' value='{{summary}}'>
+
+    <label>Description</label>
+    <!-- This div acts as the target for the editor -->
+    <div class="editor-content">
+    <prose-mirror id="description" value="{{description}}">
+      {{effect.description}}
+    </prose-mirror>
+    </div>
+    <div class="flexrow">
+      <label>Is this effect built-in to the action? (Mandatory)</label>
+      <input type="checkbox" id="mandatory" name="mandatory" {{#if mandatory}}checked{{/if}}>
+    </div>
+    <div class="flexrow">
+      <label>Can this effect repeat?</label>
+      <input type="checkbox" id="repeatable" name="repeatable" {{#if repeatable}}checked{{/if}}>
+    </div>
+    <div class="flexrow">
+      <label>Does this effect re-target the action?</label>
+      <input type="checkbox" id="doesTarget" name="doesTarget" {{#if targeting.doesTarget}}checked{{/if}}>
+    </div>
+  </div>
+</form>

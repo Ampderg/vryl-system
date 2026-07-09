@@ -132,7 +132,7 @@ If you would remove or transfer a stack of a Condition other than Hex, instead r
 
             sortingCategory: "Damage Manipulation",
             description:
-`When a creature with Exposure is targeted, the attacker may choose (after rolling) to remove all stacks of Exposure and replace a number of Successes equal to the number of stacks removed with a Natural 20.
+`When a creature with Exposure is targeted, the attacker may choose (before rolling) to remove all stacks of Exposure and replace a number of Successes equal to the number of stacks removed with a Natural 20.
 `,
         },
         {
@@ -217,7 +217,7 @@ If you would remove or transfer a stack of a Condition other than Hex, instead r
             name: "Immobilized",
             icon: "icons/svg/trap.svg",
             isCondition: true,
-
+            
             sortingCategory: "Movement",
             description:
 `While Immobilized, your speed is set to 0, and you cannot move.
@@ -271,7 +271,7 @@ If you were Incapacitated but didn't run out of Willpower, you might gain an Asp
         "Success Manipulation": 49,
         "Action Economy": 50,
         "Willpower": 51,
-        "Affliction": 10000,
+        "Affliction": 1000,
     }
 
     CONFIG.statusEffects.sort(function(a, b) {

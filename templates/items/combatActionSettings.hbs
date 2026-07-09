@@ -72,6 +72,14 @@
       <button class="clickable" id="copySavedRoll">Copy Saved Roll</button>
       {{/if}}
     </div>
+    <div class="flexrow" style="min-width:min-content">
+      <div>
+        <b>Target before effects? <input type="checkbox" id="actionDoesTargetCheckbox" {{#if system.combatAction.targeting.doesTarget}}checked{{/if}}></b>
+      </div>
+      {{#if system.combatAction.targeting.doesTarget}}
+      
+      {{/if}}
+    </div>
   </div>
   {{/if}}
 </section>

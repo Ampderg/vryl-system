@@ -54,6 +54,31 @@ export class VrylActor extends Actor {
 
             systemData.combat.damage = systemData.combat.baseDamage;
             systemData.combat.fray = systemData.combat.baseFray;
+
+                        //AUTOMATION Slowed
+            {
+                let effect = actorData.effects.find(e => e.statuses.has('slowed'));
+                if (effect) {
+                    let stacks = effect.flags.statuscounter.value ?? 1;
+                    systemData.combat.speed = Math.max(0, systemData.combat.speed - stacks);
+                }
+            }
+
+            //AUTOMATION Immobilized
+            {
+                let effect = actorData.effects.find(e => e.statuses.has('immobilized'));
+                if (effect) {
+                    systemData.combat.speed = 0;
+                }
+            }
+
+            //AUTOMATION Prone
+            {
+                let effect = actorData.effects.find(e => e.statuses.has('prone'));
+                if (effect) {
+                    systemData.combat.speed = Math.max(2, systemData.combat.speed);
+                }
+            }
         }
     }
 
