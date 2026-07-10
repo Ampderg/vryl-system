@@ -1,4 +1,7 @@
 
+let combatManagerData = {
+}
+
 Hooks.on("combatStart", (combat) => {
     for (const actor of combat.combatants) {
         for (const item of actor.actor.items) {
@@ -178,7 +181,7 @@ Hooks.on('renderChatMessageHTML', async (message, html, context) => {
                 ChatMessage.create({
                     content: content,
                 });
-            });
+            }, selectedActors);
         }
         //#endregion
         //#region Guard
@@ -195,7 +198,7 @@ Hooks.on('renderChatMessageHTML', async (message, html, context) => {
                 ChatMessage.create({
                     content: content,
                 });
-            });
+            }, selectedActors);
         }
         else if (command == "setguard") {
             let guard = parseInt(tokens[1]);
@@ -210,7 +213,7 @@ Hooks.on('renderChatMessageHTML', async (message, html, context) => {
                 ChatMessage.create({
                     content: content,
                 });
-            });
+            }, selectedActors);
         }
         //#endregion
         //#region Conditions
@@ -307,7 +310,7 @@ Hooks.on('renderChatMessageHTML', async (message, html, context) => {
                         if (effect) {
                             let threatenedBy = effect.flags.vryl?.threatenedBy ?? [];
                             threatenedBy = threatenedBy.filter(e => e != sourceActorUuid);
-                            if(threatenedBy.length > 0)
+                            if (threatenedBy.length > 0)
                                 effect.setFlag("vryl", "threatenedBy", threatenedBy);
                             else
                                 effect.delete();
@@ -321,10 +324,22 @@ Hooks.on('renderChatMessageHTML', async (message, html, context) => {
                 });
             }, targetUuid);
         }
+        else if (command == "finishTurn") {
+            if (!buttonAlias)
+                buttonAlias = `Proceed to Next Turn`;
+            createButton(buttonAlias, () => {
+                combatManagerData.resumeSignal();
+            });
+        }
     });
 });
 
+//#region combatTurnChange
+
 Hooks.on("combatTurnChange", async (combat, prior, current) => {
+
+    // if (!(current.round > prior.round || current.turn > prior.turn))
+    //     return;
 
     // Ensure this is the *first* active GM client to prevent duplicates
     // TODO: allow this to run even if there are no GMs
@@ -344,12 +359,14 @@ Hooks.on("combatTurnChange", async (combat, prior, current) => {
             }
         }
 
-        let content = `It is no longer ${endingCombatant.name}'s turn!`;
+        let content = `${endingCombatant.name} is ending their turn!`;
         const endingActor = await fromUuid(endingCombatant.actor.uuid);
 
-        let conditions = await endOfTurnConditions(endingActor, flags.vryl.buttons, combat);
+        let conditions = await endOfTurnConditions(endingActor, flags.vryl, combat, endingCombatant.token);
         if (conditions && conditions != "")
             content = "<br>" + conditions;
+
+        flags.vryl.buttons.push(`finishTurn`);
 
         await ChatMessage.create({
             content: content,
@@ -357,6 +374,14 @@ Hooks.on("combatTurnChange", async (combat, prior, current) => {
         });
     }
 
+    // Wait for proceed button
+    combatManagerData.turnPromise = new Promise((resolve) => {
+        combatManagerData.resumeSignal = resolve;
+    });
+
+    await combatManagerData.turnPromise;
+    
+    
     // Check if it's the start of the turn (ignores rewinding)
     if (current.round > prior.round) {
         await ChatMessage.create({
@@ -388,9 +413,36 @@ Hooks.on("combatTurnChange", async (combat, prior, current) => {
     }
 });
 
+//#region End of turn
+
 async function endOfTurnConditions(actor, flags, combat, token) {
+    let content = "";
     //AUTOMATION Condition Save
+
+    //AUTOMATION Threatened
+    let threatenedEffect = actor.effects.find(e => e.statuses.has('threatened'));
+    if (threatenedEffect) {
+        for (let compare of combat.turns) {
+            const compareActor = await fromUuid(compare.actor.uuid);
+
+            if (compare.uuid == actor.uuid || !threatenedEffect.flags.vryl?.threatenedBy?.includes(compareActor.uuid))
+                continue;
+
+            const ray = new Ray(token.getCenterPoint(), compare.token.getCenterPoint());
+            // 2. Measure the distance using the scene's grid rules
+            const distance = canvas.grid.measurePath([ray.A, ray.B]);
+
+            if (distance.distance <= 1) {
+                content += (content != "" ? "<br>" : "") + `<b>${actor.name}</b> is Threatened by <b>${compareActor.name}</b>, granting them an <i>Opportunity!</i>`;
+                flags.buttons.push(`unthreaten ${compareActor.uuid} ${actor.uuid}`);
+            }
+        }
+    }
+
+    return content;
 }
+
+//#region Start of turn
 
 async function startOfTurnConditions(actor, flags, combat, token) {
     let content = "";
@@ -449,6 +501,21 @@ async function startOfTurnConditions(actor, flags, combat, token) {
     for (let [key, value] of Object.entries(shockedMap)) {
         let shockedActor = await fromUuid(key);
         flags.buttons.push(`damage ${value} ${shockedActor.uuid}|<b>${shockedActor.name}</b>: Apply ${value} Shocked Damage`);
+    }
+
+    //AUTOMATION Threatened
+    for (let compare of combat.turns) {
+        if (compare.uuid == actor.uuid)
+            continue;
+
+        const compareActor = await fromUuid(compare.actor.uuid);
+        let threatenedEffect = compareActor.effects.find(e => e.statuses.has('threatened'));
+
+        if(!threatenedEffect || !threatenedEffect.flags.vryl?.threatenedBy?.includes(actor.uuid))
+            continue;
+
+        flags.buttons.push(`unthreaten ${actor.uuid} ${compareActor.uuid}|<b>${compareActor.name}</b>: Lose Threatened by <b>${actor.name}</b>`);
+        
     }
 
     return content;
