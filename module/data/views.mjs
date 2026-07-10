@@ -592,7 +592,19 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
     }
 
     static async _conditionSave(event, target) {
+        CONFIG.ui.rollBuilder.clearRoll(false);
 
+        let attribute = this.document.system.willpower;
+        attribute.dataName = "willpower";
+        attribute.name = "Willpower";
+
+        await CONFIG.ui.rollBuilder.toggleAttribute(this.document, attribute, true);
+
+        CONFIG.ui.rollBuilder.addAction(`no-willpower-spend`, this.document, false);
+        CONFIG.ui.rollBuilder.addAction(`condition-save`, this.document, false);
+
+        CONFIG.ui.rollBuilder.goToRollBuilder();
+        CONFIG.ui.rollBuilder.updateRollData();
     }
 
     static async _rest(event, target) {

@@ -54,6 +54,12 @@ export const ROLL_ACTIONS = [
             actionType: `postRoll`,
             actionOwner: `actor`,
         },
+        {
+            action: `condition-save`,
+            functionName: `conditionSave`,
+            actionType: `postRoll`,
+            actionOwner: `actor`,
+        },
 
         //#region Group Rolls
         {

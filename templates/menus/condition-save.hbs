@@ -1,0 +1,29 @@
+<div class="flexcol">
+    <div class="flex-group-center">
+        <span><b>Spent Successes: </b>[ {{successes.spent}} / {{successes.starting}} ]</span>
+    </div>
+    {{#each data as |d|}}
+    <div class="flexrow centervert" style="gap: 0.5em;">
+        <img class="centervert " src="{{d.condition.img}}" style="max-width: 30px;">
+        <b class="centervert hover-info" title="{{d.conditionData.description}}" style="max-width:100px;">{{d.condition.name}}</b>
+        <button class="centervert fitwidth" id="{{d.condition.id}}" title="Clear All" data-index="-1"
+            data-action="changeCondtionToValue">
+            Clear All
+        </button>
+        <div class="flexrow centervert">
+            {{#for 0 d.startingStacks 1}}
+            <i id="{{d.condition.id}}" title="{{add index 1}}" data-index="{{index}}"
+                data-action="changeCondtionToValue"
+                class="centervert fitwidth clickable {{#if (lt index d.targetStacks)}}fas fa-circle{{else}}fal fa-circle{{/if}}">
+            </i>
+            {{/for}}
+        </div>
+    </div>
+    {{#if (eq d.conditionData.id "hex")}}
+    <div class="flex-group-center">
+        <i>Hex must be removed before all other Conditions.</i>
+        <hr>
+    </div>
+    {{/if}}
+    {{/each}}
+</div>

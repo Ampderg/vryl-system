@@ -492,7 +492,7 @@
   padding: 0;
 }
 
-.scrollable {
+.scrollable[style="overflow-x: visible"] {
   overflow-y: scroll;
   max-height: 250px;
   border: 2px groove var(--vryl-c-groove);
@@ -620,6 +620,17 @@
 .clickable.selected {
   color: var(--vryl-c-background-highlight);
   text-shadow: 0 0 3px var(--vryl-c-background-highlight);
+}
+
+.hover-info {
+  cursor: help;
+  color: var(--vryl-c-clickable);
+}
+
+.hover-info:hover,
+.hover-info:focus {
+  color: var(--vryl-c-clickable-hover);
+  text-shadow: 0 0 1px var(--vryl-c-clickable-hover);
 }
 
 .fitwidth {

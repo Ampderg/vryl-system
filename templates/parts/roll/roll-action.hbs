@@ -37,6 +37,10 @@
             {{#if (eq action "failures-lose-willpower")}}
             Lose one Willpower for every <b>Failure</b>
             {{/if}}
+            {{#if (eq action "condition-save")}}
+            <b 
+                title="Successes can be spent to clear Conditions of your choice.">Condition Save</b>
+            {{/if}}
 
             <!-- Group Roll -->
             {{#if (eq action "group-roll")}}

@@ -935,8 +935,7 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
                             d.render(true);
                         }
 
-                        if(effect.targeting.doesTarget)
-                        {
+                        if (effect.targeting.doesTarget) {
                             game.vrylGlobalFunctions.runTokenSelector({
                                 callback: (tokens) => {
                                     combatActionFlags.currentTargetUuids = [...tokens.map(e => e.uuid)];
@@ -944,8 +943,7 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
 <div class="flexcol flex-group-center">
     <b>Targets</b>
         `;
-                                    for(let token of tokens)
-                                    {
+                                    for (let token of tokens) {
                                         newTargetContent += `<span>${token.name}</span>`;
                                     }
                                     newTargetContent += "</div>";
@@ -954,8 +952,7 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
                                 userToken: msg.speakerActor?.getActiveTokens()?.filter(e => e.id == msg.speaker.token)[0] ?? null,
                             });
                         }
-                        else
-                        {
+                        else {
                             continueActionEffect();
                         }
                     });
@@ -1277,6 +1274,96 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
         if (newWillpower > actor._source.system.willpower.level)
             return;
         actor.update({ [`system.willpower.level`]: newWillpower });
+    }
+
+    static async conditionSave(actor, msg) {
+        const context = {
+            successes: {
+                starting: msg.rolls[0].total,
+                spent: 0,
+            },
+            data: []
+        };
+        for (let s of actor.effects.contents) {
+            console.log(s);
+            s.statuses.forEach((condition) => {
+                let conditionData = CONFIG.statusEffects.filter(e => e.id == condition)[0];
+                if (conditionData && conditionData.isCondition) {
+                    let newData = {
+                        condition: s,
+                        conditionData: conditionData,
+                        startingStacks: s.flags.statuscounter?.value ?? 1,
+                    };
+                    newData.targetStacks = newData.startingStacks;
+                    context.data.push(newData);
+                }
+            });
+        }
+
+        context.data.sort((a, b) => a.conditionData.conditionSaveSorting - b.conditionData.conditionSaveSorting);
+
+        if (context.successes < 0) {
+            context.successes = 0;
+        }
+
+        const path = `systems/vryl/templates/menus/condition-save.hbs`;
+        const template = await foundry.applications.handlebars.renderTemplate(path, context);
+
+        let d = new Dialog({
+            title: "Condition Save",
+            content: template,
+            buttons: {
+                one: {
+                    label: "Apply",
+                    callback: () => {
+                        let content = "";
+                        context.data.forEach(data => {
+                            let stacks = data.targetStacks;
+                            let stacksLost = data.startingStacks - data.targetStacks;
+                            if (stacksLost > 0) {
+                                if (stacks <= 0)
+                                    data.condition.delete();
+                                else
+                                    data.condition.statusCounter.setValue(stacks);
+                                content += (content != "" ? "<br>" : "") + `${actor.name}'s has lost <b>${stacksLost}</b> stack${stacksLost != 1 ? "s" : ""} of <b>${data.conditionData.name}</b>. <i>(${stacks} Remaining)</i>`;
+                            }
+                        });
+                        ChatMessage.create({
+                            content: content,
+                        });
+                    },
+                }
+            },
+            render: async (html) => {
+                //AUTOMATION Condition Save
+
+                const useButtons = html.find(`[data-action='changeCondtionToValue']`);
+                for (let i = 0; i < useButtons.length; i++) {
+                    const button = useButtons[i];
+                    button.addEventListener('click', async () => {
+                        let conditionData = context.data.filter(e => e.condition.id == button.id)[0];
+                        let targetStacks = parseInt(button.dataset.index) + 1;
+                        if (targetStacks == conditionData.targetStacks)
+                            targetStacks--;
+                        conditionData.targetStacks = Math.max(0, targetStacks);
+
+                        context.successes.spent = 0;
+                        for (const data of context.data) {
+                            context.successes.spent += data.startingStacks - data.targetStacks;
+                        }
+
+                        d.data.content = (await foundry.applications.handlebars.renderTemplate(path, context));
+                        d.render(false);
+                    });
+                }
+            },
+            close: (html) => {
+
+            }
+        }, {
+            left: window.innerWidth - 300 - 450,
+        });
+        d.render(true);
     }
 
     static async processOnRollEffects(actor, msg) {

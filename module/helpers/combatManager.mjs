@@ -250,7 +250,7 @@ Hooks.on('renderChatMessageHTML', async (message, html, context) => {
                             actorEffect.delete();
                         else
                             actorEffect.statusCounter.setValue(stacks);
-                        content += (content != "" ? "<br>" : "") + `${actor.name}'s has lost <b>${stacksLost}</b> stack${stacksLost != 1 ? "s" : ""} of <b>${effectData.name}</b>. <i>(${stacks})</i>`;
+                        content += (content != "" ? "<br>" : "") + `${actor.name}'s has lost <b>${stacksLost}</b> stack${stacksLost != 1 ? "s" : ""} of <b>${effectData.name}</b>. <i>(${stacks} Remaining)</i>`;
                     }
                 });
                 ChatMessage.create({

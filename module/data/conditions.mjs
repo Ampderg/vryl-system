@@ -51,7 +51,7 @@ If you gain Dazed during your turn, lose one Action Point. If you have no Action
 
             sortingCategory: "Success Manipulation",
             description:
-`Creatures that are Frightened have -1 Successes to their rolls.
+`You suffer -1 Guaranteed Successes to all rolls.
 `,
         },
         {
@@ -77,10 +77,11 @@ Doom stays applied when you become Incapacitated, but you lose half of the stack
             icon: "icons/svg/cancel.svg",
             isCondition: true,
 
+            conditionSaveSortingOffset: -100000,
             sortingCategory: "Willpower",
             description:
 `During a Condition Save, you cannot remove any stacks of Conditions other than Hex.
-If you would remove or transfer a stack of a Condition other than Hex, instead remove one stack of Hex.
+If you would ever remove or transfer stacks of a Condition through means that are not innate to the Condition (such as entering water while Burning), instead remove one stack of Hex for each stack that would have been removed or transfered.
 `,
         },
         {
@@ -114,12 +115,12 @@ If you would remove or transfer a stack of a Condition other than Hex, instead r
             statuses: ["vulnerable"],
 
             name: "Vulnerable",
-            icon: "icons/svg/poison.svg",
+            icon: "icons/svg/ruins.svg",
             isCondition: true,
 
             sortingCategory: "Damage Manipulation",
             description:
-`Whenever a creature with Vulnerable is dealt damage by an action, they take one additional damage for each stack of Vulnerable they have.
+`Whenever you are dealt damage by an action, take one additional damage for each stack of Vulnerable you have.
 `,
         },
         {
@@ -132,7 +133,7 @@ If you would remove or transfer a stack of a Condition other than Hex, instead r
 
             sortingCategory: "Damage Manipulation",
             description:
-`When a creature with Exposure is targeted, the attacker may choose (before rolling) to remove all stacks of Exposure and replace a number of Successes equal to the number of stacks removed with a Natural 20.
+`When you are targeted, your attacker may choose (before rolling) to remove all stacks of Exposure on you and replace a number of their Successes equal to the number of stacks removed with Natural 20s.
 `,
         },
         {
@@ -163,7 +164,7 @@ If you would remove or transfer a stack of a Condition other than Hex, instead r
             extraRules: [
 `Entering Water: The first time a Burning creature is in water on their turn, they decrease their Burning stacks by half (rounded up).
 `,
-`Stop, Drop, and Roll: Once per turn, a Prone creature may spend one Action Point to decrease their Burning stacks by half (rounded up), or a minimum decrease of 2 stacks.
+`Stop, Drop, and Roll: Once per turn, a Prone or water-submerged creature may spend one Action Point to decrease their Burning stacks by half (rounded up).
 `,
 ]
         },
@@ -177,13 +178,26 @@ If you would remove or transfer a stack of a Condition other than Hex, instead r
 
             sortingCategory: "Damage",
             description:
-`When any creature starts its turn, Shocked creatures deal 1 lightning damage to all creatures within Range 2 other than themself, and then lose one stack of Shocked.
+`When any creature starts its turn, all Shocked creatures deal 1 lightning damage to all creatures within Range 2 other than themself, and then lose one stack of Shocked.
 `,
             extraRules: [
 `Entering Water: The first time a Shocked creature is in water on their turn, they decrease their Shocked stacks by half (rounded up), taking 1d4 damage for every stack removed.
 `,
 ]
         },
+//         {
+//             id: "poisoned",
+//             statuses: ["bleeding"],
+
+//             name: "Poisoned",
+//             icon: "icons/svg/poison.svg",
+//             isCondition: true,
+
+//             sortingCategory: "Damage",
+//             description:
+// `At the start of your turn, round your Poisoned stacks up to the nearest possible die face count (d4, d6, d8, d10, d12, or d20). Roll one die of that type, and take that much poison damage.
+// `,
+//         },
         {
             id: "distracted",
             statuses: ["distracted"],
@@ -220,7 +234,7 @@ If you would remove or transfer a stack of a Condition other than Hex, instead r
             
             sortingCategory: "Movement",
             description:
-`While Immobilized, your speed is set to 0, and you cannot move.
+`Your speed is set to 0, and you cannot move.
 `,
         },
 
@@ -272,6 +286,12 @@ If you were Incapacitated but didn't run out of Willpower, you might gain an Asp
         "Action Economy": 50,
         "Willpower": 51,
         "Affliction": 1000,
+    }
+
+    for(let status of CONFIG.statusEffects)
+    {
+        status.sorting = sortingCategoryMap[status.sortingCategory]
+        status.conditionSaveSorting = status.sorting + (status.conditionSaveSortingOffset ?? 0);
     }
 
     CONFIG.statusEffects.sort(function(a, b) {
