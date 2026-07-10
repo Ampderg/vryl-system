@@ -258,6 +258,20 @@ You may choose to gain a stack of Prone as a free action on your turn.
 `,
         },
         {
+            id: "threatened",
+            statuses: ["threatened"],
+
+            name: "Threatened",
+            icon: "icons/svg/falling.svg",
+            isCondition: false,
+
+            sortingCategory: "Affliction",
+            description:
+`When you end your turn, grant all creatures within Range 1 that you are "Threatened by" an Opportunity, and you are no longer "Threatened by" them.
+Additionally, when a creature that you are "Threatened by" starts their turn, you are no longer Threatened by them.
+`,
+        },
+        {
             id: "incapacitated",
             statuses: ["incapacitated"],
 

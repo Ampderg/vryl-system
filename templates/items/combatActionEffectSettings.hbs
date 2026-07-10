@@ -1,26 +1,46 @@
 <form>
   <div class="flexcol">
     <label>Card Summary</label>
-    <input type="text" id='summary' value='{{summary}}'>
+    <input type="text" id='summary' value='{{effect.summary}}'>
 
     <label>Description</label>
     <!-- This div acts as the target for the editor -->
     <div class="editor-content">
-    <prose-mirror id="description" value="{{description}}">
-      {{effect.description}}
-    </prose-mirror>
+      <prose-mirror id="description" value="{{effect.description}}">
+        {{effect.description}}
+      </prose-mirror>
     </div>
     <div class="flexrow">
       <label>Is this effect built-in to the action? (Mandatory)</label>
-      <input type="checkbox" id="mandatory" name="mandatory" {{#if mandatory}}checked{{/if}}>
+      <input type="checkbox" id="mandatory" name="mandatory" {{#if effect.mandatory}}checked{{/if}}>
     </div>
     <div class="flexrow">
       <label>Can this effect repeat?</label>
-      <input type="checkbox" id="repeatable" name="repeatable" {{#if repeatable}}checked{{/if}}>
+      <input type="checkbox" id="repeatable" name="repeatable" {{#if effect.repeatable}}checked{{/if}}>
     </div>
     <div class="flexrow">
       <label>Does this effect re-target the action?</label>
-      <input type="checkbox" id="doesTarget" name="doesTarget" {{#if targeting.doesTarget}}checked{{/if}}>
+      <input type="checkbox" id="doesTarget" name="doesTarget" {{#if effect.targeting.doesTarget}}checked{{/if}}>
+    </div>
+    <div class="flexcol">
+      <li class='effects-header flexrow'>
+        <div class='effect-name flexrow'>
+          Chat Buttons
+        </div>
+        <div class='effect-controls flexrow'>
+          <a class='effect-control' data-action='addActionEffectChatButton' data-tooltip='{{localize "DOCUMENT.Create" type='
+            Effect'}}'>
+            <i class='fas fa-plus'></i>
+            {{localize 'DOCUMENT.New' type='Button'}}
+          </a>
+        </div>
+      </li>
+      {{#each chatButtons as |button|}}
+      <div class="flexrow list-element centervert">
+        <input data-action="actionEffectChatButtonText" data-index="{{@index}}" type="text" value="{{button.buttonText}}">
+        <i class="centervert fitwidth fa-solid fa-trash clickable" data-action="removeActionEffectChatButton" data-index="{{@index}}"></i>
+      </div>
+      {{/each}}
     </div>
   </div>
 </form>

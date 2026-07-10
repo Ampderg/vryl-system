@@ -223,6 +223,9 @@ export class VrylCombatAction extends VrylItemCard {
       automation: effectAutomation,
       repeatable: new BooleanField({ required: true, initial: false }),
       mandatory: new BooleanField({ required: true, initial: false }),
+      chatButtons: new ArrayField(new SchemaField({
+        buttonText: new StringField({}),
+      })),
     }));
 
     schema.combatAction = new SchemaField(combatAction);

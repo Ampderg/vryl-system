@@ -818,7 +818,7 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
         const effect = await fromUuid(target.dataset.effect);
         effectsFunctions.toggleInstantEffect(effect);
     }
-
+    
     static async _useCombatAction(event, target) {
         const action = await fromUuid(target.dataset.id);
 
@@ -847,7 +847,6 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
                     content: actionContent,
                     flags: flags
                 });
-                console.log(msg);
             }
         }
 

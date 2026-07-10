@@ -204,10 +204,15 @@ export class VrylItemSheet extends api.HandlebarsApplicationMixin(sheets.ItemShe
       e.addEventListener("click", async () => {
         const effects = this.document.system.combatAction.effects;
         const effect = effects.find(f => f.id == e.id);
+        let effectContext = {
+          effect: effect,
+          chatButtons: structuredClone(effect.chatButtons),
+        }
 
-        new Dialog({
+        let path = `systems/vryl/templates/items/combatActionEffectSettings.hbs`;
+        let d = new Dialog({
           title: "Edit Action Effect",
-          content: await foundry.applications.handlebars.renderTemplate(`systems/vryl/templates/items/combatActionEffectSettings.hbs`, effect),
+          content: await foundry.applications.handlebars.renderTemplate(path, effectContext),
           buttons: {
             save: {
               label: "Save",
@@ -219,8 +224,43 @@ export class VrylItemSheet extends api.HandlebarsApplicationMixin(sheets.ItemShe
                 effect.mandatory = html.find('#mandatory')[0].checked;
                 effect.targeting.doesTarget = html.find('#doesTarget')[0].checked;
 
+                const chatButtonsText = html.find(`[data-action='actionEffectChatButtonText']`);
+                for(let input of chatButtonsText)
+                {
+                  let index = parseInt(input.dataset.index);
+                  effectContext.chatButtons[index].buttonText = input.value;
+                }
+
+                effect.chatButtons = effectContext.chatButtons;
+
                 this.document.update({ [`system.combatAction.effects`]: effects });
               }
+            }
+          },
+          render: async (html) => {
+            const createButtons = html.find(`[data-action='addActionEffectChatButton']`);
+            for (let button of createButtons) {
+              button.addEventListener('click', async () => {
+                let chatButtons = effectContext.chatButtons;
+                let newButton = {
+                  buttonText: "",
+                };
+                chatButtons.push(newButton);
+                d.data.content = (await foundry.applications.handlebars.renderTemplate(path, effectContext));
+                d.render(false);
+              });
+            }
+
+            const deleteButtons = html.find(`[data-action='removeActionEffectChatButton']`);
+            for (let button of deleteButtons) {
+              button.addEventListener('click', async () => {
+                let chatButtons = effectContext.chatButtons;
+                let index = parseInt(button.dataset.index);
+                chatButtons.splice(index, 1); 
+
+                d.data.content = (await foundry.applications.handlebars.renderTemplate(path, effectContext));
+                d.render(false);
+              });
             }
           },
         }, {
@@ -265,8 +305,7 @@ export class VrylItemSheet extends api.HandlebarsApplicationMixin(sheets.ItemShe
             order--;
         }
 
-        if(order < 0)
-        {
+        if (order < 0) {
           for (const e of effects) {
             e.order -= order;
           }

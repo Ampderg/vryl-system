@@ -913,6 +913,27 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
                         let newTargetContent = "";
 
                         async function continueActionEffect() {
+                            let newMessageFlags = {
+                                vryl: {
+                                    buttons: []
+                                }
+                            }
+
+                            for(let chatButton of effect.chatButtons)
+                            {
+                                let newButton = chatButton.buttonText;
+                                let targetText = "";
+                                if(combatActionFlags.currentTargetUuids.length == 1)
+                                    targetText = ` ${combatActionFlags.currentTargetUuids[0]}`;
+                                else if(combatActionFlags.currentTargetUuids.length > 1)
+                                    targetText = ` [${combatActionFlags.currentTargetUuids.join(' ')}]`;
+                                newButton = newButton.replaceAll(" [target]", targetText)
+
+                                newButton = newButton.replaceAll(" [source]", ` ${action.actor.uuid}`)
+
+                                newMessageFlags.vryl.buttons.push(newButton);
+                            }
+
                             ChatMessage.create({
                                 content: `
 <div class="flexcol flex-group-center">
@@ -924,7 +945,8 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
         ${CONFIG.ui.vrylEnrichText(effect.description, action.actor.system, true)}
     </div>
     ${newTargetContent}
-</div>`
+</div>`,
+                                flags: newMessageFlags,
                             });
 
                             combatActionFlags.spentSuccesses += effect.successCost;

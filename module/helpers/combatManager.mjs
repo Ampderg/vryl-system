@@ -52,10 +52,7 @@ function gainGuard(actor, guard) {
 
 Hooks.on('renderChatMessageHTML', async (message, html, context) => {
     //Render buttons from flavor
-    let selectedActors = message.flags.vryl?.selectedActorUuids?.length > 0 ? new Array(message.flags.vryl.selectedActorUuids.length) : [];
-    for (let i = 0; i < selectedActors.length; i++) {
-        selectedActors[i] = await fromUuid(message.flags.vryl.selectedActorUuids[i]);
-    }
+    let selectedActors = message.flags.vryl?.rollCombatActionTargetUuids ?? message.flags.vryl?.selectedActorUuids ?? [];
 
     let buttons = message.flags?.vryl?.buttons ?? [];
 
@@ -127,7 +124,7 @@ Hooks.on('renderChatMessageHTML', async (message, html, context) => {
         }
     }
 
-    buttons.forEach(b => {
+    buttons.forEach(async b => {
         const elements = b.split("|");
         const tokens = elements[0].split(" ");
         const command = tokens[0];
@@ -228,7 +225,7 @@ Hooks.on('renderChatMessageHTML', async (message, html, context) => {
                 message.update({ flavor: message.flavor + "<br>" + "Weakened x" + weakened })
             });
         }
-        if (command == "loseCondition") {
+        else if (command == "loseCondition") {
             let effectId = tokens[1];
             let effectData = CONFIG.statusEffects.filter(e => e.id == effectId)[0];
             let stacksLost = parseInt(tokens[2]);
@@ -257,7 +254,72 @@ Hooks.on('renderChatMessageHTML', async (message, html, context) => {
                     content: content,
                 });
             }, target);
+        }
+        else if (command == "threaten") {
+            let sourceActorUuid = tokens[1];
+            let sourceActor = await fromUuid(sourceActorUuid);
+            let targetUuid = selectedActors;
+            if (tokens.length > 2)
+                targetUuid = [tokens[2]];
 
+            if (!buttonAlias)
+                buttonAlias = `Threatened by <b>${sourceActor.name}</b>`;
+            createTargetedButton(buttonAlias, async (actors) => {
+                let content = "";
+                for (let actor of actors) {
+                    //AUTOMATION Threatened
+                    {
+                        let effect = actor.effects.find(e => e.statuses.has('threatened'));
+                        if (!effect) {
+                            await actor.toggleStatusEffect("threatened");
+                            effect = actor.effects.find(e => e.statuses.has('threatened'));
+                        }
+
+                        let threatenedBy = effect.flags.vryl?.threatenedBy ?? [];
+                        if (threatenedBy.filter(e => e == sourceActorUuid).length == 0) {
+                            threatenedBy.push(sourceActorUuid);
+                        }
+                        effect.setFlag("vryl", "threatenedBy", threatenedBy);
+                    }
+
+                    content += (content != "" ? "<br>" : "") + `<b>${actor.name}</b> is now Threatened by <b>${sourceActor.name}</b>!`;
+                }
+                ChatMessage.create({
+                    content: content,
+                });
+            }, targetUuid);
+        }
+        else if (command == "unthreaten") {
+            let sourceActorUuid = tokens[1];
+            let sourceActor = await fromUuid(sourceActorUuid);
+            let targetUuid = selectedActors;
+            if (tokens.length > 2)
+                targetUuid = [tokens[2]];
+
+            if (!buttonAlias)
+                buttonAlias = `Lose Threatened by <b>${sourceActor.name}</b>`;
+            createTargetedButton(buttonAlias, (actors) => {
+                let content = "";
+                actors.forEach(actor => {
+                    //AUTOMATION Threatened
+                    {
+                        let effect = actor.effects.find(e => e.statuses.has('threatened'));
+                        if (effect) {
+                            let threatenedBy = effect.flags.vryl?.threatenedBy ?? [];
+                            threatenedBy = threatenedBy.filter(e => e != sourceActorUuid);
+                            if(threatenedBy.length > 0)
+                                effect.setFlag("vryl", "threatenedBy", threatenedBy);
+                            else
+                                effect.delete();
+                        }
+                    }
+
+                    content += (content != "" ? "<br>" : "") + `<b>${actor.name}</b> is no longer Threatened by <b>${sourceActor.name}</b>!`;
+                });
+                ChatMessage.create({
+                    content: content,
+                });
+            }, targetUuid);
         }
     });
 });
