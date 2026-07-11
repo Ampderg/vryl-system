@@ -831,7 +831,7 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
                     return;
                 }
                 CONFIG.ui.rollBuilder.deserializeFromJson(action.system.combatAction.rollBuilderJson, true, action.actor);
-                CONFIG.ui.rollBuilder.setActionSource(action, {targets: selectedTokens.map(e => e.uuid) ?? null});
+                CONFIG.ui.rollBuilder.setActionSource(action, {targets: selectedTokens?.map(e => e.uuid) ?? null});
             }
             else {
                 let flags = {

@@ -140,6 +140,9 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
 
     //AUTOMATION Doom
     static applyDoom(willpowerAttribute, actorData) {
+        if(!actorData?.actor?.effects)
+            return;
+
         let effect = actorData.actor.effects.find(e => e.statuses.has('doom'));
         if (effect) {
             let stacks = effect.flags.statuscounter.value ?? 1;
@@ -149,6 +152,9 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
 
     //AUTOMATION Disoriented
     static applyDisoriented(bonusDice, actorData) {
+        if(!actorData?.actor?.effects)
+            return;
+
         let effect = actorData.actor.effects.find(e => e.statuses.has('disoriented'));
         if (effect) {
             let stacks = effect.flags.statuscounter.value ?? 1;
@@ -159,6 +165,9 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
 
     //AUTOMATION Frightened
     static applyFrightened(guaranteedSuccesses, actorData) {
+        if(!actorData?.actor?.effects)
+            return;
+
         let effect = actorData.actor.effects.find(e => e.statuses.has('frightened'));
         if (effect) {
             let stacks = effect.flags.statuscounter.value ?? 1;
@@ -267,6 +276,9 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
 
         if (!options.targetUuids)
             options.targetUuids = CONFIG.ROLL_DATA.rollCombatActionTargetUuids;
+
+        if (!options.targetUuids)
+            options.targetUuids = [];
 
         if (action.system.combatAction.usesCharges && options.spendCharge) {
             if (action.system.combatAction.charges <= 0) {
@@ -728,12 +740,12 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
 
                 let actorLevels = 0;
                 actorLevels += RollSidebar.applyDisoriented(actorData.actor.system.bonusDice ?? 0, actorData);
-                if (actorLevels != 0)
+                if (actorLevels)
                     actorBonuses.level = actorLevels
 
                 let actorGuaranteedSuccesses = 0;
                 actorGuaranteedSuccesses += RollSidebar.applyFrightened(actorGuaranteedSuccesses, actorData);
-                if (actorGuaranteedSuccesses != 0)
+                if (actorGuaranteedSuccesses)
                     actorBonuses.guaranteedSuccesses = actorGuaranteedSuccesses;
 
                 if (Object.keys(actorBonuses).length > 0) {

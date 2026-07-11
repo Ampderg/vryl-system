@@ -7,7 +7,11 @@
       </div>
     </div>
     {{#if actor.inCombat}}
-    cool bars go here
+    <div class="" style="margin-right:52px;">
+      {{#if (eq (getGameVariable "combat.combatant.actor.uuid" ) actor.uuid)}}
+      <button data-action="combatEndTurn">End Turn</button>
+      {{/if}}
+    </div>
     {{/if}}
   </div>
   <div class='header-fields'>

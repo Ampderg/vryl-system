@@ -230,6 +230,38 @@ Hooks.on('renderChatMessageHTML', async (message, html, context) => {
                 message.update({ flavor: message.flavor + "<br>" + "Weakened x" + weakened })
             });
         }
+        else if (command == "addCondition") {
+            let effectId = tokens[1];
+            let effectData = CONFIG.statusEffects.filter(e => e.id == effectId)[0];
+            let stacksGained = parseInt(tokens[2]);
+            if (!buttonAlias)
+                buttonAlias = `Gain ${effectData.name} x${stacksGained}`;
+
+            let target = selectedActors;
+            if (tokens.length > 3)
+                target = [tokens[3]];
+
+            createTargetedButton(buttonAlias, async (actors) => {
+                let content = "";
+                for(let actor of actors) {
+                    let actorEffect = actor.effects.find(e => e.statuses.has(effectId));
+                    let stacks = actorEffect?.flags?.statuscounter?.value ?? 0;
+
+                    if (!actorEffect) {
+                        await actor.toggleStatusEffect(effectId);
+                        actorEffect = actor.effects.find(e => e.statuses.has(effectId));
+                    }
+
+                    stacks += stacksGained;
+                    actorEffect.statusCounter.setValue(stacks);
+
+                    content += (content != "" ? "<br>" : "") + `${actor.name}'s has gained <b>${stacksGained}</b> stack${stacksGained != 1 ? "s" : ""} of <b>${effectData.name}</b>. <i>(x${stacks})</i>`;
+                }
+                ChatMessage.create({
+                    content: content,
+                });
+            }, target);
+        }
         else if (command == "loseCondition") {
             let effectId = tokens[1];
             let effectData = CONFIG.statusEffects.filter(e => e.id == effectId)[0];
@@ -352,7 +384,7 @@ Hooks.on('renderChatMessageHTML', async (message, html, context) => {
 
                     },
                     singleTarget: true,
-                    tokenFilter: (token) => game.combat.turns.filter(t => t.token.id == token.id).length > 0 &&(token.actor.system.combat.timesActivatedThisRound < token.actor.system.combat.maxActivations),
+                    tokenFilter: (token) => game.combat.turns.filter(t => t.token.id == token.id).length > 0 && (token.actor.system.combat.timesActivatedThisRound < token.actor.system.combat.maxActivations),
                     doRender: {
                         activations: true,
                     },

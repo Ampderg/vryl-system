@@ -382,14 +382,11 @@ export class VrylItem extends Item {
         {
             if(apString != "")
                 apString += "<br>";
-            apString += "<div id='actionCharges' style='text-wrap: balance;'>";
+            apString += `<div id='actionCharges' style='text-wrap: balance;'>`;
             for(let i = 0; i < itemData.system.combatAction.maxCharges; i++)
             {
                 let title = itemData.system.combatAction.maxCharges > 1 ? `title="${i+1}"` : "";
-                if(i < itemData.system.combatAction.charges)
-                    apString += `<i ${title} class='fas fa-circle' data-action='setCombatActionCharges' data-item='${itemData.uuid}' id='${i}'></i>`;
-                else
-                    apString += `<i ${title} class='fal fa-circle' data-action='setCombatActionCharges' data-item='${itemData.uuid}' id='${i}'></i>`;
+                apString += `<i ${title} class='fitwidth ${i < itemData.system.combatAction.charges ? 'fas fa-circle' : 'fal fa-circle'}' data-action='setCombatActionCharges' data-item='${itemData.uuid}' id='${i}'></i>`;
             }
             apString += "</div>";
         }
