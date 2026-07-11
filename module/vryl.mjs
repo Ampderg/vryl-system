@@ -30,6 +30,8 @@ Hooks.once("init", () => {
 
   conditionsFunctions.prepareStatusEffects();
   globalFunctions.initializeGlobals();
+
+  CONFIG.combatManager = combatManager;
   
   // Configure custom Document implementations.
   CONFIG.SystemId = 'vryl';

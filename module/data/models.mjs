@@ -108,6 +108,9 @@ export class CharacterActorDataModel extends AttributeActorDataModel {
 
       baseDamage: new NumberField({ required: true, initial: 4 }),
       baseFray: new NumberField({ required: true, initial: 2 }),
+
+      maxActivations: new NumberField({ required: true, initial: 1 }),
+      timesActivatedThisRound: new NumberField({ required: true, initial: 0 }),
     });
 
     return schema;

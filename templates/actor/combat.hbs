@@ -2,4 +2,13 @@
     {{> combatSettings}}
     {{> combatResources}}
     {{> combatCards}}
+    {{#if actor.inCombat}}
+    <div class="flexcol flex-group-center" style="margin-top:1em;">
+        <b>Combat Tools</b>
+        <div class="flexrow" style="gap:0.5em;">
+            <button data-action="combatEndTurn" {{#unless (eq (getGameVariable "combat.combatant.actor.uuid") actor.uuid)}}disabled{{/unless}}>
+                End Turn</button>
+        </div>
+    </div>
+    {{/if}}
 </section>

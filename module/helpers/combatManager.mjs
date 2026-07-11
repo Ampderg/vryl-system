@@ -326,9 +326,36 @@ Hooks.on('renderChatMessageHTML', async (message, html, context) => {
         }
         else if (command == "finishTurn") {
             if (!buttonAlias)
-                buttonAlias = `Proceed to Next Turn`;
+                buttonAlias = `Choose the next combatant to act`;
             createButton(buttonAlias, () => {
-                combatManagerData.resumeSignal();
+                game.vrylGlobalFunctions.runTokenSelector({
+                    callback: async (tokens) => {
+                        if (tokens.length == 0) {
+                            //Nobody was selected
+                            startNewRound();
+                            return;
+                        }
+
+                        let currentCombatant = game.combat.combatant;
+                        let nextActor = tokens[0].actor;
+                        for (const turn of game.combat.turns) {
+                            let turnActor = await fromUuid(turn.actor.uuid);
+                            if (turnActor.uuid != nextActor.uuid)
+                                continue;
+
+                            await game.combat.update({ turn: game.combat.turns.findIndex(c => c.actor.uuid === turnActor.uuid) });
+                            await turnActor.update({ [`system.combat.timesActivatedThisRound`]: turnActor.system.combat.timesActivatedThisRound + 1 });
+                            onStartTurn();
+                        }
+
+                    },
+                    singleTarget: true,
+                    tokenFilter: (token) => token.actor.system.combat.timesActivatedThisRound < token.actor.system.combat.maxActivations,
+                    doRender: {
+                        activations: true,
+                    },
+                    dialogButtonText: "Next Combatant",
+                });
             });
         }
     });
@@ -336,58 +363,29 @@ Hooks.on('renderChatMessageHTML', async (message, html, context) => {
 
 //#region combatTurnChange
 
-Hooks.on("combatTurnChange", async (combat, prior, current) => {
+async function startNewRound() {
+    let combat = game.combat;
+    for (const turn of combat.turns) {
+        let turnActor = await fromUuid(turn.actor.uuid);
+        await turnActor.update({ [`system.combat.timesActivatedThisRound`]: 0 });
+    }
 
-    // if (!(current.round > prior.round || current.turn > prior.turn))
-    //     return;
+    //await combat.update({ round: combat.round + 1, turn: combat, tokenId: null });
 
-    // Ensure this is the *first* active GM client to prevent duplicates
-    // TODO: allow this to run even if there are no GMs
-    const primaryGM = game.users.find(u => u.isGM && u.active);
-    if (primaryGM.id !== game.user.id) return;
-
-    const activeCombatant = combat.combatant;
-    const actor = activeCombatant?.actor;
-
-    const endingCombatant = combat.turns[prior.turn];
-
-    if (endingCombatant) {
-        let flags = {
+    await ChatMessage.create({
+        content: `No combatant was selected, a new round has started!`,
+        flags: {
             vryl: {
-                selectedActorUuids: [endingCombatant.actor.uuid],
-                buttons: [],
+                buttons: ["finishTurn"],
             }
         }
-
-        let content = `${endingCombatant.name} is ending their turn!`;
-        const endingActor = await fromUuid(endingCombatant.actor.uuid);
-
-        let conditions = await endOfTurnConditions(endingActor, flags.vryl, combat, endingCombatant.token);
-        if (conditions && conditions != "")
-            content = "<br>" + conditions;
-
-        flags.vryl.buttons.push(`finishTurn`);
-
-        await ChatMessage.create({
-            content: content,
-            flags: flags,
-        });
-    }
-
-    // Wait for proceed button
-    combatManagerData.turnPromise = new Promise((resolve) => {
-        combatManagerData.resumeSignal = resolve;
     });
+}
 
-    await combatManagerData.turnPromise;
-    
-    
-    // Check if it's the start of the turn (ignores rewinding)
-    if (current.round > prior.round) {
-        await ChatMessage.create({
-            content: `A new round has started!`,
-        });
-    }
+async function onStartTurn() {
+    const combat = game.combat;
+    const activeCombatant = combat.combatant;
+    const actor = activeCombatant?.actor;
 
     if (actor) {
         let content = `It is now ${actor.name}'s turn!`;
@@ -411,7 +409,44 @@ Hooks.on("combatTurnChange", async (combat, prior, current) => {
             flags: flags,
         });
     }
-});
+}
+
+export async function onCombatTurnChange() {
+
+    const combat = game.combat;
+    // if (!(current.round > prior.round || current.turn > prior.turn))
+    //     return;
+
+    // Ensure this is the *first* active GM client to prevent duplicates
+    // TODO: allow this to run even if there are no GMs
+    // const primaryGM = game.users.find(u => u.isGM && u.active);
+    // if (primaryGM.id !== game.user.id) return;
+
+    const endingCombatant = combat.combatant;
+
+    if (endingCombatant) {
+        let flags = {
+            vryl: {
+                selectedActorUuids: [endingCombatant.actor.uuid],
+                buttons: [],
+            }
+        }
+
+        let content = `${endingCombatant.name} is ending their turn!`;
+        const endingActor = await fromUuid(endingCombatant.actor.uuid);
+
+        let conditions = await endOfTurnConditions(endingActor, flags.vryl, combat, endingCombatant.token);
+        if (conditions && conditions != "")
+            content = "<br>" + conditions;
+
+        flags.vryl.buttons.push(`finishTurn`);
+
+        await ChatMessage.create({
+            content: content,
+            flags: flags,
+        });
+    }
+}
 
 //#region End of turn
 
@@ -511,11 +546,11 @@ async function startOfTurnConditions(actor, flags, combat, token) {
         const compareActor = await fromUuid(compare.actor.uuid);
         let threatenedEffect = compareActor.effects.find(e => e.statuses.has('threatened'));
 
-        if(!threatenedEffect || !threatenedEffect.flags.vryl?.threatenedBy?.includes(actor.uuid))
+        if (!threatenedEffect || !threatenedEffect.flags.vryl?.threatenedBy?.includes(actor.uuid))
             continue;
 
         flags.buttons.push(`unthreaten ${actor.uuid} ${compareActor.uuid}|<b>${compareActor.name}</b>: Lose Threatened by <b>${actor.name}</b>`);
-        
+
     }
 
     return content;

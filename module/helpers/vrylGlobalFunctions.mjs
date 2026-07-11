@@ -9,8 +9,11 @@ export function initializeGlobals() {
             input.value = parseInt(input.value) + parseInt(amount);
             input.dispatchEvent(new Event('change'));
         },
-        runTokenSelector: async function ({ dialogButtonText = "Target", defaultSelectedActors = [], callback, userToken = null, range = null }) {
+        runTokenSelector: async function ({ dialogButtonText = "Target", defaultSelectedActors = [], callback, userToken = null, range = null, singleTarget = false, tokenFilter = null, doRender = {} }) {
             let allTokens = canvas.tokens.placeables.filter(token => token.visible);
+            if (tokenFilter)
+                allTokens = allTokens.filter(tokenFilter);
+
             let availableTokens = allTokens;
             if (!userToken)
                 userToken = canvas.tokens.controlled[0];
@@ -37,9 +40,10 @@ export function initializeGlobals() {
                     nonallies: [...availableTokens.filter(token => token.document.disposition != 1)],
                 },
                 selectedActors: [...defaultSelectedActors],
+                doRender: doRender,
             }
 
-            const path = `systems/vryl/templates/parts/combat/tokenSelector.hbs`;
+            const path = `systems/vryl/templates/menus/tokenSelector.hbs`;
             const template = await foundry.applications.handlebars.renderTemplate(path, context);
 
             let d = new Dialog({
@@ -64,13 +68,17 @@ export function initializeGlobals() {
                         });
 
                         button.addEventListener('click', async () => {
-                            const index = context.selectedActors.findIndex((a) => a == button.id);
-
-                            if (index > -1) {
-                                context.selectedActors.splice(index, 1); // 2nd parameter means remove one item only
-                            }
+                            if (singleTarget)
+                                context.selectedActors = [button.id];
                             else {
-                                context.selectedActors.push(button.id);
+                                const index = context.selectedActors.findIndex((a) => a == button.id);
+
+                                if (index > -1) {
+                                    context.selectedActors.splice(index, 1); // 2nd parameter means remove one item only
+                                }
+                                else {
+                                    context.selectedActors.push(button.id);
+                                }
                             }
 
                             d.data.content = (await foundry.applications.handlebars.renderTemplate(path, context));

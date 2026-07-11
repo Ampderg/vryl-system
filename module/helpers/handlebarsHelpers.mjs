@@ -1,6 +1,16 @@
 export class VrylHandlebarsHelpers {
     static registerHandlebarsHelpers() {
 
+        function getNestedProperty(obj, path) {
+            return path.split('.').reduce((accumulator, key) => {
+                return accumulator && accumulator[key] !== undefined ? accumulator[key] : undefined;
+            }, obj);
+        }
+
+        Handlebars.registerHelper('getGameVariable', function (variableName) {
+            return getNestedProperty(game, variableName);
+        });
+
         Handlebars.registerHelper("withIfExists", function (context, options) {
             // options.fn executes the code block inside {{#with}}...{{/with}}
             // Passing 'context' sets it as the 'this' value inside that block
@@ -12,8 +22,8 @@ export class VrylHandlebarsHelpers {
 
         //#region Loops
 
-        Handlebars.registerHelper('includes', function(array, value, options) {
-        // Ensure the array exists and is valid
+        Handlebars.registerHelper('includes', function (array, value, options) {
+            // Ensure the array exists and is valid
             return array.includes(value);
         });
 

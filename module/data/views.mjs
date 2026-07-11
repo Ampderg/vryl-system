@@ -56,6 +56,8 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
             expandItem: this._expandItem,
             useItemEffect: this._useItemEffect,
             useCombatAction: this._useCombatAction,
+
+            combatEndTurn: this._combatEndTurn,
         },
         // Custom property that's merged into `this.options`
         // dragDrop: [{ dragSelector: '.draggable', dropSelector: null }],
@@ -865,6 +867,10 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
         }
 
 
+    }
+
+    static async _combatEndTurn(event, target) {
+        CONFIG.combatManager.onCombatTurnChange();
     }
 
     //#endregion
