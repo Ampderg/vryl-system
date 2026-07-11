@@ -13,6 +13,8 @@ Hooks.on("combatStart", (combat) => {
             }
         }
     }
+
+    startNewRound();
 });
 
 Hooks.on("deleteCombat", (combat, options, userId) => {
@@ -350,7 +352,7 @@ Hooks.on('renderChatMessageHTML', async (message, html, context) => {
 
                     },
                     singleTarget: true,
-                    tokenFilter: (token) => token.actor.system.combat.timesActivatedThisRound < token.actor.system.combat.maxActivations,
+                    tokenFilter: (token) => game.combat.turns.filter(t => t.token.id == token.id).length > 0 &&(token.actor.system.combat.timesActivatedThisRound < token.actor.system.combat.maxActivations),
                     doRender: {
                         activations: true,
                     },

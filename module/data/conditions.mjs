@@ -262,7 +262,7 @@ You may choose to gain a stack of Prone as a free action on your turn.
             statuses: ["threatened"],
 
             name: "Threatened",
-            icon: "icons/svg/falling.svg",
+            icon: "icons/svg/tower-flag.svg",
             isCondition: false,
 
             sortingCategory: "Affliction",
