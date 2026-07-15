@@ -280,13 +280,13 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
         if (!options.targetUuids)
             options.targetUuids = [];
 
-        if (action.system.combatAction.usesCharges && options.spendCharge) {
-            if (action.system.combatAction.charges <= 0) {
-                ui.notifications.warn(`${action.name} has no charges remaining!`);
-                return;
-            }
-            action.update({ [`system.combatAction.charges`]: Math.max(0, action.system.combatAction.charges - 1) });
-        }
+        // if (action.system.combatAction.usesCharges && options.spendCharge) {
+        //     if (action.system.combatAction.charges <= 0) {
+        //         ui.notifications.warn(`${action.name} has no charges remaining!`);
+        //         return;
+        //     }
+        //     action.update({ [`system.combatAction.charges`]: Math.max(0, action.system.combatAction.charges - 1) });
+        // }
         flags.vryl.combatAction = {
             uuid: action.uuid,
             usedEffects: [],
@@ -295,7 +295,7 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
         }
 
         flags.vryl.combatAction.currentTargetUuids = flags.vryl.combatAction.targetUuids;
-        
+
         for (let i = 0; i < options.targetUuids.length; i++) {
             flags.vryl.combatAction.targetNames[i] = (await fromUuid(options.targetUuids[i])).name;
         }

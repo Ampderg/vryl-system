@@ -444,9 +444,14 @@ async function onStartTurn() {
         if (conditions && conditions != "")
             content += "<br>" + conditions;
 
-        if (actor.system.combat.guard.value > 0) {
-            flags.vryl.buttons.push("setguard 0");
+        //First turn
+        if(actor.system.combat.timesActivatedThisRound <= 0)
+        {
+            if (actor.system.combat.guard.value > 0) {
+                flags.vryl.buttons.push("setguard 0");
+            }
         }
+
         await ChatMessage.create({
             content: content,
             flags: flags,
