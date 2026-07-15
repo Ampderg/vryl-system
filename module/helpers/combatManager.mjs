@@ -77,6 +77,15 @@ Hooks.on('renderChatMessageHTML', async (message, html, context) => {
         }
     }
 
+    if(message.flags?.vryl?.combatAction?.crits ?? 0 > 0)
+    {
+        let crits = message.flags.vryl.combatAction.crits;
+        for(let i = 0; i < buttons.length; i++)
+        {
+            buttons[i] = buttons[i].replaceAll("[crits]", crits);
+        }
+    }
+
     function createButton(name, callback) {
         const button = document.createElement('button');
         button.classList.add("nolog");

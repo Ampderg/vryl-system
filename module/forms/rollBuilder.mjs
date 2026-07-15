@@ -295,7 +295,7 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
         }
 
         flags.vryl.combatAction.currentTargetUuids = flags.vryl.combatAction.targetUuids;
-
+        
         for (let i = 0; i < options.targetUuids.length; i++) {
             flags.vryl.combatAction.targetNames[i] = (await fromUuid(options.targetUuids[i])).name;
         }
@@ -336,6 +336,19 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
             await RollSidebar.setupMessageCombatAction(flags, CONFIG.ROLL_DATA.rollCombatActionSource, { targetUuids: CONFIG.ROLL_DATA.rollCombatActionTargetUuids, spendCharge: true });
             flags.vryl.combatAction.spentSuccesses = 0;
             flags.vryl.combatAction.totalSuccesses = roll._total;
+            
+            let crits = 0;
+            for (let term of roll.terms) {
+                if (term.results) {
+                    for (let result of term.results) {
+                        if (result.result >= term._faces)
+                            crits++;
+                    }
+                }
+            }
+            
+
+            flags.vryl.combatAction.crits = crits;
         }
 
         //AUTOMATION Disoriented
@@ -930,6 +943,9 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
                                     buttons: []
                                 }
                             }
+
+                            if(combatActionFlags)
+                                newMessageFlags.vryl.combatAction = combatActionFlags;
 
                             for(let chatButton of effect.chatButtons)
                             {

@@ -291,6 +291,46 @@ If you were Incapacitated but didn't run out of Willpower, you might gain an Asp
         },
     ];
 
+    const markColors = ["red", "orange", "green", "blue", "blue-yellow", "purple-pink"];
+
+    for(let i = 1; i <= markColors.length; i++)
+    {
+        let color = markColors[i-1];
+        CONFIG.statusEffects.push(
+            {
+                id: `mark${i}`,
+                statuses: [`mark${i}`],
+
+                name: `Mark ${i}`,
+                icon: `icons/magic/fire/dagger-rune-enchant-flame-strong-${color}.webp`,
+                isCondition: false,
+
+                sortingCategory: "Marks",
+                description:`A functionless status for tracking tokens & effects.`,
+            }
+        );
+    }
+
+    const conditionColors = ["red", "purple", "blue"];
+
+    for(let i = 1; i <= conditionColors.length; i++)
+    {
+        let color = conditionColors[i-1];
+        CONFIG.statusEffects.push(
+            {
+                id: `condition${i}`,
+                statuses: [`condition${i}`],
+
+                name: `Extra Condition ${i}`,
+                icon: `icons/magic/control/buff-flight-wings-runes-${color}.webp`,
+                isCondition: true,
+
+                sortingCategory: "GM Conditions",
+                description:`A custom condition for GM use.`,
+            }
+        );
+    }
+
     const sortingCategoryMap = {
         "Damage": 0,
         "Damage Manipulation": 1,
@@ -300,6 +340,8 @@ If you were Incapacitated but didn't run out of Willpower, you might gain an Asp
         "Action Economy": 50,
         "Willpower": 51,
         "Affliction": 1000,
+        "GM Conditions": 2000,
+        "Marks": 2001,
     }
 
     for(let status of CONFIG.statusEffects)
