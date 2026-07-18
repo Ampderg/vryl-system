@@ -103,7 +103,7 @@ export function initializeGlobals() {
         //Enrich status effects
         for (const condition of CONFIG.statusEffects) {
             //TODO: make this replace cleaner, make sure that the text isnt within html tags
-            text = text.replaceAll(`[${condition.name}]`, `<span class="clickable" title="${condition.description}">${condition.name}</span>`);
+            text = text.replaceAll(`[${condition.name}]`, `<span class="clickable" title="${condition.description.replaceAll('"', '\"')}">${condition.name}</span>`);
         }
 
         if (system?.combat?.damage)

@@ -57,11 +57,12 @@ function gainGuard(actor, guard) {
 
 Hooks.on('renderChatMessageHTML', async (message, html, context) => {
     //Render buttons from flavor
-    let selectedActors = message.flags.vryl?.rollCombatActionTargetUuids ?? message.flags.vryl?.selectedActorUuids ?? [];
+    let selectedActors = [];
 
     let buttons = message.flags?.vryl?.buttons ?? [];
 
     if (message.rolls?.length > 0) {
+        selectedActors = message.flags.vryl?.rollCombatActionTargetUuids ?? message.flags.vryl?.selectedActorUuids ?? [];
 
         if (message.flavor.toLowerCase().includes("damage")) {
             buttons.push(`damage ${Math.ceil(parseInt(message.content))}|Deal Damage`);
@@ -138,10 +139,26 @@ Hooks.on('renderChatMessageHTML', async (message, html, context) => {
         }
     }
 
+    function formatButtonAlias(target, buttonAlias, text)
+    {
+        if (buttonAlias)
+            return buttonAlias;
+            
+        buttonAlias = "";
+        if(target.length == 1)
+            buttonAlias += `<b>${target[0].name}</b>: `;
+        else if(target.length > 1)
+            buttonAlias += `<b>Multiple Targets</b>: `;
+
+        buttonAlias += text;
+
+        return buttonAlias;
+    }
+
     buttons.forEach(async b => {
         const elements = b.split("|");
         const tokens = elements[0].split(" ");
-        const command = tokens[0];
+        const command = tokens[0].toLowerCase();
         let buttonAlias = elements.length > 1 ? elements[1] : null;
 
         //#region Damage
@@ -152,8 +169,7 @@ Hooks.on('renderChatMessageHTML', async (message, html, context) => {
                 target = [tokens[2]];
 
             damage = Math.max(damage, 0);
-            if (!buttonAlias)
-                buttonAlias = `Deal ${damage} Damage`;
+            buttonAlias = formatButtonAlias(target, buttonAlias, `Deal ${damage} Damage`);
             createTargetedButton(buttonAlias, (actors) => {
                 let content = "";
                 actors.forEach(actor => {
@@ -232,23 +248,23 @@ Hooks.on('renderChatMessageHTML', async (message, html, context) => {
             //AUTOMATION Weakened
             let weakened = parseInt(tokens[1]);
             if (!buttonAlias)
-                buttonAlias = `Apply Weakened x${weakened}`;
+                buttonAlias = `Apply Weakened x${weakened} to this roll`;
             createButton(buttonAlias, () => {
                 let roll = parseInt(message.content);
                 message.update({ content: Math.max(Math.ceil(roll / 2), roll - weakened) });
                 message.update({ flavor: message.flavor + "<br>" + "Weakened x" + weakened })
             });
         }
-        else if (command == "addCondition") {
+        else if (command == "addcondition") {
             let effectId = tokens[1];
             let effectData = CONFIG.statusEffects.filter(e => e.id == effectId)[0];
             let stacksGained = parseInt(tokens[2]);
-            if (!buttonAlias)
-                buttonAlias = `Gain ${effectData.name} x${stacksGained}`;
-
             let target = selectedActors;
             if (tokens.length > 3)
                 target = [tokens[3]];
+
+            buttonAlias = formatButtonAlias(target, buttonAlias, `Apply ${effectData.name} x${stacksGained}`);
+           
 
             createTargetedButton(buttonAlias, async (actors) => {
                 let content = "";
@@ -271,16 +287,15 @@ Hooks.on('renderChatMessageHTML', async (message, html, context) => {
                 });
             }, target);
         }
-        else if (command == "loseCondition") {
+        else if (command == "losecondition") {
             let effectId = tokens[1];
             let effectData = CONFIG.statusEffects.filter(e => e.id == effectId)[0];
             let stacksLost = parseInt(tokens[2]);
-            if (!buttonAlias)
-                buttonAlias = `Lose ${effectData.name} x${stacksLost}`;
 
             let target = selectedActors;
             if (tokens.length > 3)
                 target = [tokens[3]];
+            buttonAlias = formatButtonAlias(target, buttonAlias, `Lose ${effectData.name} x${stacksLost}`);
 
             createTargetedButton(buttonAlias, (actors) => {
                 let content = "";
@@ -308,8 +323,7 @@ Hooks.on('renderChatMessageHTML', async (message, html, context) => {
             if (tokens.length > 2)
                 targetUuid = [tokens[2]];
 
-            if (!buttonAlias)
-                buttonAlias = `Threatened by <b>${sourceActor.name}</b>`;
+            buttonAlias = formatButtonAlias(target, buttonAlias, `Threatened by <b>${sourceActor.name}</b>`);
             createTargetedButton(buttonAlias, async (actors) => {
                 let content = "";
                 for (let actor of actors) {
@@ -342,8 +356,8 @@ Hooks.on('renderChatMessageHTML', async (message, html, context) => {
             if (tokens.length > 2)
                 targetUuid = [tokens[2]];
 
-            if (!buttonAlias)
-                buttonAlias = `Lose Threatened by <b>${sourceActor.name}</b>`;
+            buttonAlias = formatButtonAlias(targetUuid, buttonAlias, `Lose Threatened by <b>${sourceActor.name}</b>`);
+
             createTargetedButton(buttonAlias, (actors) => {
                 let content = "";
                 actors.forEach(actor => {
@@ -367,7 +381,7 @@ Hooks.on('renderChatMessageHTML', async (message, html, context) => {
                 });
             }, targetUuid);
         }
-        else if (command == "finishTurn") {
+        else if (command == "finishturn") {
             if (!buttonAlias)
                 buttonAlias = `Choose the next combatant to act`;
             createButton(buttonAlias, () => {
@@ -445,7 +459,7 @@ async function onStartTurn() {
             content += "<br>" + conditions;
 
         //First turn
-        if(actor.system.combat.timesActivatedThisRound <= 0)
+        if(actor.system.combat.timesActivatedThisRound <= 1)
         {
             if (actor.system.combat.guard.value > 0) {
                 flags.vryl.buttons.push("setguard 0");
