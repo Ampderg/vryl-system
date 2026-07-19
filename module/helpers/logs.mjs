@@ -282,6 +282,9 @@ export class VrylLogsHelpers {
 <button class="copy-roll-append full-width">Append Actors to Roll <i class="fa-regular fa-plus-square"></i></button>
 </details></div></div></div>`, "");
 
+        log = log.replaceAll(`<button class="clickable" id="combatEffectsButton">Open Effects</button>`, ``);
+
+        log = log.replaceAll(`<a class="inline`, `<b class="inline`).replaceAll(`</a>`, `</b>`);
         //trim html
         //log = log.replace("<b>", "**").replace("</b>", "**").replace("<i>", "*").replace("</i>", "*");
         // const log = originalMessages.map((m) => m.export()).join("<br><br>");

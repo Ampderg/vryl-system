@@ -155,7 +155,7 @@ Hooks.on('renderChatMessageHTML', async (message, html, context) => {
         return buttonAlias;
     }
 
-    buttons.forEach(async b => {
+    for(let b of buttons) {
         const elements = b.split("|");
         const tokens = elements[0].split(" ");
         const command = tokens[0].toLowerCase();
@@ -292,7 +292,7 @@ Hooks.on('renderChatMessageHTML', async (message, html, context) => {
                     stacks += stacksGained;
                     actorEffect.statusCounter.setValue(stacks);
 
-                    content += (content != "" ? "<br>" : "") + `${actor.name}'s has gained <b>${stacksGained}</b> stack${stacksGained != 1 ? "s" : ""} of <b>${effectData.name}</b>. <i>(x${stacks})</i>`;
+                    content += (content != "" ? "<br>" : "") + `${actor.name} has gained <b>${stacksGained}</b> stack${stacksGained != 1 ? "s" : ""} of <b>${effectData.name}</b>. <i>(x${stacks})</i>`;
                 }
                 ChatMessage.create({
                     content: content,
@@ -320,12 +320,26 @@ Hooks.on('renderChatMessageHTML', async (message, html, context) => {
                             actorEffect.delete();
                         else
                             actorEffect.statusCounter.setValue(stacks);
-                        content += (content != "" ? "<br>" : "") + `${actor.name}'s has lost <b>${stacksLost}</b> stack${stacksLost != 1 ? "s" : ""} of <b>${effectData.name}</b>. <i>(${stacks} Remaining)</i>`;
+                        content += (content != "" ? "<br>" : "") + `${actor.name} has lost <b>${stacksLost}</b> stack${stacksLost != 1 ? "s" : ""} of <b>${effectData.name}</b>. <i>(${stacks} Remaining)</i>`;
                     }
                 });
                 ChatMessage.create({
                     content: content,
                 });
+            }, target);
+        }
+        else if (command == "conditionsave") {
+
+            let target = selectedActors;
+            if (tokens.length >= 1)
+                target = [tokens[1]];
+
+            buttonAlias = await formatButtonAlias(target, buttonAlias, `Condition Save`);
+           
+            createTargetedButton(buttonAlias, async (actors) => {
+                for(let actor of actors) {
+                    CONFIG.ui.rollBuilder.populateConditionSave(actor)
+                }
             }, target);
         }
         else if (command == "threaten") {
@@ -427,7 +441,7 @@ Hooks.on('renderChatMessageHTML', async (message, html, context) => {
                 });
             });
         }
-    });
+    }
 });
 
 //#region combatTurnChange
@@ -512,6 +526,21 @@ export async function onCombatTurnChange() {
         let conditions = await endOfTurnConditions(endingActor, flags.vryl, combat, endingCombatant.token);
         if (conditions && conditions != "")
             content = "<br>" + conditions;
+
+        let conditionCount = 0;
+        for(let c of endingActor.statuses)
+        {
+            let conditionData = CONFIG.statusEffects.filter(e => e.id == c)[0];
+            if(conditionData)
+            {
+                if(conditionData.isCondition)
+                {
+                    conditionCount++;
+                }
+            }
+        }
+        if(conditionCount > 0)
+            flags.vryl.buttons.push(`conditionSave ${endingActor.uuid}`);
 
         flags.vryl.buttons.push(`finishTurn`);
 

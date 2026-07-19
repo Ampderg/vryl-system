@@ -1318,6 +1318,22 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
         actor.update({ [`system.willpower.level`]: newWillpower });
     }
 
+    static async populateConditionSave(actor) {
+        CONFIG.ui.rollBuilder.clearRoll(false);
+
+        let attribute = actor.system.willpower;
+        attribute.dataName = "willpower";
+        attribute.name = "Willpower";
+
+        await CONFIG.ui.rollBuilder.toggleAttribute(actor, attribute, true);
+
+        CONFIG.ui.rollBuilder.addAction(`no-willpower-spend`, actor, false);
+        CONFIG.ui.rollBuilder.addAction(`condition-save`, actor, false);
+
+        CONFIG.ui.rollBuilder.goToRollBuilder();
+        CONFIG.ui.rollBuilder.updateRollData();
+    }
+
     static async conditionSave(actor, msg) {
         const context = {
             successes: {
@@ -1367,7 +1383,7 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
                                     data.condition.delete();
                                 else
                                     data.condition.statusCounter.setValue(stacks);
-                                content += (content != "" ? "<br>" : "") + `${actor.name}'s has lost <b>${stacksLost}</b> stack${stacksLost != 1 ? "s" : ""} of <b>${data.conditionData.name}</b>. <i>(${stacks} Remaining)</i>`;
+                                content += (content != "" ? "<br>" : "") + `${actor.name} has lost <b>${stacksLost}</b> stack${stacksLost != 1 ? "s" : ""} of <b>${data.conditionData.name}</b>. <i>(${stacks} Remaining)</i>`;
                             }
                         });
                         ChatMessage.create({
