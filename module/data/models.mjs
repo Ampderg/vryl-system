@@ -60,6 +60,7 @@ class AttributeActorDataModel extends ActorDataModel {
     schema.xp = new NumberField({ required: true, initial: 200, min: 0 })
 
     schema.willpower = new SchemaField({
+      value: new NumberField({ }),
       level: new NumberField({ required: true, initial: 3, min: 0, max: game.settings.get(CONFIG.SystemId, 'max-willpower') }),
       max: new NumberField({ required: true, initial: 3, min: 0, max: game.settings.get(CONFIG.SystemId, 'max-willpower') }),
       bonusDice: new NumberField({ required: true, initial: 0 }),
@@ -92,14 +93,14 @@ export class CharacterActorDataModel extends AttributeActorDataModel {
 
     schema.combat = new SchemaField({
       hp: new SchemaField({
-        value: new NumberField({initial: 0}),
+        value: new NumberField({initial: 40}),
         min: new NumberField({initial: 0}),
-        max: new NumberField({initial: 30}),
+        max: new NumberField({initial: 40}),
       }),
       guard: new SchemaField({
         value: new NumberField({initial: 0}),
         min: new NumberField({initial: 0}),
-        max: new NumberField({initial: 30}),
+        max: new NumberField({initial: 40}),
       }),
       speed: new NumberField({ required: true, initial: 4 }),
       actionsPerTurn: new NumberField({ required: true, initial: game.settings.get(CONFIG.SystemId, 'default-actions-per-turn'), min: 0 }),

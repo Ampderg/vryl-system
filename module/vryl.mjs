@@ -21,6 +21,9 @@ import { VrylLogsHelpers } from "./helpers/logs.mjs";
 import { SubmenuAttributes } from "./forms/submenuAttributes.mjs";
 import { SubmenuEquipment } from "./forms/submenuEquipment.mjs";
 
+// Module Integration
+import "./externalModules/barBrawl.mjs";
+
 const collections = foundry.documents.collections;
 const sheets = foundry.appv1.sheets;
 

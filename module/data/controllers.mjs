@@ -79,6 +79,9 @@ export class VrylActor extends Actor {
                     systemData.combat.speed = Math.max(2, systemData.combat.speed);
                 }
             }
+
+            //BARS
+            systemData.willpower.value = systemData.willpower.level;
         }
     }
 

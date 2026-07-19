@@ -196,8 +196,12 @@ Hooks.on('renderChatMessageHTML', async (message, html, context) => {
         else if (command == "recover") {
             let hp = parseInt(tokens[1]);
             hp = Math.max(hp, 0);
-            if (!buttonAlias)
-                buttonAlias = `Recover ${hp} Hit Point${hp != 1 ? "s" : ""}`;
+
+            let target = selectedActors;
+            if (tokens.length > 2)
+                target = [tokens[2]];
+
+            buttonAlias = await formatButtonAlias(target, buttonAlias, `Recover ${hp} Hit Point${hp != 1 ? "s" : ""}`);
             createTargetedButton(buttonAlias, (actors) => {
                 let hp = parseInt(tokens[1]);
                 let content = "";
@@ -208,14 +212,18 @@ Hooks.on('renderChatMessageHTML', async (message, html, context) => {
                 ChatMessage.create({
                     content: content,
                 });
-            }, selectedActors);
+            }, target);
         }
         //#endregion
         //#region Guard
         else if (command == "addguard") {
             let guard = parseInt(tokens[1]);
-            if (!buttonAlias)
-                buttonAlias = `Gain ${guard} Guard`;
+
+            let target = selectedActors;
+            if (tokens.length > 2)
+                target = [tokens[2]];
+
+            buttonAlias = await formatButtonAlias(target, buttonAlias, `Gain ${guard} Guard`);
             createTargetedButton(buttonAlias, (actors) => {
                 let content = "";
                 actors.forEach(actor => {
@@ -225,12 +233,16 @@ Hooks.on('renderChatMessageHTML', async (message, html, context) => {
                 ChatMessage.create({
                     content: content,
                 });
-            }, selectedActors);
+            }, target);
         }
         else if (command == "setguard") {
             let guard = parseInt(tokens[1]);
-            if (!buttonAlias)
-                buttonAlias = `Set Guard to ${guard}`;
+            
+            let target = selectedActors;
+            if (tokens.length > 2)
+                target = [tokens[2]];
+
+            buttonAlias = await formatButtonAlias(target, buttonAlias, `Set Guard to ${guard}`);
             createTargetedButton(buttonAlias, (actors) => {
                 let content = "";
                 actors.forEach(actor => {
