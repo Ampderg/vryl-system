@@ -182,7 +182,7 @@ export class VrylActor extends Actor {
     }
 
     _updateRollActorData() {
-        const actorData = CONFIG.ROLL_DATA.rollActors.get(this.id);
+        const actorData = CONFIG.ROLL_DATA.rollActors.get(this.uuid);
 
         function updateLevels(attributeData, realAttribute) {
             if (!isNaN(attributeData.level))
@@ -210,10 +210,10 @@ export class VrylActor extends Actor {
         const overrides = {};
         this.statuses.clear();
 
-        CONFIG.ROLL_DATA.globalActions = CONFIG.ROLL_DATA.globalActions?.filter((a) => a.activeEffectAppliedByActor != this.id);
-        const actorData = CONFIG.ROLL_DATA.rollActors?.get(this.id);
+        CONFIG.ROLL_DATA.globalActions = CONFIG.ROLL_DATA.globalActions?.filter((a) => a.activeEffectAppliedByActor != this.uuid);
+        const actorData = CONFIG.ROLL_DATA.rollActors?.get(this.uuid);
         if (actorData)
-            actorData.actions?.filter((a) => a.activeEffectAppliedByActor != this.id);
+            actorData.actions?.filter((a) => a.activeEffectAppliedByActor != this.uuid);
 
         // Organize non-disabled effects by their application priority
         const allEffects = this.allApplicableEffects();
@@ -239,7 +239,7 @@ export class VrylActor extends Actor {
             if (appliedRollActions) {
                 for (const appliedRollAction of appliedRollActions) {
                     const actionArray = CONFIG.ui.rollBuilder.getActionArray(appliedRollAction.actor);
-                    appliedRollAction.activeEffectAppliedByActor = this.id;
+                    appliedRollAction.activeEffectAppliedByActor = this.uuid;
                     actionArray.push(appliedRollAction);
                 }
             }

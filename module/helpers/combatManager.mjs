@@ -139,14 +139,14 @@ Hooks.on('renderChatMessageHTML', async (message, html, context) => {
         }
     }
 
-    function formatButtonAlias(target, buttonAlias, text)
+    async function formatButtonAlias(target, buttonAlias, text)
     {
         if (buttonAlias)
             return buttonAlias;
             
         buttonAlias = "";
         if(target.length == 1)
-            buttonAlias += `<b>${target[0].name}</b>: `;
+            buttonAlias += `<b>${(await fromUuid(target[0])).name}</b>: `;
         else if(target.length > 1)
             buttonAlias += `<b>Multiple Targets</b>: `;
 
@@ -169,7 +169,7 @@ Hooks.on('renderChatMessageHTML', async (message, html, context) => {
                 target = [tokens[2]];
 
             damage = Math.max(damage, 0);
-            buttonAlias = formatButtonAlias(target, buttonAlias, `Deal ${damage} Damage`);
+            buttonAlias = await formatButtonAlias(target, buttonAlias, `Deal ${damage} Damage`);
             createTargetedButton(buttonAlias, (actors) => {
                 let content = "";
                 actors.forEach(actor => {
@@ -263,7 +263,7 @@ Hooks.on('renderChatMessageHTML', async (message, html, context) => {
             if (tokens.length > 3)
                 target = [tokens[3]];
 
-            buttonAlias = formatButtonAlias(target, buttonAlias, `Apply ${effectData.name} x${stacksGained}`);
+            buttonAlias = await formatButtonAlias(target, buttonAlias, `Apply ${effectData.name} x${stacksGained}`);
            
 
             createTargetedButton(buttonAlias, async (actors) => {
@@ -295,7 +295,7 @@ Hooks.on('renderChatMessageHTML', async (message, html, context) => {
             let target = selectedActors;
             if (tokens.length > 3)
                 target = [tokens[3]];
-            buttonAlias = formatButtonAlias(target, buttonAlias, `Lose ${effectData.name} x${stacksLost}`);
+            buttonAlias = await formatButtonAlias(target, buttonAlias, `Lose ${effectData.name} x${stacksLost}`);
 
             createTargetedButton(buttonAlias, (actors) => {
                 let content = "";
@@ -323,7 +323,7 @@ Hooks.on('renderChatMessageHTML', async (message, html, context) => {
             if (tokens.length > 2)
                 targetUuid = [tokens[2]];
 
-            buttonAlias = formatButtonAlias(target, buttonAlias, `Threatened by <b>${sourceActor.name}</b>`);
+            buttonAlias = await formatButtonAlias(target, buttonAlias, `Threatened by <b>${sourceActor.name}</b>`);
             createTargetedButton(buttonAlias, async (actors) => {
                 let content = "";
                 for (let actor of actors) {
@@ -356,7 +356,7 @@ Hooks.on('renderChatMessageHTML', async (message, html, context) => {
             if (tokens.length > 2)
                 targetUuid = [tokens[2]];
 
-            buttonAlias = formatButtonAlias(targetUuid, buttonAlias, `Lose Threatened by <b>${sourceActor.name}</b>`);
+            buttonAlias = await (targetUuid, buttonAlias, `Lose Threatened by <b>${sourceActor.name}</b>`);
 
             createTargetedButton(buttonAlias, (actors) => {
                 let content = "";

@@ -95,23 +95,15 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
             for (let element of attributeElements) {
                 element.classList.add("attribute-deletable");
                 if (element.classList.contains(`roll-action`))
-                    element.addEventListener('click', (event) => {
-                        let actorId;
-                        let attributeDataName;
-                        element.classList.forEach((c) => {
-                            if (c.startsWith(`actor-`)) actorId = c.replace(`actor-`, ``);
-                            else if (c.startsWith(`action-name-`)) attributeDataName = c.replace(`action-name-`, ``);
-                        })
-                        this.removeAction(attributeDataName, game.actors.get(actorId));
+                    element.addEventListener('click', async (event) => {
+                        let actor = await fromUuid(element.dataset.actorId);
+                        let actionDataName = element.dataset.actionDataName;
+                        this.removeAction(actionDataName, actor);
                     });
                 else
                     element.addEventListener('click', (event) => {
-                        let actorId;
-                        let attributeDataName;
-                        element.classList.forEach((c) => {
-                            if (c.startsWith(`actor-`)) actorId = c.replace(`actor-`, ``);
-                            else if (c.startsWith(`attribute-name-`)) attributeDataName = c.replace(`attribute-name-`, ``);
-                        })
+                        let actorId = element.dataset.actorId;
+                        let attributeDataName = element.dataset.attributeDataName;
                         this.deselectAttribute(actorId, attributeDataName);
                     });
             }
@@ -353,7 +345,7 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
 
         //AUTOMATION Disoriented
         for (const [key, actorData] of CONFIG.ROLL_DATA.rollActors) {
-            const actor = game.actors.get(key);
+            const actor = await fromUuid(key);
             let disorientedEffect = actor.effects.find(e => e.statuses.has('disoriented'));
             if (disorientedEffect) {
                 let stacks = disorientedEffect.flags.statuscounter.value ?? 1;
@@ -409,7 +401,7 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
 
         for (const [key, value] of rollData.rollActors) {
             rollActors[key] = value;
-            rollActors[key].id = key;
+            rollActors[key].uuid = key;
         }
 
         let html = await RollSidebar.renderRoll();
@@ -442,12 +434,12 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
         RollSidebar.goToChat(target);
     }
 
-    static getActor(actorData, fillTemplate = true) {
+    static async getActor(actorData, fillTemplate = true) {
         if (actorData.id != 'VRYL-TEMPLATE-ACTOR')
-            return game.actors.get(actorData.id);
+            return await fromUuid(actorData.uuid);
 
         if (!fillTemplate)
-            return actorData.id;
+            return actorData.uuid;
 
         const controlledActor = game.user.character ?? canvas.tokens.controlled[0]?.actor;
 
@@ -459,7 +451,7 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
     }
 
     static updateActorSelection(actor) {
-        const rollActor = CONFIG.ROLL_DATA.rollActors.get(actor._id);
+        const rollActor = CONFIG.ROLL_DATA.rollActors.get(actor.uuid);
         const attributesArray = Object.entries(actor.system.attributes);
         for (const a of rollActor.attributes) {
             const filtered = attributesArray.filter((b) => b[0] == a.dataName);
@@ -477,7 +469,7 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
 
         let copyButton = html.querySelector(`.copy-roll-replace`);
         if (copyButton) {
-            copyButton.addEventListener('click', function () {
+            copyButton.addEventListener('click', async function () {
                 const flags = message.flags.vryl;
                 CONFIG.ROLL_DATA = structuredClone(flags.rollData);
                 const rollActors = Object.entries(flags.rollActors);
@@ -485,10 +477,10 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
                 for (const [key, value] of rollActors) {
                     let actorData = structuredClone(value);
 
-                    actorData.actor = RollSidebar.getActor(actorData);
+                    actorData.actor = await RollSidebar.getActor(actorData);
 
-                    CONFIG.ROLL_DATA.rollActors.set(actorData.actor.id, actorData);
-                    if (actorData.actor.id != key) updateActorSelection(actorData.actor);
+                    CONFIG.ROLL_DATA.rollActors.set(actorData.actor.uuid, actorData);
+                    if (actorData.actor.uuid != key) updateActorSelection(actorData.actor);
                 }
 
                 RollSidebar.updateRollData();
@@ -497,7 +489,7 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
         }
         let appendButton = html.querySelector(`.copy-roll-append`);
         if (appendButton) {
-            appendButton.addEventListener('click', function () {
+            appendButton.addEventListener('click', async function () {
                 const flags = message.flags.vryl;
                 const rollActors = Object.entries(flags.rollActors);
 
@@ -515,10 +507,10 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
 
                     currentData.willpower = actorData.willpower ?? oldData.willpower;
 
-                    currentData.actor = RollSidebar.getActor(actorData);
+                    currentData.actor = await RollSidebar.getActor(actorData);
 
-                    CONFIG.ROLL_DATA.rollActors.set(actorData.actor.id, currentData);
-                    if (actorData.actor.id != key) RollSidebar.updateActorSelection(actorData.actor);
+                    CONFIG.ROLL_DATA.rollActors.set(actorData.actor.uuid, currentData);
+                    if (actorData.actor.uuid != key) RollSidebar.updateActorSelection(actorData.actor);
                 }
 
                 RollSidebar.updateRollData();
@@ -561,8 +553,8 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
     //#region Attribute Selection
 
     static populateRollActor(actor) {
-        if (!CONFIG.ROLL_DATA.rollActors.has(actor.id))
-            CONFIG.ROLL_DATA.rollActors.set(actor.id, {
+        if (!CONFIG.ROLL_DATA.rollActors.has(actor.uuid))
+            CONFIG.ROLL_DATA.rollActors.set(actor.uuid, {
                 actor: actor,
                 attributes: []
             });
@@ -573,18 +565,18 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
     }
 
     static async toggleWillpower(actor, render = true) {
-        const actorData = rollActors.get(actor.id);
+        const actorData = rollActors.get(actor.uuid);
         if (!actorData || !actorData.willpower)
             await this.selectAttribute(actor, actor.system.willpower, render);
         else
-            await this.deselectAttribute(actor.id, 'willpower', render);
+            await this.deselectAttribute(actor.uuid, 'willpower', render);
     }
 
     static async toggleAttribute(actor, attribute, render = true) {
         this.populateRollActor(actor);
 
         const rollActors = CONFIG.ROLL_DATA.rollActors;
-        const actorData = rollActors.get(actor.id);
+        const actorData = rollActors.get(actor.uuid);
 
         let doSelect = false;
         if (attribute.dataName == 'willpower')
@@ -595,14 +587,14 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
         if (doSelect)
             await this.selectAttribute(actor, attribute, render);
         else
-            await this.deselectAttribute(actor.id, attribute.dataName, render);
+            await this.deselectAttribute(actor.uuid, attribute.dataName, render);
     }
 
     static async selectAttribute(actor, attribute, render = true) {
         this.populateRollActor(actor);
 
         const rollActors = CONFIG.ROLL_DATA.rollActors;
-        const actorData = rollActors.get(actor.id);
+        const actorData = rollActors.get(actor.uuid);
 
         //Deselect matching types
         if (attribute.dataName == 'willpower') {
@@ -784,7 +776,7 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
             //Combine all renderings
             if (actorContent != "") {
                 content += `
-                <div class="roll-builder-actor actor-${key}"><div class="roll-builder-actor-inner">
+                <div class="roll-builder-actor" data-actor-id="${key}"><div class="roll-builder-actor-inner">
                 <h5 class="flex-group-center">${actorData.actor.name}</h5>
                 ${actorContent}
                 </div></div>`;
@@ -1182,7 +1174,7 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
         if (actor && actor != 'global' && actor._id) {
             this.populateRollActor(actor);
 
-            const actorData = CONFIG.ROLL_DATA.rollActors.get(actor._id);
+            const actorData = CONFIG.ROLL_DATA.rollActors.get(actor.uuid);
             if (!actorData.actions)
                 actorData.actions = [];
 
@@ -1282,7 +1274,7 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
         const rollData = CONFIG.ROLL_DATA;
 
         for (const [key, actorData] of rollData.rollActors) {
-            const actor = game.actors.get(key);
+            const actor = await fromUuid(key);
 
             if (actorData.actions && actorData.actions.length > 0) {
 
@@ -1457,15 +1449,17 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
     static async openTemplateActor(event, target) {
 
         let data = {
-            id: "VRYL-TEMPLATE-ACTOR",
+            uuid: "VRYL-TEMPLATE-ACTOR",
             name: "Template",
             system: {
                 attributes: {},
                 isTemplateActor: true,
             },
         }
+        data.id = data.uuid;
         data._id = data.id;
         data.actor = {};
+        data.actor.uuid = data.uuid;
         data.actor.id = data.id;
 
         const defaultAttributes = game.settings.get(CONFIG.SystemId, 'attributes');
@@ -1510,13 +1504,13 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
         let element = menu.element;
         element.querySelectorAll(`.form-footer`)[0].remove();
 
-        VrylActorSheet.renderSelectedAttributes(element, data.id);
+        VrylActorSheet.renderSelectedAttributes(element, data.uuid);
 
         windowHooks.push({
             name: `vryl-rollDataUpdated`,
             id: Hooks.on(`vryl-rollDataUpdated`, () => {
                 console.log("Roll data updated for actor: " + data.id);
-                VrylActorSheet.renderSelectedAttributes(element, data.id);
+                VrylActorSheet.renderSelectedAttributes(element, data.uuid);
             })
         });
 
@@ -1527,7 +1521,7 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
 
             CONFIG.ui.rollBuilder.goToRollBuilder();
             CONFIG.ui.rollBuilder.updateRollData();
-            VrylActorSheet.renderSelectedAttributes(element, data.id);
+            VrylActorSheet.renderSelectedAttributes(element, data.uuid);
         }
 
         const clickable = element.querySelectorAll('.attribute-name:not(.listeners_bound)');
@@ -1601,14 +1595,11 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
             }
             else {
                 this.populateRollActor(actor);
-                const actorData = CONFIG.ROLL_DATA.rollActors.get(actor._id);
+                const actorData = CONFIG.ROLL_DATA.rollActors.get(actor.uuid);
                 activeActions = actorData.action;
             }
 
-            let clickedActionName;
-            c.classList.forEach((c) => {
-                if (c.startsWith(`action-name-`)) clickedActionName = c.replace(`action-name-`, ``);
-            })
+            let clickedActionName = c.dataset.actionDataName;
             return { name: clickedActionName, present: (activeActions.filter((a) => a.action == clickedActionName).length > 0) };
         }
 
@@ -1654,7 +1645,7 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
         CONFIG.ROLL_DATA.rollItemEffects = [];
 
         for (const [actorId, actorData] of CONFIG.ROLL_DATA.rollActors) {
-            if (actorData.actor.id == 'VRYL-TEMPLATE-ACTOR')
+            if (actorId == 'VRYL-TEMPLATE-ACTOR')
                 continue;
 
             for (const effect of actorData.actor.appliedEffects) {
@@ -1722,7 +1713,7 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
 
         for (const [key, value] of rollData.rollActors) {
             rollActors[key] = value;
-            rollActors[key].id = key;
+            rollActors[key].uuid = key;
         }
 
         const flags = {
@@ -1737,7 +1728,7 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
         return json;
     }
 
-    static deserializeFromJson(json, fillTemplate = true, fromActor = undefined) {
+    static async deserializeFromJson(json, fillTemplate = true, fromActor = undefined) {
         const flags = JSON.parse(json).vryl;
         CONFIG.ROLL_DATA = structuredClone(flags.rollData);
         const rollActors = Object.entries(flags.rollActors);
@@ -1745,14 +1736,14 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
         for (const [key, value] of rollActors) {
             let actorData = structuredClone(value);
             if (!fillTemplate && key == "VRYL-TEMPLATE-ACTOR") {
-                CONFIG.ROLL_DATA.rollActors.set(actorData.actor.id, actorData);
+                CONFIG.ROLL_DATA.rollActors.set("VRYL-TEMPLATE-ACTOR", actorData);
                 continue;
             }
 
-            actorData.actor = fromActor ?? RollSidebar.getActor(actorData);
-
-            CONFIG.ROLL_DATA.rollActors.set(actorData.actor.id, actorData);
-            if (actorData.actor.id != key) RollSidebar.updateActorSelection(actorData.actor);
+            actorData.actor = fromActor ?? (await RollSidebar.getActor(actorData));
+            let uuid = actorData.actor.uuid ?? `Actor.${actorData.actor.id}`;
+            CONFIG.ROLL_DATA.rollActors.set(uuid, actorData);
+            if (uuid != key) RollSidebar.updateActorSelection(actorData.actor);
         }
 
         RollSidebar.updateRollData();

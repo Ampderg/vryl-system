@@ -14,7 +14,9 @@
                 <div id="{{dataName}}" class="attribute flexrow fitheight {{#if indexOdd}}odd-row{{/if}}">
                     <span data-action="attribute-roll" id="{{dataName}}"
                         class="fitflex attribute-name clickable roll attribute-list 
-                        actor-{{../../../actor.id}} attribute-type-{{../../dataName}} attribute-category-{{../dataName}} attribute-name-{{dataName}}">
+                        attribute-type-{{../../dataName}} attribute-category-{{../dataName}}"
+                        data-actor-id="{{../../../actor.uuid}}" data-attribute-data-name="{{dataName}}"
+                        >
                         {{name}}
                     </span>
                     {{#unless ../../../system.isTemplateActor}}

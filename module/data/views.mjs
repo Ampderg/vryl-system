@@ -10,7 +10,7 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
 
         Hooks.on(`vryl-rollDataUpdated`, () => {
             console.log("Roll data updated for actor: " + this.document.id);
-            VrylActorSheet.renderSelectedAttributes(this.element, this.document.id);
+            VrylActorSheet.renderSelectedAttributes(this.element, this.document.uuid);
         });
 
         Hooks.on("combatStart", (combat) => {
@@ -208,7 +208,7 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
 
         }
 
-        VrylActorSheet.renderSelectedAttributes(this.element, this.document.id);
+        VrylActorSheet.renderSelectedAttributes(this.element, this.document.uuid);
 
         const itemRows = this.element.querySelectorAll('.itemCard[data-document-class][data-item-id]');
         for (const docRow of itemRows) {
@@ -431,7 +431,7 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
     static async renderSelectedAttributes(element, actorId) {
         if (!element) return;
 
-        let allSelected = element.querySelectorAll(`.attribute-name.selected.actor-${actorId}.attribute-name, .willpower-roll`);
+        let allSelected = element.querySelectorAll(`.attribute-name.selected.attribute-name[data-actor-id="${actorId}"], .willpower-roll`);
         for (const element of allSelected) {
             element.classList.remove(`selected`);
         }
@@ -441,7 +441,7 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
         const selectedAttributes = actor.attributes;
 
         for (const a of selectedAttributes) {
-            let selectedElements = element.querySelectorAll(`.attribute-name.actor-${actorId}.attribute-name-${a.dataName}`);
+            let selectedElements = element.querySelectorAll(`.attribute-name[data-attribute-data-name="${a.dataName}"][data-actor-id="${actorId}"]`);
 
             for (let a of selectedElements) {
                 a.classList.add(`selected`);
@@ -460,7 +460,7 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
 
         CONFIG.ui.rollBuilder.goToRollBuilder();
         CONFIG.ui.rollBuilder.updateRollData();
-        VrylActorSheet.renderSelectedAttributes(this.element, this.document.id);
+        VrylActorSheet.renderSelectedAttributes(this.element, this.document.uuid);
     }
 
 
@@ -579,7 +579,7 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
     static async _willpowerSpend(event, target) {
         CONFIG.ui.rollBuilder.populateRollActor(this.document);
 
-        let rollActor = CONFIG.ROLL_DATA.rollActors.get(this.document.id);
+        let rollActor = CONFIG.ROLL_DATA.rollActors.get(this.document.uuid);
         if (!rollActor.willpower)
             rollActor.willpower = {};
 
@@ -652,7 +652,7 @@ export class VrylActorSheet extends api.HandlebarsApplicationMixin(sheets.ActorS
 
         CONFIG.ui.rollBuilder.goToRollBuilder();
 
-        await VrylActorSheet.renderSelectedAttributes(this.element, this.document.id);
+        await VrylActorSheet.renderSelectedAttributes(this.element, this.document.uuid);
     }
 
     static async _editWillpowerPips(event, target) {
