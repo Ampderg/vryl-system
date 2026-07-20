@@ -347,6 +347,12 @@ export class VrylItem extends Item {
         {
             for(let itemEffect of item.effects)
             {
+                if(itemEffect.disabled)
+                    continue;
+
+                if(itemEffect.flags.vryl?.isInstant && !itemEffect.flags.vryl?.isInstantApplied)
+                    continue;
+
                 let addedCombatActionEffects = itemEffect.flags.vryl?.addedCombatActionEffects;
                 if(!addedCombatActionEffects)
                     continue;

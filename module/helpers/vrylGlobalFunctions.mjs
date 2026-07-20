@@ -17,7 +17,14 @@ export function initializeGlobals() {
             input.dispatchEvent(new Event('change'));
         },
         runTokenSelector: async function ({ dialogButtonText = "Target", defaultSelectedActors = [], callback, userToken = null, range = null, singleTarget = false, tokenFilter = null, doRender = {} }) {
-            let allTokens = canvas.tokens.placeables.filter(token => token.visible);
+            let allTokens = canvas.tokens.placeables;
+            if(game.combat && game.combat.turns.length > 0)
+            {
+                allTokens = allTokens.filter(token => game.combat.turns.filter(e => token.document.uuid == e.token.uuid).length > 0);
+            }
+            
+            allTokens = allTokens.filter(token => token.visible);
+
             if (tokenFilter)
                 allTokens = allTokens.filter(tokenFilter);
 

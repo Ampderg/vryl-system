@@ -4,7 +4,7 @@
         {{!-- <b>{{@key}}</b> --}}
         {{#each group as |token|}}
         <div style="margin-right:auto;" class="flexrow flex-group-left centervert">
-            <img src="{{actor.img}}" width="40px" style="margin-right:1em">
+            <img src="{{actor.img}}" width="30px" style="margin-right:1em;min-width:30px;">
             <b class="clickable {{#if (includes ../../selectedActors token.id)}}selected{{/if}}"
                 data-action="selectToken" id="{{token.id}}">
                 {{token.name}}</b>

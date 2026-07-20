@@ -280,8 +280,30 @@ Hooks.on('renderChatMessageHTML', async (message, html, context) => {
                 });
             }, target);
         }
+        else if (command == "loseguard") {
+            let guardLost = parseInt(tokens[1]);
+            
+            let target = selectedActors;
+            if (tokens.length > 2)
+                target = [tokens[2]];
+
+            buttonAlias = await formatButtonAlias(target, buttonAlias, `Lose ${guardLost} Guard`);
+            createTargetedButton(buttonAlias, (actors) => {
+                let content = "";
+                actors.forEach(actor => {
+                    let newGuard = Math.max(0, actor.system.combat.guard.value - guardLost);
+                    
+                    content += (content != "" ? "<br>" : "") + `${actor.name} lost <b>${guardLost} Guard</b>! <i>(${newGuard})</i>`;
+                    
+                    actor.update({ [`system.combat.guard.value`]: newGuard });
+                });
+                createChatMessageFromButton({
+                    content: content,
+                });
+            }, target);
+        }
         else if (command == "setguard") {
-            let setGuardString = parseInt(tokens[1]);
+            let setGuardString = tokens[1];
 
             let target = selectedActors;
             if (tokens.length > 2)
@@ -293,8 +315,8 @@ Hooks.on('renderChatMessageHTML', async (message, html, context) => {
                 actors.forEach(actor => {
                     let currentGuard = actor.system.combat.guard.value;
                     let guardSet = getModifiedValue(setGuardString, currentGuard);
-                    content += (content != "" ? "<br>" : "") + `${actor.name}'s <b>Guard</b> has been set to <b>${guard}</b>.`;
-                    actor.update({ [`system.combat.guard.value`]: guard });
+                    content += (content != "" ? "<br>" : "") + `${actor.name}'s <b>Guard</b> has been set to <b>${guardSet}</b>.`;
+                    actor.update({ [`system.combat.guard.value`]: guardSet });
                 });
                 createChatMessageFromButton({
                     content: content,

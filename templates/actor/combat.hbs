@@ -8,6 +8,8 @@
         <div class="flexrow" style="gap:0.5em;">
             <button data-action="combatEndTurn" {{#unless (eq (getGameVariable "combat.combatant.actor.uuid") actor.uuid)}}disabled{{/unless}}>
                 End Turn</button>
+            <button data-action="combatEnterWater">
+                Enter Water</button>
         </div>
     </div>
     {{/if}}
