@@ -1,5 +1,12 @@
 export function initializeGlobals() {
     game.vrylGlobalFunctions = {
+        markdownToHtml: function(markdownText) {
+            let html = markdownText;
+            html = html.replaceAll(/\*\*\*(.*?)\*\*\*/g, `<b><i>$1</i></b>`);
+            html = html.replaceAll(/\*\*(.*?)\*\*/g, `<b>$1</b>`);
+            html = html.replaceAll(/\*(.*?)\*/g, `<i>$1</i>`);
+            return html;
+        },
         adjustNumberStepValue: function (element, amount, childrenDeep = 1) {
             let parent = element;
             for (let i = 0; i < childrenDeep; i++)
@@ -126,4 +133,5 @@ export function initializeGlobals() {
 
         return text;
     }
+    
 }

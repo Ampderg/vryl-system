@@ -342,19 +342,19 @@ export class VrylItem extends Item {
                 break;
             case "encounter":
                 apString += "<i class='fas fa-arrows-rotate'></i>";
-                if(itemData.system.combatAction.charges == 0)
-                {
-                    apString += `<i class='fa-standard fa-square-xmark'></i>`;
-                }
-                else if(itemData.system.combatAction.charges <= 6)
-                {
-                    const numWords = ["", "one", "two", "three", "four", "five", "six"];
-                    apString += `<i class='fa-standard fa-dice-${numWords[itemData.system.combatAction.charges]}'></i>`;
-                }
-                else
-                {
-                    apString += `<i class='fa-standard fa-square fa-stack-2x"></i><span class="fa-stack-1x number-overlay">${itemData.system.combatAction.charges}</span>`;
-                }
+                // if(itemData.system.combatAction.charges == 0)
+                // {
+                //     apString += `<i class='fa-standard fa-square-xmark'></i>`;
+                // }
+                // else if(itemData.system.combatAction.charges <= 6)
+                // {
+                //     const numWords = ["", "one", "two", "three", "four", "five", "six"];
+                //     apString += `<i class='fa-standard fa-dice-${numWords[itemData.system.combatAction.charges]}'></i>`;
+                // }
+                // else
+                // {
+                //     apString += `<i class='fa-standard fa-square fa-stack-2x"></i><span class="fa-stack-1x number-overlay">${itemData.system.combatAction.charges}</span>`;
+                // }
 
                 apString += "&nbsp;";
                 break;

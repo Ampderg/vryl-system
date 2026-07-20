@@ -78,11 +78,9 @@ Hooks.on('renderChatMessageHTML', async (message, html, context) => {
         }
     }
 
-    if(message.flags?.vryl?.combatAction?.crits ?? 0 > 0)
-    {
+    if (message.flags?.vryl?.combatAction?.crits ?? 0 > 0) {
         let crits = message.flags.vryl.combatAction.crits;
-        for(let i = 0; i < buttons.length; i++)
-        {
+        for (let i = 0; i < buttons.length; i++) {
             buttons[i] = buttons[i].replaceAll("[crits]", crits);
         }
     }
@@ -139,15 +137,14 @@ Hooks.on('renderChatMessageHTML', async (message, html, context) => {
         }
     }
 
-    async function formatButtonAlias(target, buttonAlias, text)
-    {
+    async function formatButtonAlias(target, buttonAlias, text) {
         if (buttonAlias)
             return buttonAlias;
-            
+
         buttonAlias = "";
-        if(target.length == 1)
+        if (target.length == 1)
             buttonAlias += `<b>${(await fromUuid(target[0])).name}</b>: `;
-        else if(target.length > 1)
+        else if (target.length > 1)
             buttonAlias += `<b>Multiple Targets</b>: `;
 
         buttonAlias += text;
@@ -155,7 +152,7 @@ Hooks.on('renderChatMessageHTML', async (message, html, context) => {
         return buttonAlias;
     }
 
-    for(let b of buttons) {
+    for (let b of buttons) {
         const elements = b.split("|");
         const tokens = elements[0].split(" ");
         const command = tokens[0].toLowerCase();
@@ -237,7 +234,7 @@ Hooks.on('renderChatMessageHTML', async (message, html, context) => {
         }
         else if (command == "setguard") {
             let guard = parseInt(tokens[1]);
-            
+
             let target = selectedActors;
             if (tokens.length > 2)
                 target = [tokens[2]];
@@ -276,11 +273,11 @@ Hooks.on('renderChatMessageHTML', async (message, html, context) => {
                 target = [tokens[3]];
 
             buttonAlias = await formatButtonAlias(target, buttonAlias, `Apply ${effectData.name} x${stacksGained}`);
-           
+
 
             createTargetedButton(buttonAlias, async (actors) => {
                 let content = "";
-                for(let actor of actors) {
+                for (let actor of actors) {
                     let actorEffect = actor.effects.find(e => e.statuses.has(effectId));
                     let stacks = actorEffect?.flags?.statuscounter?.value ?? 0;
 
@@ -335,9 +332,9 @@ Hooks.on('renderChatMessageHTML', async (message, html, context) => {
                 target = [tokens[1]];
 
             buttonAlias = await formatButtonAlias(target, buttonAlias, `Condition Save`);
-           
+
             createTargetedButton(buttonAlias, async (actors) => {
-                for(let actor of actors) {
+                for (let actor of actors) {
                     CONFIG.ui.rollBuilder.populateConditionSave(actor)
                 }
             }, target);
@@ -441,6 +438,53 @@ Hooks.on('renderChatMessageHTML', async (message, html, context) => {
                 });
             });
         }
+        else if (command == "writesummary") {
+
+            if(!buttonAlias)
+                buttonAlias = `Write Summary`;
+
+            createButton(buttonAlias, async () => {
+
+                const path = `systems/vryl/templates/menus/write-summary.hbs`;
+                const context = {
+                    currentSummary: message.flags.vryl?.messageSummary ?? "",
+                }
+                const template = await foundry.applications.handlebars.renderTemplate(path, context);
+
+                let d = new Dialog({
+                    title: "Write Summary",
+                    content: template,
+                    buttons: {
+                        one: {
+                            label: "Save",
+                            callback: (dHtml) => {
+                                let proseMirror = dHtml.find(`#summary`)[0];
+                                let summary = proseMirror.value;
+                                summary = game.vrylGlobalFunctions.markdownToHtml(summary);
+                                message.setFlag("vryl", "messageSummary", summary);
+                                //message.update();
+                            },
+                        }
+                    },
+                    render: async (html) => {
+                    },
+                    close: (html) => {
+                    }
+                }, {
+                left: window.innerWidth - 300 - 450,
+                height: 350,
+                });
+
+                d.render(true);
+
+            });
+
+            if (message.flags.vryl?.messageSummary) {
+                let summaryHtml = document.createElement('span');
+                summaryHtml.innerHTML = `<br>${message.flags.vryl.messageSummary}`
+                html.appendChild(summaryHtml);
+            }
+        }
     }
 });
 
@@ -453,6 +497,11 @@ async function startNewRound() {
         await turnActor.update({ [`system.combat.timesActivatedThisRound`]: 0 });
     }
 
+    let combatRound = combat.flags.vryl?.combatRound ?? 0;
+    combatRound++;
+
+    await combat.setFlag("vryl", "combatRound", combatRound);
+
     //await combat.update({ round: combat.round + 1, turn: combat, tokenId: null });
 
     await ChatMessage.create({
@@ -460,6 +509,7 @@ async function startNewRound() {
         flags: {
             vryl: {
                 buttons: ["finishTurn"],
+                newCombatRound: combatRound,
             }
         }
     });
@@ -477,6 +527,7 @@ async function onStartTurn() {
             vryl: {
                 selectedActorUuids: [actor.uuid],
                 buttons: [],
+                startOfCombatTurn: true,
             }
         };
 
@@ -485,8 +536,7 @@ async function onStartTurn() {
             content += "<br>" + conditions;
 
         //First turn
-        if(actor.system.combat.timesActivatedThisRound <= 1)
-        {
+        if (actor.system.combat.timesActivatedThisRound <= 1) {
             if (actor.system.combat.guard.value > 0) {
                 flags.vryl.buttons.push("setguard 0");
             }
@@ -517,6 +567,7 @@ export async function onCombatTurnChange() {
             vryl: {
                 selectedActorUuids: [endingCombatant.actor.uuid],
                 buttons: [],
+                endOfCombatTurn: true,
             }
         }
 
@@ -528,21 +579,19 @@ export async function onCombatTurnChange() {
             content = "<br>" + conditions;
 
         let conditionCount = 0;
-        for(let c of endingActor.statuses)
-        {
+        for (let c of endingActor.statuses) {
             let conditionData = CONFIG.statusEffects.filter(e => e.id == c)[0];
-            if(conditionData)
-            {
-                if(conditionData.isCondition)
-                {
+            if (conditionData) {
+                if (conditionData.isCondition) {
                     conditionCount++;
                 }
             }
         }
-        if(conditionCount > 0)
+        if (conditionCount > 0)
             flags.vryl.buttons.push(`conditionSave ${endingActor.uuid}`);
 
         flags.vryl.buttons.push(`finishTurn`);
+        flags.vryl.buttons.push(`writeSummary|<b>${endingActor.name}</b>: Write Turn Summary`);
 
         await ChatMessage.create({
             content: content,
