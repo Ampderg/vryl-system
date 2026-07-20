@@ -65,16 +65,16 @@ Hooks.on('renderChatMessageHTML', async (message, html, context) => {
         selectedActors = message.flags.vryl?.rollCombatActionTargetUuids ?? message.flags.vryl?.selectedActorUuids ?? [];
 
         if (message.flavor.toLowerCase().includes("damage")) {
-            buttons.push(`damage ${Math.ceil(parseInt(message.content))}|Deal Damage`);
-            buttons.push(`damage ${Math.ceil(parseInt(message.content) * 2)}|Deal Double Damage`);
-            buttons.push(`damage ${Math.ceil(parseInt(message.content) * 0.5)}|Deal Half Damage`);
+            buttons.push(`damage ${Math.ceil(parseInt(message.content))}|alias "Deal Damage"`);
+            buttons.push(`damage ${Math.ceil(parseInt(message.content) * 2)}|alias "Deal Double Damage"`);
+            buttons.push(`damage ${Math.ceil(parseInt(message.content) * 0.5)}|alias "Deal Half Damage"`);
         }
         if (message.flavor.toLowerCase().includes("recover")) {
-            buttons.push(`recover ${Math.ceil(parseInt(message.content))}|Recover Hit Points`);
+            buttons.push(`recover ${Math.ceil(parseInt(message.content))}|alias "Recover Hit Points"`);
         }
         if (message.flavor.toLowerCase().includes("guard")) {
-            buttons.push(`addguard ${Math.ceil(parseInt(message.content))}|Gain Guard`);
-            buttons.push(`addguard ${Math.ceil(parseInt(message.content) * 2)}|Gain Double Guard`);
+            buttons.push(`addguard ${Math.ceil(parseInt(message.content))}|alias "Gain Guard"`);
+            buttons.push(`addguard ${Math.ceil(parseInt(message.content) * 2)}|alias "Gain Double Guard"`);
         }
     }
 
@@ -154,9 +154,36 @@ Hooks.on('renderChatMessageHTML', async (message, html, context) => {
 
     for (let b of buttons) {
         const elements = b.split("|");
-        const tokens = elements[0].split(" ");
+        let tokens = elements[0].match(/"[^"]+"|[^\s]+/g);
+        tokens = tokens.map(token => token.replace(/^"|"$/g, ''));
         const command = tokens[0].toLowerCase();
-        let buttonAlias = elements.length > 1 ? elements[1] : null;
+
+        let options = {}
+        let buttonAlias = null;
+        for (let i = 1; i < elements.length; i++) {
+            let element = elements[i];
+            let elementTokens = element.match(/"[^"]+"|[^\s]+/g);
+            elementTokens = elementTokens.map(token => token.replace(/^"|"$/g, ''));
+
+            if (elementTokens[0] == "alias") {
+                buttonAlias = elementTokens[1];
+            } else if (elementTokens[0] == "damageType") {
+                options.damageType = elementTokens[1];
+            }
+        }
+
+        // [50%]
+        function getModifiedValue(modifierSet, unmodifiedValue) {
+            let token = modifierSet;
+
+            let percentRegex = /\[(\d+\.?\d+)%\]/;
+            if (percentRegex.test(token)) {
+                let percent = parseFloat(token.replace(percentRegex, `$1`));
+                return Math.ceil(unmodifiedValue * (percent / 100.0));
+            }
+
+            return parseInt(modifierSet);
+        }
 
         //#region Damage
         if (command == "damage") {
@@ -166,7 +193,12 @@ Hooks.on('renderChatMessageHTML', async (message, html, context) => {
                 target = [tokens[2]];
 
             damage = Math.max(damage, 0);
-            buttonAlias = await formatButtonAlias(target, buttonAlias, `Deal ${damage} Damage`);
+            let damageTypeString = "";
+            if (options.damageType) {
+                damageTypeString = " " + options.damageType;
+                damageTypeString = damageTypeString.replace(/(^\w|\s\w)/g, m => m.toUpperCase());
+            }
+            buttonAlias = await formatButtonAlias(target, buttonAlias, `Deal ${damage}${damageTypeString} Damage`);
             createTargetedButton(buttonAlias, (actors) => {
                 let content = "";
                 actors.forEach(actor => {
@@ -180,7 +212,7 @@ Hooks.on('renderChatMessageHTML', async (message, html, context) => {
                         }
                     }
 
-                    content += (content != "" ? "<br>" : "") + `${actor.name} took <b>${actorDamage} damage</b>!`;
+                    content += (content != "" ? "<br>" : "") + `${actor.name} took <b>${actorDamage}${damageTypeString} damage</b>!`;
                     dealDamage(actor, actorDamage, target ?? message.flags.vryl.selectedActorUuids);
                 });
                 ChatMessage.create({
@@ -233,23 +265,25 @@ Hooks.on('renderChatMessageHTML', async (message, html, context) => {
             }, target);
         }
         else if (command == "setguard") {
-            let guard = parseInt(tokens[1]);
+            let setGuardString = parseInt(tokens[1]);
 
             let target = selectedActors;
             if (tokens.length > 2)
                 target = [tokens[2]];
 
-            buttonAlias = await formatButtonAlias(target, buttonAlias, `Set Guard to ${guard}`);
+            buttonAlias = await formatButtonAlias(target, buttonAlias, `Set Guard to ${setGuardString}`);
             createTargetedButton(buttonAlias, (actors) => {
                 let content = "";
                 actors.forEach(actor => {
+                    let currentGuard = actor.system.combat.guard.value;
+                    let guardSet = getModifiedValue(setGuardString, currentGuard);
                     content += (content != "" ? "<br>" : "") + `${actor.name}'s <b>Guard</b> has been set to <b>${guard}</b>.`;
                     actor.update({ [`system.combat.guard.value`]: guard });
                 });
                 ChatMessage.create({
                     content: content,
                 });
-            }, selectedActors);
+            }, target);
         }
         //#endregion
         //#region Conditions
@@ -299,12 +333,12 @@ Hooks.on('renderChatMessageHTML', async (message, html, context) => {
         else if (command == "losecondition") {
             let effectId = tokens[1];
             let effectData = CONFIG.statusEffects.filter(e => e.id == effectId)[0];
-            let stacksLost = parseInt(tokens[2]);
+            let stacksLostString = tokens[2];
 
             let target = selectedActors;
             if (tokens.length > 3)
                 target = [tokens[3]];
-            buttonAlias = await formatButtonAlias(target, buttonAlias, `Lose ${effectData.name} x${stacksLost}`);
+            buttonAlias = await formatButtonAlias(target, buttonAlias, `Lose ${effectData.name} x${stacksLostString}`);
 
             createTargetedButton(buttonAlias, (actors) => {
                 let content = "";
@@ -312,6 +346,8 @@ Hooks.on('renderChatMessageHTML', async (message, html, context) => {
                     let actorEffect = actor.effects.find(e => e.statuses.has(effectId));
                     if (actorEffect) {
                         let stacks = actorEffect.flags.statuscounter?.value ?? 1;
+                        let stacksLost = getModifiedValue(stacksLostString, stacks);
+                        stacksLost = Math.min(stacks, stacksLost);
                         stacks -= stacksLost;
                         if (stacks <= 0)
                             actorEffect.delete();
@@ -320,6 +356,58 @@ Hooks.on('renderChatMessageHTML', async (message, html, context) => {
                         content += (content != "" ? "<br>" : "") + `${actor.name} has lost <b>${stacksLost}</b> stack${stacksLost != 1 ? "s" : ""} of <b>${effectData.name}</b>. <i>(${stacks} Remaining)</i>`;
                     }
                 });
+                ChatMessage.create({
+                    content: content,
+                });
+            }, target);
+        }
+        else if (command == "transfercondition") {
+            let effectId = tokens[1];
+            let effectData = CONFIG.statusEffects.filter(e => e.id == effectId)[0];
+            let stacksLostString = tokens[2];
+
+            let source = tokens[3];
+
+            let target = selectedActors;
+            if (tokens.length > 4)
+                target = [tokens[4]];
+
+            buttonAlias = await formatButtonAlias([source], buttonAlias, `Transfer ${effectData.name} x${stacksLostString}`);
+
+            createTargetedButton(buttonAlias, async (actors) => {
+                let content = "";
+
+                let sourceActor = await fromUuid(source);
+                let actorEffect = sourceActor.effects.find(e => e.statuses.has(effectId));
+                if (actorEffect) {
+                    let stacks = actorEffect.flags.statuscounter?.value ?? 1;
+                    let stacksLost = getModifiedValue(stacksLostString, stacks);
+                    stacksLost = Math.min(stacks, stacksLost);
+                    stacks -= stacksLost;
+                    if (stacks <= 0)
+                        actorEffect.delete();
+                    else
+                        actorEffect.statusCounter.setValue(stacks);
+                    content += (content != "" ? "<br>" : "") + `${sourceActor.name} has lost <b>${stacksLost}</b> stack${stacksLost != 1 ? "s" : ""} of <b>${effectData.name}</b>. <i>(${stacks} Remaining)</i>`;
+
+                    for (let actor of actors) {
+                        let actorEffect = actor.effects.find(e => e.statuses.has(effectId));
+                        let stacks = actorEffect?.flags?.statuscounter?.value ?? 0;
+
+                        if (!actorEffect) {
+                            await actor.toggleStatusEffect(effectId);
+                            actorEffect = actor.effects.find(e => e.statuses.has(effectId));
+                        }
+
+                        stacks += stacksLost;
+                        actorEffect.statusCounter.setValue(stacks);
+
+                        content += (content != "" ? "<br>" : "") + `${actor.name} has gained <b>${stacksLost}</b> stack${stacksLost != 1 ? "s" : ""} of <b>${effectData.name}</b>. <i>(x${stacks})</i>`;
+                    }
+                }
+
+
+
                 ChatMessage.create({
                     content: content,
                 });
@@ -440,7 +528,7 @@ Hooks.on('renderChatMessageHTML', async (message, html, context) => {
         }
         else if (command == "writesummary") {
 
-            if(!buttonAlias)
+            if (!buttonAlias)
                 buttonAlias = `Write Summary`;
 
             createButton(buttonAlias, async () => {
@@ -471,8 +559,8 @@ Hooks.on('renderChatMessageHTML', async (message, html, context) => {
                     close: (html) => {
                     }
                 }, {
-                left: window.innerWidth - 300 - 450,
-                height: 350,
+                    left: window.innerWidth - 300 - 450,
+                    height: 350,
                 });
 
                 d.render(true);
@@ -538,7 +626,7 @@ async function onStartTurn() {
         //First turn
         if (actor.system.combat.timesActivatedThisRound <= 1) {
             if (actor.system.combat.guard.value > 0) {
-                flags.vryl.buttons.push("setguard 0");
+                flags.vryl.buttons.push(`setguard 0 ${actor.uuid}`);
             }
         }
 
@@ -591,7 +679,7 @@ export async function onCombatTurnChange() {
             flags.vryl.buttons.push(`conditionSave ${endingActor.uuid}`);
 
         flags.vryl.buttons.push(`finishTurn`);
-        flags.vryl.buttons.push(`writeSummary|<b>${endingActor.name}</b>: Write Turn Summary`);
+        flags.vryl.buttons.push(`writeSummary|alias "<b>${endingActor.name}</b>: Write Turn Summary"`);
 
         await ChatMessage.create({
             content: content,
@@ -634,14 +722,24 @@ async function endOfTurnConditions(actor, flags, combat, token) {
 async function startOfTurnConditions(actor, flags, combat, token) {
     let content = "";
     //AUTOMATION Stunned
+    let stunnedEffect = actor.effects.find(e => e.statuses.has('stunned'));
+    if (stunnedEffect) {
+        flags.buttons.push(`loseCondition stunned [100%] ${actor.uuid}|alias "<b>${actor.name}</b>: Lose all stacks of Stunned"`);
+    }
+
     //AUTOMATION Dazed
+    let dazedEffect = actor.effects.find(e => e.statuses.has('dazed'));
+    if (dazedEffect) {
+        let actionPointsLost = actor.system.combat.actionsPerTurn - 1;
+        flags.buttons.push(`loseCondition dazed ${actionPointsLost} ${actor.uuid}"`);
+    }
 
     //AUTOMATION Burning
 
     let burningEffect = actor.effects.find(e => e.statuses.has('burning'));
     if (burningEffect) {
         let burningStacks = burningEffect.flags.statuscounter.value ?? 1;
-        flags.buttons.push(`damage ${burningStacks} ${actor.uuid}|Apply ${burningStacks} Burning Damage`);
+        flags.buttons.push(`damage ${burningStacks} ${actor.uuid}|alias "Apply ${burningStacks} Burning Damage"|damageType "Burning"`);
     }
     //AUTOMATION Bleeding
     let bleedingEffect = actor.effects.find(e => e.statuses.has('bleeding'));
@@ -656,7 +754,7 @@ async function startOfTurnConditions(actor, flags, combat, token) {
             flags.buttons.push(`loseCondition bleeding ${lostStacks} ${actor.uuid}|Lose Bleeding x${lostStacks}`);
             let bleedDamage = new Roll("2d6+4");
             await bleedDamage.evaluate();
-            flags.buttons.push(`damage ${bleedDamage.total} ${actor.uuid}|Apply ${bleedDamage.total} Bleeding Damage`);
+            flags.buttons.push(`damage ${bleedDamage.total} ${actor.uuid}|alias "Apply ${bleedDamage.total} Bleeding Damage"|damageType "Bleeding"`);
         }
     }
     //AUTOMATION Shocked
@@ -665,7 +763,7 @@ async function startOfTurnConditions(actor, flags, combat, token) {
         const turnActor = await fromUuid(turn.actor.uuid);
 
         if (turnActor.statuses.has('shocked')) {
-            flags.buttons.push(`loseCondition shocked 1 ${turnActor.uuid}|<b>${turnActor.name}</b>: Lose Shocked x1`);
+            flags.buttons.push(`loseCondition shocked 1 ${turnActor.uuid}|alias "<b>${turnActor.name}</b>: Lose Shocked x1"`);
 
             for (let compare of combat.turns) {
                 if (compare.uuid == turn.uuid)
@@ -687,7 +785,7 @@ async function startOfTurnConditions(actor, flags, combat, token) {
 
     for (let [key, value] of Object.entries(shockedMap)) {
         let shockedActor = await fromUuid(key);
-        flags.buttons.push(`damage ${value} ${shockedActor.uuid}|<b>${shockedActor.name}</b>: Apply ${value} Shocked Damage`);
+        flags.buttons.push(`damage ${value} ${shockedActor.uuid}|alias "<b>${shockedActor.name}</b>: Apply ${value} Shocked Damage"|damageType "Shocked"`);
     }
 
     //AUTOMATION Threatened
@@ -701,9 +799,10 @@ async function startOfTurnConditions(actor, flags, combat, token) {
         if (!threatenedEffect || !threatenedEffect.flags.vryl?.threatenedBy?.includes(actor.uuid))
             continue;
 
-        flags.buttons.push(`unthreaten ${actor.uuid} ${compareActor.uuid}|<b>${compareActor.name}</b>: Lose Threatened by <b>${actor.name}</b>`);
+        flags.buttons.push(`unthreaten ${actor.uuid} ${compareActor.uuid}|alias "<b>${compareActor.name}</b>: Lose Threatened by <b>${actor.name}</b>"`);
 
     }
+    
 
     return content;
 }

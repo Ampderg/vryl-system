@@ -350,7 +350,7 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
             if (disorientedEffect) {
                 let stacks = disorientedEffect.flags.statuscounter.value ?? 1;
                 stacks = Math.ceil(stacks / 2);
-                flags.vryl.buttons.push(`loseCondition disoriented ${stacks} ${actor.uuid}|<b>${actor.name}</b>: Lose Disoriented x${stacks}`);
+                flags.vryl.buttons.push(`loseCondition disoriented ${stacks} ${actor.uuid}|alias "<b>${actor.name}</b>: Lose Disoriented x${stacks}"`);
             }
         }
 

@@ -10,7 +10,7 @@ export function prepareStatusEffects() {
 
             sortingCategory: "Action Economy",
             description:
-`When you activate in the initiative order, lose all Action Points, lose all stacks of Stunned.
+`When you activate in the initiative order, before anything else, lose all Action Points and lose all stacks of Stunned.
 You cannot use Reactions.
 `,
         },
@@ -107,7 +107,7 @@ If you would ever remove or transfer stacks of a Condition through means that ar
 
             sortingCategory: "Damage Manipulation",
             description:
-`Whenever an action your perform deals damage, decrease its damage by the number of Weakened stacks you have, to a minimum of half (rounded up).
+`Whenever an action you perform rolls for damage, decrease the roll by the number of Weakened stacks you have, to a minimum of half (rounded up).
 `,
         },
         {
