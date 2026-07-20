@@ -189,84 +189,25 @@ export class VrylItemSheet extends api.HandlebarsApplicationMixin(sheets.ItemShe
       this._addActionEffect();
     });
 
-    const successCostElements = this.element.querySelectorAll(`[data-action='updateSuccessCost']`);
-    for (const e of successCostElements) {
-      e.addEventListener("change", () => {
-        const effects = this.document.system.combatAction.effects;
-        const effect = effects.find(f => f.id == e.id);
-        effect.successCost = e.value;
-        this.document.update({ [`system.combatAction.effects`]: effects });
-      });
-    }
+    // const successCostElements = this.element.querySelectorAll(`[data-action='updateSuccessCost']`);
+    // for (const e of successCostElements) {
+    //   e.addEventListener("change", () => {
+    //     const effects = this.document.system.combatAction.effects;
+    //     const effect = effects.find(f => f.uuid == e.id);
+    //     effect.successCost = e.value;
+    //     this.document.update({ [`system.combatAction.effects`]: effects });
+    //   });
+    // }
 
     const effectDescriptionElements = this.element.querySelectorAll(`[data-action='updateEffectDescription']`);
     for (const e of effectDescriptionElements) {
       e.addEventListener("click", async () => {
         const effects = this.document.system.combatAction.effects;
-        const effect = effects.find(f => f.id == e.id);
-        let effectContext = {
-          effect: effect,
-          chatButtons: structuredClone(effect.chatButtons),
-        }
-
-        let path = `systems/vryl/templates/items/combatActionEffectSettings.hbs`;
-        let d = new Dialog({
-          title: "Edit Action Effect",
-          content: await foundry.applications.handlebars.renderTemplate(path, effectContext),
-          buttons: {
-            save: {
-              label: "Save",
-              callback: (html) => {
-                // Retrieve the updated HTML content
-                effect.description = html.find('#description').val();
-                effect.summary = html.find('#summary').val();
-                effect.repeatable = html.find('#repeatable')[0].checked;
-                effect.mandatory = html.find('#mandatory')[0].checked;
-                effect.targeting.doesTarget = html.find('#doesTarget')[0].checked;
-
-                const chatButtonsText = html.find(`[data-action='actionEffectChatButtonText']`);
-                for(let input of chatButtonsText)
-                {
-                  let index = parseInt(input.dataset.index);
-                  effectContext.chatButtons[index].buttonText = input.value;
-                }
-
-                effect.chatButtons = effectContext.chatButtons;
-
-                this.document.update({ [`system.combatAction.effects`]: effects });
-              }
-            }
-          },
-          render: async (html) => {
-            const createButtons = html.find(`[data-action='addActionEffectChatButton']`);
-            for (let button of createButtons) {
-              button.addEventListener('click', async () => {
-                let chatButtons = effectContext.chatButtons;
-                let newButton = {
-                  buttonText: "",
-                };
-                chatButtons.push(newButton);
-                d.data.content = (await foundry.applications.handlebars.renderTemplate(path, effectContext));
-                d.render(false);
-              });
-            }
-
-            const deleteButtons = html.find(`[data-action='removeActionEffectChatButton']`);
-            for (let button of deleteButtons) {
-              button.addEventListener('click', async () => {
-                let chatButtons = effectContext.chatButtons;
-                let index = parseInt(button.dataset.index);
-                chatButtons.splice(index, 1); 
-
-                d.data.content = (await foundry.applications.handlebars.renderTemplate(path, effectContext));
-                d.render(false);
-              });
-            }
-          },
-        }, {
-          width: 550,
-          height: 400
-        }).render(true);
+        const effect = effects.find(f => f.uuid == e.id);
+        
+        game.vrylGlobalFunctions.openCombatActionEffectSettings(effect, () => {
+            this.document.update({ [`system.combatAction.effects`]: effects });
+        });
 
       });
     }
@@ -274,7 +215,7 @@ export class VrylItemSheet extends api.HandlebarsApplicationMixin(sheets.ItemShe
     const effectDeleteElements = this.element.querySelectorAll(`[data-action='deleteEffect']`);
     for (const e of effectDeleteElements) {
       e.addEventListener("click", () => {
-        const effects = this.document.system.combatAction.effects.filter(f => f.id != e.id);
+        const effects = this.document.system.combatAction.effects.filter(f => f.uuid != e.id);
         this.document.update({ [`system.combatAction.effects`]: effects });
       });
     }
@@ -282,7 +223,7 @@ export class VrylItemSheet extends api.HandlebarsApplicationMixin(sheets.ItemShe
     this.element.querySelectorAll(`[data-action='shiftEffectOrderUp']`).forEach((element, index, array) => {
       element.addEventListener("click", (event) => {
         const effects = this.document.system.combatAction.effects;
-        const effect = effects.find(f => f.id == event.target.parentElement.id);
+        const effect = effects.find(f => f.uuid == event.target.parentElement.id);
 
         let order = null;
         for (const e of effects) {
@@ -320,7 +261,7 @@ export class VrylItemSheet extends api.HandlebarsApplicationMixin(sheets.ItemShe
     this.element.querySelectorAll(`[data-action='shiftEffectOrderDown']`).forEach((element, index, array) => {
       element.addEventListener("click", (event) => {
         const effects = this.document.system.combatAction.effects;
-        const effect = effects.find(f => f.id == event.target.parentElement.id);
+        const effect = effects.find(f => f.uuid == event.target.parentElement.id);
 
         let order = null;
         for (const e of effects) {

@@ -162,6 +162,87 @@ function renderChanges(activeEffectConfig, html, data) {
     </header>
     ${content}
     </div>`;
+
+    {
+
+        let grantedCombatEffects = data.document.getFlag("vryl", "addedCombatActionEffects") ?? [];
+        let combatEffectsElement = document.createElement("div");
+        section.appendChild(combatEffectsElement);
+
+        let listHeader = document.createElement("div");
+        listHeader.classList.add("flexrow");
+        listHeader.innerHTML = "<span>Granted Combat Action Effects</span>"
+        combatEffectsElement.appendChild(listHeader);
+
+        let addButton = document.createElement("span")
+        addButton.innerHTML = `<span class="clickable"><i class="fa-regular fa-square-plus"></i></span>`;
+        listHeader.appendChild(addButton);
+
+        let combatEffectsList = document.createElement("div");
+        combatEffectsElement.appendChild(combatEffectsList);
+
+        function addCombatEffect(effect) {
+            let newEffectElement = document.createElement("div");
+            newEffectElement.classList.add('flexrow');
+            newEffectElement.innerHTML = `<b>${effect.summary == "" ? effect.description : effect.summary}</b>`;
+
+            let editButton = document.createElement("span");
+            editButton.classList.add(`clickable`);
+            editButton.innerHTML = `<i class='fas fa-edit'></i>`;
+            editButton.addEventListener('click', () => {
+                game.vrylGlobalFunctions.openCombatActionEffectSettings(effect, () => {
+                    data.document.setFlag("vryl", "addedCombatActionEffects", grantedCombatEffects);
+                });
+            });
+            newEffectElement.appendChild(editButton);
+
+            let deleteButton = document.createElement("span");
+            deleteButton.classList.add(`clickable`);
+            deleteButton.innerHTML = `<i class='fas fa-trash'></i>`;
+            deleteButton.addEventListener('click', () => {
+                grantedCombatEffects = grantedCombatEffects.filter(e => e.id != effect.id);
+                data.document.setFlag("vryl", "addedCombatActionEffects", grantedCombatEffects);
+            });
+            newEffectElement.appendChild(deleteButton);
+
+            combatEffectsList.appendChild(newEffectElement);
+        }
+
+        for (let e of grantedCombatEffects) {
+            addCombatEffect(e);
+        }
+
+        addButton.addEventListener('click', () => {
+            let newId = 0;
+            for (let e of grantedCombatEffects) {
+                if (e.id >= newId)
+                    newId = e.id + 1;
+            }
+
+            let newEffect = {
+                id: newId,
+                uuid: `${data.document.uuid}.${newId}`,
+                successCost: 0,
+                order: 0,
+                targeting: {
+                    doesTarget: false,
+                    targetCount: null,
+                    targetRange: null
+                },
+                description: "Granted Effect",
+                summary: "",
+                repeatable: false,
+                mandatory: false,
+                chatButtons: [],
+                isGrantedExternally: true,
+            };
+            grantedCombatEffects.push(newEffect);
+            data.document.setFlag("vryl", "addedCombatActionEffects", grantedCombatEffects);
+            //addCombatEffect(newEffect);
+        })
+
+
+    }
 }
 
 function renderDuration(activeEffectConfig, html, data) {
@@ -191,7 +272,7 @@ function renderDuration(activeEffectConfig, html, data) {
     CONFIG.ui.vrylSetEffectFlag = async function (flag, value, documentUuid) {
         const document = await fromUuid(documentUuid);
         document.setFlag(CONFIG.SystemId, flag, value);
-        }
+    }
 
     const section = html.querySelector("section[data-tab='duration']");
     if (!section) return;
@@ -203,10 +284,9 @@ function renderDuration(activeEffectConfig, html, data) {
 
     const temporaryHTML = section.innerHTML;
     let currentType = "passive";
-    
+
     let instantContent = '';
-    if (data.document.getFlag('vryl', 'isInstant'))
-    {
+    if (data.document.getFlag('vryl', 'isInstant')) {
         currentType = "instant";
 
         const promptSetting = data.document.getFlag(CONFIG.SystemId, 'promptSetting');
@@ -218,13 +298,11 @@ function renderDuration(activeEffectConfig, html, data) {
             <option value="flagPresent" ${promptSetting == "flagPresent" ? "selected" : ""}>When Roll Flag is Present</option>
             <option value="always" ${promptSetting == "always" ? "selected" : ""}>Always</option>
         </select>`;
-        if(promptSetting == "flagPresent")
-        {
+        if (promptSetting == "flagPresent") {
             const promptFlagSetting = data.document.getFlag(CONFIG.SystemId, 'promptSettingFlag');
             instantContent += `<select onchange="CONFIG.ui.vrylSetEffectFlag('promptSettingFlag', this.value, '${data.document.uuid}')">`;
             const globalActions = ROLL_ACTIONS.filter((a) => a.actionOwner == 'global');
-            for(const rollAction of globalActions)
-            {
+            for (const rollAction of globalActions) {
                 instantContent += `<option value="${rollAction.action}" ${promptFlagSetting == rollAction.action ? "selected" : ""} >${rollAction.action}</option>`;
             }
             instantContent += "</select>";

@@ -152,6 +152,22 @@ Hooks.on('renderChatMessageHTML', async (message, html, context) => {
         return buttonAlias;
     }
 
+    async function createChatMessageFromButton(context = {})
+    {
+        if(!context.flags)
+            context.flags = {};
+        if(!context.flags.vryl)
+            context.flags.vryl = {};
+
+        context.flags.vryl.hideInLog = true;
+
+        let buttonResultMsg = await ChatMessage.create(context);
+        
+        let buttonResultMessages = message.getFlag("vryl", "buttonResultMessages") ?? [];
+        buttonResultMessages.push(buttonResultMsg.uuid);
+        message.setFlag("vryl", "buttonResultMessages", buttonResultMessages);
+    }
+
     for (let b of buttons) {
         const elements = b.split("|");
         let tokens = elements[0].match(/"[^"]+"|[^\s]+/g);
@@ -215,7 +231,7 @@ Hooks.on('renderChatMessageHTML', async (message, html, context) => {
                     content += (content != "" ? "<br>" : "") + `${actor.name} took <b>${actorDamage}${damageTypeString} damage</b>!`;
                     dealDamage(actor, actorDamage, target ?? message.flags.vryl.selectedActorUuids);
                 });
-                ChatMessage.create({
+                createChatMessageFromButton({
                     content: content,
                 });
             }, target);
@@ -238,7 +254,7 @@ Hooks.on('renderChatMessageHTML', async (message, html, context) => {
                     content += (content != "" ? "<br>" : "") + `${actor.name} recovered <b>${hp} Hit Point${hp != 1 ? "s" : ""}</b>!`;
                     recoverHp(actor, hp);
                 });
-                ChatMessage.create({
+                createChatMessageFromButton({
                     content: content,
                 });
             }, target);
@@ -259,7 +275,7 @@ Hooks.on('renderChatMessageHTML', async (message, html, context) => {
                     content += (content != "" ? "<br>" : "") + `${actor.name} gained <b>${guard} Guard</b>! <i>(${actor.system.combat.guard.value + guard})</i>`;
                     gainGuard(actor, guard);
                 });
-                ChatMessage.create({
+                createChatMessageFromButton({
                     content: content,
                 });
             }, target);
@@ -280,7 +296,7 @@ Hooks.on('renderChatMessageHTML', async (message, html, context) => {
                     content += (content != "" ? "<br>" : "") + `${actor.name}'s <b>Guard</b> has been set to <b>${guard}</b>.`;
                     actor.update({ [`system.combat.guard.value`]: guard });
                 });
-                ChatMessage.create({
+                createChatMessageFromButton({
                     content: content,
                 });
             }, target);
@@ -325,7 +341,7 @@ Hooks.on('renderChatMessageHTML', async (message, html, context) => {
 
                     content += (content != "" ? "<br>" : "") + `${actor.name} has gained <b>${stacksGained}</b> stack${stacksGained != 1 ? "s" : ""} of <b>${effectData.name}</b>. <i>(x${stacks})</i>`;
                 }
-                ChatMessage.create({
+                createChatMessageFromButton({
                     content: content,
                 });
             }, target);
@@ -356,7 +372,7 @@ Hooks.on('renderChatMessageHTML', async (message, html, context) => {
                         content += (content != "" ? "<br>" : "") + `${actor.name} has lost <b>${stacksLost}</b> stack${stacksLost != 1 ? "s" : ""} of <b>${effectData.name}</b>. <i>(${stacks} Remaining)</i>`;
                     }
                 });
-                ChatMessage.create({
+                createChatMessageFromButton({
                     content: content,
                 });
             }, target);
@@ -406,9 +422,7 @@ Hooks.on('renderChatMessageHTML', async (message, html, context) => {
                     }
                 }
 
-
-
-                ChatMessage.create({
+                createChatMessageFromButton({
                     content: content,
                 });
             }, target);
@@ -455,7 +469,7 @@ Hooks.on('renderChatMessageHTML', async (message, html, context) => {
 
                     content += (content != "" ? "<br>" : "") + `<b>${actor.name}</b> is now Threatened by <b>${sourceActor.name}</b>!`;
                 }
-                ChatMessage.create({
+                createChatMessageFromButton({
                     content: content,
                 });
             }, targetUuid);
@@ -487,7 +501,7 @@ Hooks.on('renderChatMessageHTML', async (message, html, context) => {
 
                     content += (content != "" ? "<br>" : "") + `<b>${actor.name}</b> is no longer Threatened by <b>${sourceActor.name}</b>!`;
                 });
-                ChatMessage.create({
+                createChatMessageFromButton({
                     content: content,
                 });
             }, targetUuid);

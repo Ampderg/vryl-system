@@ -319,8 +319,17 @@ export class VrylItem extends Item {
         if (itemData.type != "combatAction") return;
 
         const effects = itemData.system.combatAction.effects;
+        for(let e of effects)
+        {
+            e.uuid = `${itemData.uuid}.${e.id}`;
+        }
 
         const orderedEffects = {}
+
+        function enrichEffect(effect) {
+            effect.enrichedDescription = CONFIG.ui.vrylEnrichText(effect.description, itemData.actor.system);
+            effect.enrichedSummary = CONFIG.ui.vrylEnrichText(effect.summary, itemData.actor.system);
+        }
 
         for (const effect of effects) {
             if (!orderedEffects[effect.order])
@@ -328,11 +337,34 @@ export class VrylItem extends Item {
 
             orderedEffects[effect.order].push(effect);
 
-            effect.enrichedDescription = CONFIG.ui.vrylEnrichText(effect.description, itemData.actor.system);
-            effect.enrichedSummary = CONFIG.ui.vrylEnrichText(effect.summary, itemData.actor.system);
+            enrichEffect(effect);
         }
 
         itemData.system.combatAction.orderedEffects = orderedEffects;
+
+        let itemCombatEffects = [];
+        for(let item of itemData.actor.items.contents)
+        {
+            for(let itemEffect of item.effects)
+            {
+                let addedCombatActionEffects = itemEffect.flags.vryl?.addedCombatActionEffects;
+                if(!addedCombatActionEffects)
+                    continue;
+
+                for(let e of addedCombatActionEffects)
+                {
+                    e.uuid = `${itemEffect.uuid}.${e.id}`;
+                    enrichEffect(e);
+
+                    itemCombatEffects.push(e);
+                }
+            }
+        }
+
+        if(itemCombatEffects.length > 0)
+            itemData.system.combatAction.itemCombatEffects = itemCombatEffects;
+        else
+            itemData.system.combatAction.itemCombatEffects = undefined;
 
         let apString = "";
 

@@ -926,7 +926,7 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
 
                         event.stopPropagation();
                         event.preventDefault();
-                        const effect = action.system.combatAction.effects.find(item => item.id == button.id);
+                        const effect = button.id.includes("ActiveEffect") ? action.system.combatAction.itemCombatEffects.find(item => item.uuid == button.id) : action.system.combatAction.effects.find(item => item.uuid == button.id);
                         let newTargetContent = "";
 
                         async function continueActionEffect() {
@@ -970,7 +970,7 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
                             });
 
                             combatActionFlags.spentSuccesses += effect.successCost;
-                            combatActionFlags.usedEffects.push(effect.id);
+                            combatActionFlags.usedEffects.push(effect.uuid);
 
                             await msg.setFlag("vryl", "combatAction", combatActionFlags);
                             d.data.content = (await foundry.applications.handlebars.renderTemplate(`systems/vryl/templates/parts/roll/combat-action-effect-execution.hbs`, context));

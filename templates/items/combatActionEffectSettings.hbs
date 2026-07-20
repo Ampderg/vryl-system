@@ -10,8 +10,15 @@
         {{effect.description}}
       </prose-mirror>
     </div>
+    {{#if effect.isGrantedExternally}}
+    
+    {{/if}}
     <div class="flexrow">
-      <label>Is this effect built-in to the action? (Mandatory)</label>
+      <label>Base Success Cost</label>
+      <input type="number" id="successCost" style="max-width:3em;" value="{{effect.successCost}}">
+    </div>
+    <div class="flexrow">
+      <label>Is this effect mandatory?</label>
       <input type="checkbox" id="mandatory" name="mandatory" {{#if effect.mandatory}}checked{{/if}}>
     </div>
     <div class="flexrow">

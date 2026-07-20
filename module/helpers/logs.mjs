@@ -82,6 +82,9 @@ export class VrylLogsHelpers {
         for (let i = 0; i < messagesToSave.length; i++) {
             let message = messagesToSave[i];
 
+            if(message.flags.vryl?.hideInLog)
+                continue;
+
             if (message.flags.vryl?.isAudioPlayEvent) {
                 const sound = await fromUuid(message.flags.vryl.audioSrcUuid);
                 if (!sound)
@@ -176,6 +179,16 @@ export class VrylLogsHelpers {
                 log += this.styleCenter(message.flavor) + "\n";
 
             let content = message.content;
+
+            if(message.flags.vryl?.buttonResultMessages)
+            {
+                for(let connectedUuid of message.flags.vryl?.buttonResultMessages)
+                {
+                    let connectedMsg = await fromUuid(connectedUuid);
+                    content += `<br>${connectedMsg.content}`;
+                }
+            }
+
             content = content.replaceAll(`<em>`, "<i>").replaceAll(`</em>`, "</i>").replaceAll(`<hr>`, "<br>").replaceAll(`<hr />`, "<br>");
             content = content.replaceAll("<br>", "\n");
             // content = content.replaceAll(`<i class="fa-solid fa-arrow-right"></i>`, "(At-Will)");

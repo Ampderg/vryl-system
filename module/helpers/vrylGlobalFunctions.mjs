@@ -1,6 +1,6 @@
 export function initializeGlobals() {
     game.vrylGlobalFunctions = {
-        markdownToHtml: function(markdownText) {
+        markdownToHtml: function (markdownText) {
             let html = markdownText;
             html = html.replaceAll(/\*\*\*(.*?)\*\*\*/g, `<b><i>$1</i></b>`);
             html = html.replaceAll(/\*\*(.*?)\*\*/g, `<b>$1</b>`);
@@ -101,6 +101,72 @@ export function initializeGlobals() {
             });
             d.render(true);
         },
+        openCombatActionEffectSettings: async function (effect, callback) {
+            let effectContext = {
+                effect: effect,
+                chatButtons: structuredClone(effect.chatButtons),
+            }
+
+            let path = `systems/vryl/templates/items/combatActionEffectSettings.hbs`;
+            let template = await foundry.applications.handlebars.renderTemplate(path, effectContext)
+            let d = new Dialog({
+                title: "Edit Action Effect",
+                content: template,
+                buttons: {
+                    save: {
+                        label: "Save",
+                        callback: (html) => {
+                            // Retrieve the updated HTML content
+                            effect.description = html.find('#description').val();
+                            effect.summary = html.find('#summary').val();
+                            effect.repeatable = html.find('#repeatable')[0].checked;
+                            effect.mandatory = html.find('#mandatory')[0].checked;
+                            effect.targeting.doesTarget = html.find('#doesTarget')[0].checked;
+                            effect.successCost = parseInt(html.find('#successCost')[0].value);
+
+                            const chatButtonsText = html.find(`[data-action='actionEffectChatButtonText']`);
+                            for (let input of chatButtonsText) {
+                                let index = parseInt(input.dataset.index);
+                                effectContext.chatButtons[index].buttonText = input.value;
+                            }
+
+                            effect.chatButtons = effectContext.chatButtons;
+
+                            callback();
+                        }
+                    }
+                },
+                render: async (html) => {
+                    const createButtons = html.find(`[data-action='addActionEffectChatButton']`);
+                    for (let button of createButtons) {
+                        button.addEventListener('click', async () => {
+                            let chatButtons = effectContext.chatButtons;
+                            let newButton = {
+                                buttonText: "",
+                            };
+                            chatButtons.push(newButton);
+                            d.data.content = (await foundry.applications.handlebars.renderTemplate(path, effectContext));
+                            d.render(false);
+                        });
+                    }
+
+                    const deleteButtons = html.find(`[data-action='removeActionEffectChatButton']`);
+                    for (let button of deleteButtons) {
+                        button.addEventListener('click', async () => {
+                            let chatButtons = effectContext.chatButtons;
+                            let index = parseInt(button.dataset.index);
+                            chatButtons.splice(index, 1);
+
+                            d.data.content = (await foundry.applications.handlebars.renderTemplate(path, effectContext));
+                            d.render(false);
+                        });
+                    }
+                },
+            }, {
+                width: 550,
+                height: 400
+            }).render(true);
+        }
     }
 
     CONFIG.ui.vrylEnrichText = function (text, system = undefined, isChat = false) {
@@ -110,7 +176,7 @@ export function initializeGlobals() {
         //Enrich status effects
         for (const condition of CONFIG.statusEffects) {
             //TODO: make this replace cleaner, make sure that the text isnt within html tags
-            text = text.replaceAll(`[${condition.name}]`, `<span class="clickable" title="${condition.description.replaceAll('"', '\"')}">${condition.name}</span>`);
+            text = text.replaceAll(`[${condition.name}]`, `<span class="hover-info" title="${condition.description.replaceAll('"', '\"')}">${condition.name}</span>`);
         }
 
         if (system?.combat?.damage)
@@ -133,5 +199,5 @@ export function initializeGlobals() {
 
         return text;
     }
-    
+
 }
