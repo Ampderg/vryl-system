@@ -329,6 +329,30 @@ function renderDuration(activeEffectConfig, html, data) {
 
     section.innerHTML = content;
 
+    {
+        let instantSection = section.querySelectorAll(`.durationSection[data-dropdown-section="instant"]`)[0];
+
+        let row;
+        let label; 
+
+        row = document.createElement("div");
+        row.classList.add("flexrow");
+
+        label = document.createElement("label");
+        label.innerText = "Apply to Roll Builder automatically when prompted?";
+        row.appendChild(label);
+
+        let checkAppliedByDefault = document.createElement("input");
+        checkAppliedByDefault.type = "checkbox"
+        checkAppliedByDefault.checked = data.document.flags.vryl?.isInstantEffectAppliedWhenPrompted ?? false;
+        checkAppliedByDefault.addEventListener(`change`, () => {
+            data.document.setFlag(`vryl`, `isInstantEffectAppliedWhenPrompted`, checkAppliedByDefault.checked);
+        });
+
+        row.appendChild(checkAppliedByDefault);
+        instantSection.appendChild(row);
+    }
+
     CONFIG.ui.vrylEffectShowHideSection(section.querySelector("select.durationSection"), section, selector, data.document.uuid);
 }
 

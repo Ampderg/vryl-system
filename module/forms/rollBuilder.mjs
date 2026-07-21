@@ -436,7 +436,7 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
 
     static async getActor(actorData, fillTemplate = true) {
         if (actorData.id != 'VRYL-TEMPLATE-ACTOR')
-            return await fromUuid(actorData.uuid);
+            return await actorData.uuid ? fromUuid(actorData.uuid) : game.actors.get(actorData.id);
 
         if (!fillTemplate)
             return actorData.uuid;
@@ -701,7 +701,7 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
         }
 
         async function renderItemEffects(actorId) {
-            const actorItems = CONFIG.ROLL_DATA.rollItemEffects.filter((a) => a.actor.id == actorId);
+            const actorItems = CONFIG.ROLL_DATA.rollItemEffects.filter((a) => a.actor.uuid == actorId);
 
             let content = "";
 
@@ -1658,6 +1658,7 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
     //#region Active Effects
 
     static _populateActorEffects() {
+        let previousRollItemEffects = CONFIG.ROLL_DATA.rollItemEffects;
         CONFIG.ROLL_DATA.rollItemEffects = [];
 
         for (const [actorId, actorData] of CONFIG.ROLL_DATA.rollActors) {
@@ -1691,7 +1692,13 @@ export class RollSidebar extends HandlebarsApplicationMixin(AbstractSidebarTab) 
                                 }
                                 break;
                         }
+                    }
 
+                    if(isPrompted && effect.getFlag(CONFIG.SystemId, `isInstantEffectAppliedWhenPrompted`) &&
+                        previousRollItemEffects.filter(e => e.uuid == effect.uuid).length == 0)
+                    {
+                        isApplied = true;
+                        effect.setFlag(CONFIG.SystemId, `isInstantApplied`, true);
                     }
 
                     if (!isApplied && !isPrompted)
